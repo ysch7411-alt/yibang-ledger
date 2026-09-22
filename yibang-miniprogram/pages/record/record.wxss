@@ -1,9 +1,49 @@
-/* 今日支出卡片：和进账一样的布局，红色主题 */
-.today-card-expense {
-  background: linear-gradient(135deg, #FDECEA 0%, #FFFFFF 100%);
+
+/* 本页是 **TabBar 页**：弹层要停在 tabBar 之上。
+   （公共 .sheet 的默认值 `--sheet-rest` 是二级页的情形 —— 页面没有 tabBar，贴底避让安全区。）
+   2026-09-22 收口：全站弹层位置统一由 --sheet-rest 控制，**页面不再各自覆盖 .sheet**。 */
+page {
+  --sheet-rest: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
 }
-.today-card-expense .today-cap {
-  color: #D92D20;
+
+/* ---------------- 页头右侧的分享按钮 ----------------
+   2026-09-22 两次改：
+   ① 原来这里是 .search-box（放大镜造型、搜索框语感），但绑的动作是"分享今日报表"——
+      图标暗示和真实功能对不上，用户会先去点它搜索。改成浅橙底 + 文字标签的次要按钮。
+   ② 图标换成"托盘+向上箭头"（用户从 4 个备选里挑的），文案从「分享」改成「分享今日报表」。
+
+   宽度账：页头可用 622rpx（750 − container 左右各 28 − page-head 左右各 36）。
+   文案 4 字变 6 字多占约 110rpx，会遇到最长日期「12月28日 星期三」时把标题挤到换行，
+   所以把左右内边距 24→18rpx、图标 34→30rpx、图文间距 10→8rpx，
+   一共让出约 34rpx —— 不动高度（88rpx 触控区是全站规范，不能牺牲）。 */
+.share-btn {
+  display: flex;
+  align-items: center;
+  /* 触控区 ≥88rpx（全站规范） */
+  min-height: 88rpx;
+  padding: 0 18rpx;
+  border-radius: var(--r-full);
+  background: var(--brand-weak);
+  border: 2rpx solid var(--brand-line);
+  /* 不许被左侧标题挤扁 */
+  flex: none;
+}
+.share-btn-hover,
+.share-btn:active {
+  background: #FFE8DC;
+}
+.share-btn-ico {
+  width: 30rpx;
+  height: 30rpx;
+  margin-right: 8rpx;
+  flex: none;
+}
+.share-btn-t {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--brand-ink);
+  /* 文案不许折行：折了按钮会变高，整个页头跟着变形 */
+  white-space: nowrap;
 }
 /* 今日支出卡片 */
 .today-expense-card {
@@ -57,29 +97,9 @@
 .page-head-right {
   flex-shrink: 0;
 }
-.search-box {
-  display: flex;
-  align-items: center;
-  padding: 16rpx 24rpx;
-  border-radius: 32rpx;
-  background: rgba(228, 85, 29, .08);
-  border: 2rpx solid rgba(228, 85, 29, .25);
-  min-width: 200rpx;
-}
-.search-box:active {
-  transform: scale(0.97);
-  opacity: 0.85;
-}
-.search-box-icon {
-  width: 28rpx;
-  height: 28rpx;
-  margin-right: 10rpx;
-}
-.search-box-placeholder {
-  font-size: 26rpx;
-  color: #E4551D;
-  font-weight: 500;
-}
+/* 2026-09-22 移除 .search-box / .search-box-icon / .search-box-placeholder：
+   它们只被记账页页头那一个"分享"按钮引用，而那个造型会误导成搜索。
+   改用上面的 .share-btn。删之前已确认三处类名在 pages/ 与 app.wxss 里再无其他引用。 */
 
 /* 给固定录入带留出空间（TabBar 108rpx + 录入带 ~124rpx） */
 /* ══════ 记账页的输入条定位 ══════
@@ -128,7 +148,11 @@
   color: var(--brand-ink);
 }
 
-/* ---------------- 今日收支 ---------------- */
+/* ---------------- 今日收支（横排合并卡） ----------------
+   2026-09-22：原来是两张 72rpx 大字的巨卡上下排开，首屏被它们吃光，
+   "最近记录"落在折叠线以下 —— 而"我刚记了什么"才是这一页的主任务。
+   合并成左右两栏 + 一行结余：信息一条不少，纵向省下约 200rpx。
+   字号 72→44rpx（正好是全站 .money-md 那一档），店里看依然够大。 */
 .today-card {
   background: linear-gradient(160deg, #FFFFFF 0%, #FFF8F4 100%);
   position: relative;
@@ -148,31 +172,43 @@
 .card-hover {
   transform: scale(.998);
 }
-.today-hd {
+.today-cols {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
+}
+.today-col {
+  flex: 1;
+  /* 🔴 flex 子项默认 min-width:auto，大金额会把两栏撑歪 —— 必须显式写 0 */
+  min-width: 0;
+}
+.today-sep {
+  flex: none;
+  width: 1rpx;
+  background: var(--line);
+  margin: 4rpx 28rpx;
 }
 .today-cap {
   font-size: 26rpx;
   color: var(--t3);
 }
-.today-hero {
-  font-size: 72rpx;
+/* 数字颜色交给 c-income / c-expense 承担，这里不再硬编码色值
+   （原来写死了 #0B7A43 / #D92D20，换主题时不会跟着变） */
+.today-v {
+  margin-top: 10rpx;
+  font-size: 44rpx;
   font-weight: 700;
-  letter-spacing: -1.5rpx;
-  margin: 12rpx 0 12rpx;
-  color: var(--t1);
+  line-height: 1.2;
+  letter-spacing: -.6rpx;
 }
 .today-ft {
   display: flex;
-  align-items: center;
-  font-size: 24rpx;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid var(--line);
+  font-size: 26rpx;
   color: var(--t3);
-}
-.today-ft .dot {
-  margin: 0 12rpx;
-  color: var(--line);
 }
 
 /* ---------------- 往来概况 ---------------- */
@@ -487,14 +523,9 @@
   font-weight: 700;
   color: var(--t1);
 }
-.f-input {
-  height: 96rpx;
-  padding: 0 24rpx;
-  border-radius: var(--r-md);
-  background: var(--fill);
-  font-size: 32rpx;
-  color: var(--t1);
-}
+/* .f-input 已收口到 app.wxss（2026-09-22）：本页原来那份 height:96rpx 与
+   我的页的 88rpx 各说各话，而往来页/成员管理漏写 height 直接把文字裁掉了。
+   表单控件全站只该有一份定义。 */
 
 /* ---------------- 今日汇总 sheet ---------------- */
 .sum-hero {
@@ -794,3 +825,4 @@
   border-radius: 50%;
   animation: yb-spin .7s linear infinite;
 }
+

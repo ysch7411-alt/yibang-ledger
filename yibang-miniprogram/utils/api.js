@@ -265,6 +265,12 @@ async function saveRecord(payload) {
       unit: payload.unit || '',
       unit_price: payload.unitPrice === undefined ? null : payload.unitPrice,
       pay_method: payload.method || '',
+      /* 品类（2026-09-22）：AI 解析出来的 category 就在 records[] 里，
+         但这一层字段映射原来**没有把它转发出去** —— 于是模型归好的品类
+         走到这一步就被丢掉，后端永远存不到。
+         （这类"中间层少转发一个字段"的毛病不报错、只是功能静默失效，
+           加字段时务必把 解析→映射→入库 三处一起对一遍。） */
+      category: payload.category || '',
       content: payload.content || '',
       record_date: payload.recordDate || fmt.ymd()
     }
@@ -326,6 +332,14 @@ async function parseText(text) {
       type: TYPE_CODE[o.type] || Number(o.type_code) || 2,
       contactName: String(o.contact || o.contact_name || '').trim(),
       content: String(o.content || o.remark || o.summary || '').trim(),
+      /* 品类（2026-09-22）。
+         ⚠️ 这个函数是**用固定字段清单重建对象**的 —— 后端多返回一个字段，
+         这里不写就等于扔掉。加 category 时我先只改了 saveRecord，
+         结果真实录入路径的品类一直是 null（直接调 API 测试却是通的，
+         因为那条路不经过这里）。
+         **教训：往解析结果里加字段，要把「后端返回 → 本函数 → saveRecord → 后端入库」
+         这条链的每一层都过一遍；中间任何一层是"白名单式重建"，漏了就是静默失效。** */
+      category: String(o.category || '').trim(),
       recordDate: o.record_date || o.date || fmt.ymd()
     }))
     .filter((r2) => r2.amount > 0);
@@ -508,6 +522,64 @@ async function getPurchaseStats(opts) {
   };
 }
 
+/**
+ * 按维度聚合日常收支（2026-09-22）：回答「钱花在哪了 / 钱从哪来」。
+ *
+ * 与 getPurchaseStats 的分工（两者不能互相替代）：
+ *   · getPurchaseStats —— 只覆盖**采购单据**的明细行（按供应商 / 品类）
+ *   · getRecordStats   —— 覆盖**全部日常收支**（买菜、房租、运费、工资、货款…）
+ * 老板问"这个月钱花哪了"，要的是后者；只给他采购那一部分等于答非所问。
+ *
+ * 拿不到返回 **null**（与 getGroupSummary / getPurchaseStats 一致）：
+ * 页面必须能区分"这段时间真的没有账"和"接口没取到" ——
+ * 把后者画成一张 0 表，老板会以为账丢了。
+ */
+async function getRecordStats(opts) {
+  const o = opts || {};
+  const groupBy = o.groupBy === 'method' ? 'method' : 'category';
+  const dir = o.dir === 'in' ? 'in' : 'out';
+  const range = fmt.rangeOf(o.range || 'month');
+  const from = o.from || range.from;
+  const to = o.to || range.to;
+
+  const d = await safe(
+    app().request(`/record/stats?from=${from}&to=${to}&groupBy=${groupBy}&dir=${dir}`, { silent: true }),
+    null
+  );
+  if (!d) return null;
+
+  const raw = Array.isArray(d.list) ? d.list : [];
+  const total = fmt.toNum(d.total);
+  // 条形长度以**榜首**为基准，不是以总额 —— 否则一家独大时其余全是一条看不见的线
+  const max = raw.reduce((m, x) => Math.max(m, fmt.toNum(x.amount)), 0);
+
+  return {
+    groupBy,
+    dir,
+    from: d.from || from,
+    to: d.to || to,
+    total,
+    totalText: fmt.money(total),
+    count: raw.length,
+    list: raw.map((x, i) => {
+      const amount = fmt.toNum(x.amount);
+      return {
+        rank: i + 1,
+        key: x.key || (groupBy === 'method' ? '未填写' : '未分类'),
+        amount,
+        amountText: fmt.money(amount),
+        count: Number(x.count) || 0,
+        // 最小 6%：排在尾巴上的那几项也得看得见，不然用户会以为漏了
+        pct: max ? Math.max(6, Math.round((amount / max) * 100)) : 0,
+        // 占比优先用**服务端算好的**：前端再算一遍，迟早出现"饼图和列表对不上"
+        share: typeof x.share === 'number'
+          ? x.share
+          : (total ? Math.round((amount / total) * 1000) / 10 : 0)
+      };
+    })
+  };
+}
+
 /** 批量入库：AI 一句话里读出几笔就存几笔 */
 async function saveRecords(records) {
   const saved = [];
@@ -571,6 +643,7 @@ module.exports = {
   getPurchaseList,
   getPurchaseDetail,
   getPurchaseStats,
+  getRecordStats,
   getGroupSummary,
   saveRecord,
   saveRecords,

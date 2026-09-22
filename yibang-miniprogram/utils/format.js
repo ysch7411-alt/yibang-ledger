@@ -286,6 +286,11 @@ module.exports = {
   toNum,
   money,
   signedMoney,
+  /* 2026-09-22 补导出：这个函数一直是内部工具，结果 notifications / operation-logs
+     两个页面各自重造了一份日期解析（`new Date(s.replace(/-/g,'/'))`），
+     而那个写法遇到 mysql2 序列化出来的 UTC ISO 串会产生 Invalid Date →
+     界面上显示「NaN月NaN日」。把它公开出来，别再各写一份。 */
+  toLocalDate,
   ymd,
   ym,
   dayKey,

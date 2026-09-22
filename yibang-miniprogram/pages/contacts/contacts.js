@@ -13,6 +13,10 @@ Page({
     filteredList: [],
     receivableCount: 0,
     payableCount: 0,
+    // 页头那行（带数据的标题 + 净额），加载完由 loadData 填；
+    // 先给个占位，避免首帧空白闪一下
+    headTitle: '往来对象',
+    headSub: '',
     filterType: 'all', // all / receivable / payable
     showAdd: false,
     saving: false,
@@ -60,15 +64,36 @@ Page({
         // 格式化列表金额
         const formattedList = list.map(item => ({
           ...item,
-          balanceText: this.formatMoney(Math.abs(item.balance))
+          balanceText: this.formatMoney(Math.abs(item.balance)),
+          /* 头像首字必须在 JS 里算好。
+             WXML 的数据绑定**不支持方法调用** —— 模板里原来写的
+             {{item.name.charAt(0)}} 不报错，但渲染出来是空的，
+             所以这个头像一直是个空白橙圆圈（role-manage / contact-detail 同样问题）。 */
+          initial: (item.name || '?').slice(0, 1)
         }));
 
         // 统计数量
         const receivableCount = list.filter(i => i.balance > 0).length;
         const payableCount = list.filter(i => i.balance < 0).length;
 
+        /* 页头那行大标题（2026-09-23 统一）：
+           原来写的是「应收应付」四个字 —— 和导航栏重复、信息量为零 ✗
+           而全站其它页的页头用的都是**带数据的一行**（记账页「9月23日」、报表页「本月账目」）✓
+           这里同样给真实数据：几位往来对象 + 净头寸。
+           ⚠️ 为什么标题给"净额"：下面那两张卡分别给了"别人欠我的"和"我欠别人的"，
+              **唯独没给净额** —— 而老板真正想知道的是"我到底是净收还是净欠"。
+           金额用 formatMoney 统一格式化（和两栏卡片同一个函数，避免小数位不一致）。 */
+        const net = Number((summary && summary.receivable) || 0) - Number((summary && summary.payable) || 0);
+        const headTitle = list.length + ' 位往来对象';
+        const headSub = list.length === 0 ? '还没有往来对象'
+          : net > 0 ? ('净别人欠我 ¥' + this.formatMoney(net))
+            : net < 0 ? ('净我欠别人 ¥' + this.formatMoney(-net))
+              : '两边两清';
+
         this.setData({
           summary,
+          headTitle,
+          headSub,
           list: formattedList,
           receivableCount,
           payableCount

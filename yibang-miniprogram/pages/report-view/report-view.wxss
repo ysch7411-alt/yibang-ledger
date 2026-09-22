@@ -166,3 +166,44 @@
 .rv-tail {
   height: 24rpx;
 }
+
+/* ---------- 客户对账单（kind='contact'）----------
+   2026-09-22 新增。这一页从此有两种负载：老板分享的报表，和发给客户的对账单。 */
+
+/* 四个分项：应收 / 已回款 / 应付 / 已付款 —— 2×2 排布。
+   为什么要列出来而不是只给一个余额：余额是个"结论"，客户没法验算；
+   列出分项，他自己一加就能核对，这才是对账单的价值。 */
+.stmt-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 26rpx;
+  padding-top: 22rpx;
+  border-top: 1rpx solid var(--line);
+}
+.stmt-cell {
+  width: 50%;
+  padding: 10rpx 0;
+}
+.stmt-k {
+  font-size: 24rpx;
+  color: var(--t3);
+}
+.stmt-v {
+  margin-top: 4rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+
+/* 明细行里的类型标签（应收 / 回款 / 应付 / 付款）。
+   基类用全站的 .tag（不另造一套），这里只把尺寸收小一点、
+   保证它能塞进标题行 —— 标题行是 nowrap + ellipsis 的单行，
+   标签比行高还高的话会被裁掉一半。 */
+.rv-tag {
+  height: 40rpx;
+  padding: 0 12rpx;
+  margin-right: 10rpx;
+  font-size: 23rpx;
+  vertical-align: middle;
+  flex: none;
+}

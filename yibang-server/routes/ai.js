@@ -5,6 +5,24 @@ const jwt = require('jsonwebtoken');
 const { resolveUpload, detectKind, toDataUri, callModel, extractJson } = require('../lib/ledger');
 const { aiLimit, bumpCount } = require('../lib/rate-limit');
 const cache = require('../lib/cache');
+const decide = require('../lib/decide');
+const skills = require('../lib/skills');
+const skillParams = require('../lib/skills/params');
+const log = require('../lib/log');
+
+/**
+ * 直接构造一张卡片（不走大模型）。
+ * 用于"这句话我不用想就知道怎么答"的场景：跟账无关的闲聊、请求记账、记账结果。
+ * 形状必须和 toCard() 产出的一致，前端才能用同一条渲染分支。
+ * @param {object} [extra] 额外字段。目前用于 `undo: [id...]` —— 写了库就必须给撤销入口。
+ */
+function cardPayload(summary, points, numbers, extra) {
+  const obj = Object.assign(
+    { summary: summary, numbers: numbers || [], points: points || [] },
+    extra || {}
+  );
+  return { answer: JSON.stringify(obj), card: obj };
+}
 
 function auth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -47,7 +65,7 @@ router.post('/asr', auth, aiLimit('voice'), async (req, res) => {
     bumpCount(req);
     res.json({ code: 0, data: { text: String(text || '').trim() } });
   } catch (err) {
-    console.error('ASR 错误:', err.response?.data || err.message);
+    log.error('ASR 错误:', err.response?.data || err.message);
     res.json({ code: 500, msg: '语音识别失败' });
   }
 });
@@ -98,7 +116,7 @@ router.post('/vision', auth, aiLimit('vision'), async (req, res) => {
     bumpCount(req);
     res.json({ code: 0, data: { text: String(text || '').trim() } });
   } catch (err) {
-    console.error('读图错误:', err.response?.data || err.message);
+    log.error('读图错误:', err.response?.data || err.message);
     res.json({ code: 500, msg: '图片识别失败' });
   }
 });
@@ -112,6 +130,8 @@ router.post('/chat', auth, aiLimit('chat'), async (req, res) => {
   const { question, history } = req.body || {};
   const q = String(question || '').trim();
   if (!q) return res.json({ code: 400, msg: '缺少问题' });
+  // 转发给能力层：记账那一路要回环调 /record/* 复用记账页的逻辑，需要原样的鉴权头
+  const token = req.headers.authorization || '';
 
   try {
     // 先查缓存：相同问题直接返回结果
@@ -120,6 +140,75 @@ router.post('/chat', auth, aiLimit('chat'), async (req, res) => {
     if (cached) {
       bumpCount(req);
       return res.json({ code: 0, data: cached });
+    }
+
+    /* ═══════ 决策层（2026-09-22 加）═══════
+       在做任何昂贵的事之前，先做两个便宜的判断：
+       ① 这句话跟账有关吗 —— 无关就直接婉拒，**完全不调大模型**（成本闸门）；
+       ② 该用哪个能力 —— 命中就让 skill 去查（**数字由代码算**），
+          答不上的才退回原来那套"把 ctx 塞给模型"的老路。
+       决策模型（Jev）不可用 / 超时 / 置信度不够时**全部静默降级**，功能不中断。 */
+    const it = await decide.intent(q);
+
+    if (it.value === 'other') {
+      // 闲聊不值钱，不值得花大模型的调用费 —— 这是最直接的一道成本闸门
+      bumpCount(req);
+      const data = cardPayload('这个我答不了', [
+        '我只看得懂你店里的账，别的我不懂',
+        '可以问：本月结余多少 / 谁欠我钱 / 哪项支出最大'
+      ]);
+      cache.set(cacheKey, data, 3600);
+      return res.json({ code: 0, data });
+    }
+
+    if (it.value === 'record') {
+      /* 记账（**写操作**）。三道保险缺一不可：
+         ① 只在 intent 明确判成"在报账"时才走这里 —— 写操作**不参与**"该用哪个能力"的竞猜，
+            不让模型在"答问题"和"改账本"之间做选择（选错代价不对称：答错只是不准，写错是数据脏了）；
+         ② act_record 内部走的是和记账页**完全相同**的接口（含商家词表归一、金额兜底验算、
+            最近记录去重），不是重写一套；
+         ③ 卡片里带上新记录的 id → 前端给「记错了，撤销」。
+            **自动入账是最需要撤销兜底的场景**，这是产品既定原则。 */
+      const r = await skills.run('act_record', req.userId, { text: q }, { token });
+      bumpCount(req);
+
+      if (r.ok && r.usable) {
+        const ids = r.data.created.map((x) => x.id);
+        const numbers = r.data.created.map((x) => ({ label: x.type, value: '¥' + Number(x.amount).toFixed(2) }));
+        const data = cardPayload('已经记好了', [r.text], numbers, { undo: ids });
+        // ⚠️ 写操作的结果**不进缓存**：撤销之后再问一次，必须反映的是现状而不是刚才那次
+        return res.json({ code: 0, data });
+      }
+
+      // 没算出一笔账 → 如实说，并给条能走通的路（**不假装记上了**）
+      const data = cardPayload('这句我没能算出一笔账', [
+        '多半是没听清金额 —— 补一句「多少钱」就行',
+        '也可以到「记账」页说，那边可以边说边改'
+      ]);
+      cache.set(cacheKey, data, 3600);
+      return res.json({ code: 0, data });
+    }
+
+    // 是问账 → 先看有没有现成的能力能查
+    let skillText = '';
+    let skillUsed = '';
+    const pick = await decide.pickSkill(q);
+    if (pick.name) {
+      const bag = {};
+      if (pick.name === 'q_contact') {
+        // 📍客户名单**只在本地匹配**，绝不发给任何外部模型（数据出境红线）
+        const [cs] = await pool.query('SELECT name FROM contacts WHERE user_id = ?', [req.userId]);
+        bag.contactNames = cs.map((x) => x.name);
+      }
+      const params = skillParams.extract(q, pick.name, bag);
+      const r = await skills.run(pick.name, req.userId, params, { token });
+      // usable=false 表示"能力跑了、但这次的数据不足以回答"（如 q_contact 没听出是谁）——
+      // 这种情况**退回原来的老路**，别拿它当答案把问题答丢
+      if (r.ok && r.usable !== false) {
+        skillText = r.text;          // ← 已经算好的一句话，模型只负责说圆
+        skillUsed = r.name;
+        log.info('[ai] 用能力回答:', r.name, JSON.stringify(params), 'decide=' + pick.source);
+      }
     }
 
     const [monthRows] = await pool.query(
@@ -186,13 +275,63 @@ router.post('/chat', auth, aiLimit('chat'), async (req, res) => {
     // 七八行密集文字挤在一个灰气泡里，老板找不到数字在哪。
     // 所以让模型直接给结构（结论 / 关键数字 / 要点），前端渲染成卡片。
     // 模型不按格式返回时下面会降级成纯文本，不影响能用。
+    /**
+     * 系统提示词（2026-09-22 加"边界与婉拒"）。
+     *
+     * 原来只有一句"只根据下面提供的账目数据回答，不要编造数据"——
+     * 太弱了：模型遇到"今天天气怎么样""帮我写首诗"依然会硬答，
+     * 老板看到一堆跟账无关的话，会直接怀疑"这个 AI 到底懂不懂我的账"。
+     *
+     * 所以把**能答什么 / 答不了什么 / 答不了怎么说**三件事写清楚。
+     * 判"无关"只能靠模型自己的语义理解，前端用关键词拦（黑名单）既拦不全又会误伤
+     * （"这个月有哪些支出"里也可能出现奇怪的字），所以这里不做正则拦截。
+     *
+     * 婉拒也要求按同一套 JSON 结构返回，前端才不用为"拒答"单开一条渲染分支。
+     */
+    const SCOPE =
+      '你是「易帮账本」小程序里、中小门店老板的生意参谋。\n' +
+      '\n【你只做四件事】超出这四件的一律婉拒 —— 不要硬答、不要延伸、不要聊别的：\n' +
+      '① 查账：本月/上月的收入支出结余、谁欠我钱、我欠谁钱、某个客户的往来情况、' +
+      '钱花在哪（按品类）、最近记了哪些账；\n' +
+      '② 报账：今天有没有值得提醒老板的事（经营早报）；\n' +
+      '③ 记账：老板报了一笔账，**系统已经帮他记进去了**，你只需确认并提示可撤销；\n' +
+      '④ 比账：自己的成本占比跟同行比是高还是低。\n' +
+      '　 ⚠️ **没有基准就没有高低**：已查好的数据里说"暂时比不了"时，就照实说比不了，\n' +
+      '　   **不要顺口评价"你的成本控制得很好 / 很低"** —— 那是你自己编了一个同行标准。\n' +
+      '\n【这四件之外的一律婉拒】\n' +
+      '· 跟账目无关的：天气、新闻、闲聊、写代码、翻译、算术题、通用知识、情感咨询；\n' +
+      '· 属于账目但**这次没给你数据**的：某一天／某一周／某一季度／去年的汇总、\n' +
+      '  采购单据、库存、员工工资、报税。\n' +
+      '（⚠️ 但如果下面的【本次已经查好的数据】里正好有，就**直接用那个回答**，不要说答不了。\n' +
+      '  「比账」在样本不够时，已查好的数据里会写明"暂时比不了" —— 照实转述，不要自己编一个同行数字。）\n' +
+      '\n【注意区分】数据查出来是空的，也是**正常答案**，不属于"答不了"。\n' +
+      '比如问「谁欠我钱」而结果为空，就直说"目前没人欠你钱"，\n' +
+      '**不要套用下面的婉拒模板** —— 更不能建议老板去问一个他刚问过的问题。\n' +
+      '\n【答不了怎么说】不要硬答、不要猜、**绝对不要编数据**，也不要长篇解释自己为什么答不了。\n' +
+      '用 summary 给一句干脆的婉拒（如"这个我答不了"），\n' +
+      'points 第一条说明你只看得到店里的账，第二条给一个**你能答**的替代问法。\n' +
+      '\n只根据下面提供的账目数据回答，数字必须来自这里。\n\n';
+
     const messages = [{
       role: 'system',
-      content: '你是中小门店老板的生意参谋。只根据下面提供的账目数据回答，不要编造数据。\n\n' + ctx +
+      content: SCOPE +
+        /* 能力查到的东西放最前面，并明确标成"唯一数据源"。
+           为什么强调"不要重算"：这一块里的数字是 SQL 算好的，
+           模型只要照抄就永远对；一旦它自己动手加总，就有算错的可能 ——
+           而老板分不清"AI 算错"和"账记错"。 */
+        (skillText
+          ? '\n【本次已经查好的数据 —— 这就是答案的数据源，直接用】\n' + skillText +
+            '\n（以上数字由系统用代码从账本算出，**直接引用，不要重算、不要改数、不要自己加总**。）\n\n'
+          : '') +
+        ctx +
         '\n\n【回答格式】严格按这个 JSON 输出，不要 markdown 代码块、不要任何解释：\n' +
         '{"summary":"一句话结论，20字以内，口语","numbers":[{"label":"指标名","value":"¥1,234.00"}],"points":["要点，每条不超过30字"]}\n' +
-        '约束：numbers 最多 3 个，只放最关键的；points 最多 3 条，说清"所以呢"；' +
-        '数字必须来自上面给的账目；没有的数据不要编，宁可不填。'
+        '约束：numbers 最多 3 个，只放最关键的（婉拒时可以给空数组 []）；points 最多 3 条，' +
+        '说清"所以呢"而不是复述数字；没有的数据不要编，宁可不填。\n' +
+        '· 如果问题**在范围内、但结果确实没什么可说**（本月还没记账、某笔往来是 0），\n' +
+        '  points 就给一条**向前看**的建议（如"记几笔账我就能看出结构了"），\n' +
+        '  **不要在这里复述"我只看得到店里的账"这类职责说明** —— 那是婉拒时才说的话，\n' +
+        '  在正常回答里出现会显得答非所问。'
     }];
 
     for (const m of prior) {
@@ -224,7 +363,7 @@ router.post('/chat', auth, aiLimit('chat'), async (req, res) => {
 
     res.json({ code: 0, data: payload });
   } catch (err) {
-    console.error('AI问答错误:', err.response?.data || err.message);
+    log.error('AI问答错误:', err.response?.data || err.message);
     res.json({ code: 500, msg: 'AI回答失败' });
   }
 });

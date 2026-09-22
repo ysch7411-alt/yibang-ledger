@@ -4,6 +4,7 @@ const pool = require('../db/config');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { dayOr } = require('../lib/ledger');
+const log = require('../lib/log');
 
 function auth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -84,7 +85,12 @@ router.post('/create', auth, async (req, res) => {
     // 就能读到别人的客户名和电话 —— 两个洞凑一起才是真问题，所以两边都要堵。
     const [c] = await pool.query('SELECT id FROM contacts WHERE id = ? AND user_id = ?', [contact_id, req.userId]);
     if (!c.length) return res.json({ code: 400, msg: '这个往来对象不属于你' });
-    row = { contact_id, data_date: null, from_date: null, to_date: null, period: null };
+    /* 「截至日」必须钉死在**创建这一刻**，用服务器时间（不信客户端时钟）。
+       对账单如果每次打开都跟着数据走，客户今天看到余额 8000、明天打开变成 11500，
+       两边就永远对不上账 —— 而这个链接本来就是拿来对账的。
+       记下 to_date，明细与余额都按它截断，页面上写明「截至 X 月 X 日」。
+       （老分享记录的 to_date 是 null，view 那边会退回"今天"兜底，不会因此查全表。） */
+    row = { contact_id, data_date: null, from_date: null, to_date: todayStr(), period: null };
   } else {
     row = { contact_id: null, data_date: dayOr(data_date, todayStr()), from_date: null, to_date: null, period: null };
   }
@@ -115,7 +121,7 @@ router.post('/create', auth, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('生成分享失败:', err.message);
+    log.error('生成分享失败:', err.message);
     res.json({ code: 500, msg: '生成分享失败' });
   }
 });
@@ -211,23 +217,71 @@ router.get('/view/:token', async (req, res) => {
     if (share.type === 2) {
       // 两个查询都必须带 user_id：contact_id 是客户端传进来的，
       // 只按 id 查会让持有链接的人看到不属于这个账本的联系人。
+      // 注意这里**不再取 contacts.balance** —— 那是"此刻"的余额，
+      // 而下面明细已经截到 asOf 了，两者口径必须一致，否则对账单自己跟自己打架。
       const [contact] = await pool.query(
-        'SELECT id, name, phone, type, balance FROM contacts WHERE id = ? AND user_id = ?',
+        'SELECT id, name, phone, type FROM contacts WHERE id = ? AND user_id = ?',
         [share.contact_id, share.user_id]
       );
       if (!contact.length) return res.json({ code: 404, msg: '分享的对账对象已不存在' });
 
+      // 截至日：老分享记录 to_date 为 null，退回今天兜底（不因缺字段而查全表）
+      const asOf = share.to_day || todayStr();
+
+      // 只取页面真正会渲染的列。**不带 category** —— 那是老板自己给账目归的类
+      //（「工资」「房租」…），属于账本内部的口径；发给客户的账单上有「事由」就够了，
+      // 把内部分类摊给客户看只会引起"你这笔记的什么"这类无谓追问。
       const [transactions] = await pool.query(
         'SELECT id, type, amount, content, ' +
         "DATE_FORMAT(record_date, '%Y-%m-%d') AS record_date, created_at " +
-        'FROM transactions WHERE user_id = ? AND contact_id = ? AND status = 1 ' +
+        'FROM transactions WHERE user_id = ? AND contact_id = ? AND status = 1 AND record_date <= ? ' +
         'ORDER BY record_date DESC, created_at DESC, id DESC LIMIT ' + MAX_DETAILS,
-        [share.user_id, share.contact_id]
+        [share.user_id, share.contact_id, asOf]
       );
+
+      /* 四个分项 + 余额都按 asOf 从明细现算，算式与 lib/ledger.js 的 recalcBalance **完全一致**：
+           余额 = 应收(3) − 回款(5) − 应付(4) + 付款(6)
+         口径必须一模一样 —— 客户拿着这个数跟老板小程序里看到的对不上，这份对账单就废了。
+
+         为什么要把四个分项都列出来：只给一个余额，对方没法验算，反而更容易起疑；
+         列出「应收多少 / 已回多少 / 还差多少」，客户自己一加就能核对，这才是对账单的价值。 */
+      const [agg] = await pool.query(
+        'SELECT ' +
+        'COALESCE(SUM(CASE WHEN type = 3 THEN amount ELSE 0 END), 0) AS recv_amt, ' +
+        'COALESCE(SUM(CASE WHEN type = 5 THEN amount ELSE 0 END), 0) AS back_amt, ' +
+        'COALESCE(SUM(CASE WHEN type = 4 THEN amount ELSE 0 END), 0) AS pay_amt, ' +
+        'COALESCE(SUM(CASE WHEN type = 6 THEN amount ELSE 0 END), 0) AS done_amt, ' +
+        'COUNT(*) AS cnt ' +
+        'FROM transactions WHERE user_id = ? AND contact_id = ? AND status = 1 AND record_date <= ?',
+        [share.user_id, share.contact_id, asOf]
+      );
+      const a = agg[0] || {};
+      const r2 = (n) => Math.round(Number(n || 0) * 100) / 100;
+      const recvAmt = r2(a.recv_amt);
+      const backAmt = r2(a.back_amt);
+      const payAmt = r2(a.pay_amt);
+      const doneAmt = r2(a.done_amt);
+      const cnt = Number(a.cnt) || 0;
 
       return res.json({
         code: 0,
-        data: Object.assign({}, meta, { kind: 'contact', contact: contact[0], transactions })
+        data: Object.assign({}, meta, {
+          kind: 'contact',
+          asOf,
+          contact: contact[0],
+          amount: {
+            recvAmt,     // 累计应收（对方欠我）
+            backAmt,     // 累计已回款
+            payAmt,      // 累计应付（我欠对方）
+            doneAmt,     // 累计已付款
+            // 与 recalcBalance 同一算式：3 − 5 − 4 + 6
+            balance: r2(recvAmt - backAmt - payAmt + doneAmt)
+          },
+          count: cnt,
+          transactions,
+          // 明细超过上限时如实说明，别让对方以为这就是全部
+          truncated: Math.max(0, cnt - transactions.length)
+        })
       });
     }
 
@@ -266,7 +320,7 @@ router.get('/view/:token', async (req, res) => {
       })
     });
   } catch (err) {
-    console.error('获取分享内容失败:', err.message);
+    log.error('获取分享内容失败:', err.message);
     res.json({ code: 500, msg: '获取分享内容失败' });
   }
 });

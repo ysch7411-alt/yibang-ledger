@@ -132,6 +132,9 @@ function cssVars(theme) {
 const TAB_ICONS = {
   '/pages/record/record': { icon: '/images/tab-record.svg', iconOn: '/images/tab-record-on.svg' },
   '/pages/summary/summary': { icon: '/images/tab-chart.svg', iconOn: '/images/tab-chart-on.svg' },
+  // AI 参谋（2026-09-22 从"报表页底部的一个入口"提成独立 tab）。
+  // 图标是它早期当 tab 时留下的那两张，一直没删 —— 这次正好用上。
+  '/pages/advisor/advisor': { icon: '/images/tab-advisor.svg', iconOn: '/images/tab-advisor-on.svg' },
   '/pages/contacts/contacts': { icon: '/images/tab-contacts.svg', iconOn: '/images/tab-contacts-on.svg' },
   '/pages/profile/profile': { icon: '/images/tab-mine.svg', iconOn: '/images/tab-mine-on.svg' }
 };

@@ -1,5 +1,7 @@
 // pages/operation-logs/operation-logs.js
 const app = getApp();
+// 项目统一的日期还原（专门处理 mysql2 把 DATETIME 序列化成 UTC ISO 串这件事）
+const fmt = require('../../utils/format');
 
 Page({
   data: {
@@ -69,10 +71,16 @@ Page({
 
   /**
    * 格式化时间
+   *
+   * ⚠️ 与 notifications.js 的 formatTime 是同一个 bug（界面显示「NaN月NaN日」）：
+   * `dateStr.replace(/-/g, '/')` 会把后端返回的 UTC ISO 串
+   * "2026-09-21T12:14:00.000Z" 搅成非法日期（那个 replace 本来只为兼容 iOS 解析
+   * 'YYYY-MM-DD HH:mm:ss' 而写）。现在先走 fmt.toLocalDate，再加 isNaN 兜底。
    */
   formatTime(dateStr) {
     if (!dateStr) return '';
-    const date = new Date(dateStr.replace(/-/g, '/'));
+    const date = fmt.toLocalDate(dateStr) || new Date(String(dateStr).replace(/-/g, '/'));
+    if (isNaN(date.getTime())) return '';
     const now = new Date();
     const diff = now - date;
     const minutes = Math.floor(diff / 60000);

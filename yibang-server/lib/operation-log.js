@@ -1,4 +1,6 @@
 const pool = require('../db/config');
+// ⚠️ 本文件自己就导出了一个叫 log() 的函数，所以这里必须用别的名字 ✗
+const logger = require('./log');
 
 /**
  * 操作类型常量
@@ -68,7 +70,7 @@ async function log(params) {
       [shopOwnerId, operatorId, operatorName || null, action, contentStr]
     );
   } catch (err) {
-    console.error('记录操作日志失败:', err);
+    logger.error('记录操作日志失败:', err);
     // 日志记录失败不影响主流程
   }
 }

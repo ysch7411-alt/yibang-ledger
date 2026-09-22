@@ -279,3 +279,13 @@ button.reg-btn::after {
 .bp-skip:active {
   opacity: .7;
 }
+
+/* ---------- 弹层贴底（本页是二级页，没有 tabBar）----------
+   公共 .sheet 默认停在 tabBar 之上，而二级页没有 tabBar，
+   那一截空间没人占 → 弹层底下漏出约 120rpx 的缝（2026-09-22 全站排查发现）。
+   用 var(--kb-lift, 0px)：本页弹层没挂键盘抬升，取 0 就是贴底；
+   哪天加了输入框并接上 kb-lift，这里也不用再改。 */
+.sheet {
+  bottom: var(--kb-lift, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

@@ -12,9 +12,9 @@
     <text class="loading-text">加载中...</text>
   </view>
 
-  <!-- 空状态 -->
-  <view wx:elif="{{list.length === 0}}" class="empty-state">
-    <view class="empty-ico">🔔</view>
+  <!-- 空状态：并入全站公共 .empty 体系（原来是自己写的 .empty-state） -->
+  <view wx:elif="{{list.length === 0}}" class="empty">
+    <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
     <view class="empty-title">还没有消息</view>
     <view class="empty-desc">有新消息会在这里提醒你</view>
   </view>
@@ -28,15 +28,19 @@
       bindtap="onItemTap"
       data-id="{{item.id}}"
     >
+      <!-- 2026-09-22：图标从 emoji 换成本地 SVG。
+           emoji 在不同安卓机上形状和颜色都不一样（同一条列表里能出现三种画风），
+           也无法跟随主题色；换成统一品牌橙描边的图标后三行是一个调子。
+           语义沿用原来那套：确认/批准→勾，申请→开锁，驳回→叉，成员增减→人，角色→徽盾。 -->
       <view class="notify-ico {{item.type}}">
-        <text wx:if="{{item.type === 'report_confirmed'}}">📊</text>
-        <text wx:elif="{{item.type === 'unlock_requested'}}">🔓</text>
-        <text wx:elif="{{item.type === 'unlock_approved'}}">✅</text>
-        <text wx:elif="{{item.type === 'unlock_rejected'}}">❌</text>
-        <text wx:elif="{{item.type === 'member_added'}}">👤</text>
-        <text wx:elif="{{item.type === 'role_changed'}}">🎭</text>
-        <text wx:elif="{{item.type === 'member_removed'}}">🚪</text>
-        <text wx:else>📌</text>
+        <image wx:if="{{item.type === 'report_confirmed'}}" class="notify-ico-img" src="/images/ic-check-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.type === 'unlock_requested'}}" class="notify-ico-img" src="/images/ic-lock-open-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.type === 'unlock_approved'}}" class="notify-ico-img" src="/images/ic-check-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.type === 'unlock_rejected'}}" class="notify-ico-img" src="/images/ic-close-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.type === 'member_added'}}" class="notify-ico-img" src="/images/ic-person-add-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.type === 'role_changed'}}" class="notify-ico-img" src="/images/ic-role-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.type === 'member_removed'}}" class="notify-ico-img" src="/images/ic-person-minus-o.svg" mode="aspectFit" />
+        <image wx:else class="notify-ico-img" src="/images/ic-info.svg" mode="aspectFit" />
       </view>
       <view class="notify-content">
         <view class="notify-title-row">

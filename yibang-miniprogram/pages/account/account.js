@@ -16,7 +16,9 @@ Page({
     loggedIn: false,
     phone: '',
     userId: null,
-    busy: false
+    busy: false,
+    businessDayEnd: '00:00',
+    businessDayEndLabel: '按自然日（00:00）'
   },
 
   onShow() {
@@ -25,16 +27,30 @@ Page({
 
   refresh() {
     const user = app.globalData.userInfo || {};
+    const end = user.business_day_end || '00:00';
     this.setData({
       loggedIn: !!app.globalData.userId,
       phone: MASK(user.phone),
-      userId: app.globalData.userId || null
+      userId: app.globalData.userId || null,
+      businessDayEnd: end,
+      businessDayEndLabel: end === '00:00' ? '按自然日（00:00）' : '凌晨' + end + '前算前一天'
     });
   },
 
   goBindPhone() {
     wx.navigateTo({ url: '/pages/bind-phone/bind-phone' });
   },
+
+  /* 2026-09-22 删除两段死方法：chooseBusinessDay() / saveBusinessDayEnd()。
+     营业日截止时间这个设置在**"我的"页**（pages/profile）已经有了一份可用实现，
+     而本页（账号设置）的 wxml 里**根本没有这个入口** —— 于是这两段代码谁也调不到，
+     属于历史遗留：设置早年放在这一页，后来搬到"我的"页，旧实现忘了删。
+
+     为什么必须删而不是留着：它内部用的是
+         wx.showActionSheet({ itemList: [7 个选项] })
+     而官方文档写明 itemList「数组长度最大为 6」—— 7 项会直接失败。
+     一旦以后有人把这个入口接回来，就会立刻复现"点了毫无反应"的 bug
+     （失败还被静默吞掉）。留着它就是留一个定时炸弹。 */
 
   /**
    * 退出登录。

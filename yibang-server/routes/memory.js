@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/config');
 const jwt = require('jsonwebtoken');
+const log = require('../lib/log');
 
 function auth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -64,7 +65,7 @@ router.get('/info', auth, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('记忆信息错误:', err && err.message);
+    log.error('记忆信息错误:', err && err.message);
     res.json({ code: 500, msg: '获取记忆信息失败' });
   }
 });

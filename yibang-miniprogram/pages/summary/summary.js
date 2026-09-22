@@ -1,4 +1,4 @@
-﻿// pages/summary/summary.js
+// pages/summary/summary.js
 //
 // 「分享报表」这一块的设计口径（2026-09-19 用户明确要求「分享带明细的报表」）：
 //
@@ -10,12 +10,19 @@
 //   · 复制文字：明细**全量**不截断，适合要粘进表格或逐条核的场景（图片给不了全量）
 //
 // 为什么不做 H5 分享链接：用户明确说过「H5 先不做，现在只做 A 套」。
-// 后端虽然有 /share/create，但这一版不启用（别让它在没渲染页的情况下露出去）。
+// 分享走的是**微信小程序卡片**：path 上带 token，对方点开进只读页（pages/report-view）。
+// ⚠️ 2026-09-22 更正：原来这里写着"后端虽然有 /share/create，但这一版不启用"——
+// 那句早就过期了，本页的 ensureShareToken() 一直在调它（只读页也已经渲染好了）。
+// **过期的注释比没有注释更坏**：它会让人以为功能没启用而绕开或重复实现。
 const app = getApp();
 const api = require('../../utils/api');
 const fmt = require('../../utils/format');
 const cal = require('../../utils/calendar');
+const share = require('../../utils/share');
 const cv = require('../../utils/canvas');
+// 键盘避让：申请解锁弹层里有一个 textarea，底部弹层是 fixed，
+// 光靠 input 的 adjust-position 推不动它 → 必须走这套 mixin（见 utils/keyboard.js）。
+const kb = require('../../utils/keyboard');
 
 /* ---------------- 报表图的版式常量 ----------------
    图和算高两处必须用同一套数字，所以全部提上来做常量。
@@ -44,7 +51,9 @@ function decorate(list) {
   });
 }
 
-Page({
+// 键盘避让：Object.assign 把 kb.methods（onKbFocus / onKbBlur / onKbHeight / setKb）
+// 并进页面方法里 —— 用法与 record.js / advisor.js 完全一致。
+Page(Object.assign({
   data: {
     period: 'today',
     periodLabel: '今日',
@@ -102,6 +111,16 @@ Page({
     myRole: null,
     canConfirmReport: false,
     reportStatus: null,
+    /* 键盘避让：键盘高度（px），由 utils/keyboard.js 写入；申请解锁弹层用它上挪 */
+    kbLift: 0,
+    /* 「钱花在哪」品类分布（2026-09-22）。
+       catStat 为 null 表示**没取到**，不是"没有数据" —— 两者必须分开显示：
+       把"接口失败"画成一张空表，老板会以为账丢了。 */
+    catStat: null,
+    catLoading: false,
+    catFailed: false,
+    catDir: 'out',      // out=钱花在哪（支出） / in=钱从哪来（收入）
+    catLabel: '本月',
     currentMonth: '',
     confirming: false,
     // 申请解锁弹层
@@ -298,7 +317,7 @@ Page({
 
     // 三件事互不依赖，一起发出去，别串行等。
     // 日历收起时**不请求** —— 收起状态下去拉一份没人看的数据是白花老板的流量。
-    const jobs = [this.loadStat(), this.loadContactList(), this.loadDayTable()];
+    const jobs = [this.loadStat(), this.loadContactList(), this.loadDayTable(), this.loadCatStat()];
     if (this.data.calOpen) jobs.push(this.loadCalendar());
     await Promise.all(jobs);
     this.setData({ loading: false });
@@ -710,6 +729,64 @@ Page({
     if (period === this.data.period) return;
     this.setData({ period });
     this.loadStat();
+    // 品类分布必须跟着一起切：上面汇总说的是"本月"，下面结构还停在"今日"，
+    // 两个数字对不上，老板会以为哪边算错了。
+    this.loadCatStat();
+  },
+
+  /* ---------------- 钱花在哪（品类分布） ---------------- */
+
+  /** 品类卡的区间：跟页面上的 今日/本月 口径保持一致 */
+  _catRange() {
+    const period = this.data.period;
+    const now = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    const ymdOf = (d) => d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    const today = fmt.ymd();
+
+    if (period === 'today') return { from: today, to: today, label: '今天' };
+    if (period === 'yesterday') {
+      const s = ymdOf(new Date(now.getTime() - 86400000));
+      return { from: s, to: s, label: '昨天' };
+    }
+    if (period === 'custom') {
+      const s = this.data.customDate || today;
+      return { from: s, to: s, label: '这一天' };
+    }
+    if (period === 'year') return { from: now.getFullYear() + '-01-01', to: today, label: '今年' };
+    return { from: now.getFullYear() + '-' + p(now.getMonth() + 1) + '-01', to: today, label: '本月' };
+  },
+
+  async loadCatStat() {
+    const range = this._catRange();
+    // 竞态保护：切口径/切收支时旧请求可能还在飞，回来不能覆盖新数据
+    //（项目里日历、每日汇总表都用了同一招）
+    const seq = (this._catSeq || 0) + 1;
+    this._catSeq = seq;
+
+    this.setData({ catLoading: true, catFailed: false, catLabel: range.label });
+
+    const r = await api.getRecordStats({
+      groupBy: 'category',
+      dir: this.data.catDir,
+      from: range.from,
+      to: range.to
+    });
+
+    if (seq !== this._catSeq) return;   // 已被更新的请求取代，丢掉这次结果
+    this.setData({ catLoading: false, catFailed: !r, catStat: r });
+  },
+
+  /** 切换「花了 / 赚了」—— 同一批数据的两个视角 */
+  pickCatDir(e) {
+    const dir = e.currentTarget.dataset.d === 'in' ? 'in' : 'out';
+    if (dir === this.data.catDir) return;
+    this.setData({ catDir: dir });
+    this.loadCatStat();
+  },
+
+  retryCatStat() {
+    this.loadCatStat();
   },
 
   async loadContactList() {
@@ -735,6 +812,11 @@ Page({
 
   goRecord() {
     wx.switchTab({ url: '/pages/record/record' });
+  },
+
+  /* 搜索账目 */
+  goSearch() {
+    wx.navigateTo({ url: '/pages/search/search' });
   },
 
   /* ================= 分享报表 ================= */
@@ -782,53 +864,19 @@ Page({
    * 区间要参与比对，因为**分享出去的是一份快照** —— 老板今天分享的今日报表，
    * 对方明天打开应该还是那一天的，不能悄悄变成明天的。
    */
-  async ensureShareToken() {
-    if (this.data.sharePreparing) return;
-
+  /**
+   * 备好报表的分享链接。
+   * 状态机统一在 utils/share.js。
+   * ⚠️ 把 period + 区间一起编进缓存 key —— 分享出去的是一份**快照**，
+   *    换个月份/区间就是另一份，必须各自缓存（原来是在校验里逐字段比 from/to）。
+   */
+  ensureShareToken() {
     const period = this.data.period === 'month' ? 'month' : 'today';
     const r = fmt.rangeOf(period);
-    const now = Date.now();
-
-    let cache = null;
-    try {
-      cache = wx.getStorageSync('share_token') || null;
-    } catch (e) {
-      /* 读不到就当没有 */
-    }
-    if (
-      cache && cache.token && cache.period === period &&
-      cache.from === r.from && cache.to === r.to &&
-      Number(cache.expireAt || 0) > now + 60000          // 留 1 分钟余量，别贴边过期
-    ) {
-      this.setData({ shareToken: cache.token, shareReady: true, sharePreparing: false });
-      return;
-    }
-
-    this.setData({ sharePreparing: true, shareReady: false });
-    const res = await api.safe(
-      app.request('/share/create', { method: 'POST', data: { type: 3, period, expire_days: 7 }, silent: true }),
-      null
-    );
-
-    if (!res || !res.token) {
-      // 没备好就保持"不可点"，面板上会显示「点一下重试」，不糊过去
-      this.setData({ sharePreparing: false, shareReady: false, shareToken: '' });
-      app.beacon('share-token-fail', period);
-      return;
-    }
-
-    try {
-      wx.setStorageSync('share_token', {
-        token: res.token,
-        period,
-        from: r.from,
-        to: r.to,
-        expireAt: new Date(res.expire_at).getTime()
-      });
-    } catch (e) {
-      /* 存不下也不影响这次分享 */
-    }
-    this.setData({ shareToken: res.token, shareReady: true, sharePreparing: false });
+    share.ensure(this, {
+      key: '3-' + period + '-' + r.from + '-' + r.to,
+      data: { type: 3, period, expire_days: 7 }
+    });
   },
 
   /**
@@ -1137,9 +1185,9 @@ Page({
     });
   },
 
-  goAdvisor() {
-    wx.navigateTo({ url: '/pages/advisor/advisor' });
-  },
+  /* 2026-09-22 删除 goAdvisor()：AI 参谋已经提成 tabBar 的第 3 个 tab，
+     本页那个入口同时撤掉了 —— 留着这个方法就是没人调的死代码
+     （和 account 页的营业日方法、profile 页的 goAdvisor 同一个来路）。 */
 
   /**
    * 导出Excel（报表页右上角按钮，看完报表直接导出）
@@ -1237,4 +1285,4 @@ Page({
       success: () => wx.showToast({ title: '对账单已复制', icon: 'none' })
     });
   }
-});
+}, kb.methods));   // 键盘避让：onKbFocus / onKbBlur / onKbHeight / setKb

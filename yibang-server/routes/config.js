@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/config');
+const log = require('../lib/log');
 
 /**
  * 获取全局配置（主题/文案/布局/功能开关）
@@ -39,7 +40,7 @@ router.get('/', async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('获取配置失败:', err);
+    log.error('获取配置失败:', err);
     res.json({ code: 500, msg: '获取配置失败' });
   }
 });

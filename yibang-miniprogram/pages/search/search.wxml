@@ -1,5 +1,5 @@
 <!--pages/search/search.wxml-->
-<view class="container" style="{{_cv}}">
+<view class="container container-page" style="{{_cv}}">
   <view class="page-head">
     <view class="page-title">找一找</view>
     <view class="page-sub">想找什么，搜一下就有</view>
@@ -8,7 +8,7 @@
   <!-- 采购单入口：拍过的送货单不在流水里，得有个地方能翻回来 -->
   <view class="po-entry" bindtap="goPurchase" hover-class="tap-dim">
     <view class="po-entry-ico">
-      <image class="po-entry-ico-img" src="/images/ic-scan.svg" mode="aspectFit" />
+      <image class="po-entry-ico-img" src="/images/ic-order.svg" mode="aspectFit" />
     </view>
     <view class="po-entry-main">
       <view class="po-entry-t">采购单</view>

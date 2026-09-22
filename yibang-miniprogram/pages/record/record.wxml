@@ -1,35 +1,52 @@
-﻿<!--pages/record/record.wxml-->
+<!--pages/record/record.wxml-->
 <view class="container rec {{shots.length ? 'has-shots' : ''}}" style="{{_cv}}">
   <!-- 自定义公告条：后台「自定义参数」里加了 notice 才显示（见 utils/config.js 的 getCustom） -->
   <view wx:if="{{_notice}}" class="notice-bar">{{_notice}}</view>
 
+  <!-- 页内标题只放"导航栏说不出的事"：今天几号、记了几笔。
+       原来这里复述「记账啦」（导航栏已经写过一遍），等于白占一行 44rpx 大字。 -->
   <view class="page-head">
     <view class="page-head-left">
-      <view class="page-title">记账啦</view>
-      <view class="page-sub">{{todayLabel}} · 今天已记 {{daily.count}} 笔</view>
+      <view class="page-title">{{todayLabel}}</view>
+      <view class="page-sub">今天已记 {{daily.count}} 笔</view>
     </view>
     <view class="page-head-right">
-      <view class="search-box" bindtap="goSearch">
-        <image class="search-box-icon" src="/images/tab-search-on.svg" mode="aspectFit" />
-        <text class="search-box-placeholder">搜索账目</text>
+      <!-- 分享入口（2026-09-22 第二次改）：
+           ① 造型：原来复用了搜索框的造型 + 放大镜图标，看着像"搜一搜" —— 已换成浅橙底按钮；
+           ② 图标：三点连线的通用分享符号**看不出分享的是什么**，换成"托盘 + 向上箭头"
+              （用户从 4 个备选里挑的方案 C），一眼就是"把东西发出去"；
+           ③ 文案：「分享」两字太笼统，改成「分享今日报表」—— 直接说清分享的内容。
+           按钮变长后头部会紧，所以把内部间距收紧了（见 .share-btn），
+           保证最长的日期（「12月28日 星期三」）也不会把标题挤到换行。 -->
+      <view class="share-btn" bindtap="shareToday" hover-class="share-btn-hover" hover-stay-time="60">
+        <image class="share-btn-ico" src="/images/ic-share.svg" mode="aspectFit" />
+        <text class="share-btn-t">分享今日报表</text>
       </view>
     </view>
   </view>
 
-  <!-- 今日进账：打开就知道今天收了多少钱 -->
+  <!-- 今日收支：一张横排卡。
+       原来「今日进账 / 今日支出」是两张 72rpx 大字的巨卡上下排开，把首屏吃光，
+       "最近记录"被推到折叠线以下 —— 而看"我刚记了什么"才是这个页面的主任务。
+       合并成左右两栏 + 一行结余，信息一条不少，首屏能多放出 1~2 条明细。 -->
   <view class="card today-card">
-    <view class="today-hd">
-      <text class="today-cap">今日进账</text>
+    <view class="today-cols">
+      <view class="today-col">
+        <view class="today-cap">今日进账</view>
+        <view class="today-v num c-income">+¥{{daily.incomeText}}</view>
+      </view>
+      <view class="today-sep"></view>
+      <view class="today-col">
+        <view class="today-cap">今日支出</view>
+        <view class="today-v num c-expense">-¥{{daily.expenseText}}</view>
+      </view>
     </view>
-    <view class="today-hero num c-income">+¥{{daily.incomeText}}</view>
-  </view>
-
-  <!-- 今日支出：让用户一眼看到今天花了多少钱 -->
-  <view class="card today-card today-card-expense">
-    <view class="today-hd">
-      <text class="today-cap">今日支出</text>
+    <view class="today-ft">
+      <text>今日结余</text>
+      <text class="num {{daily.isPositive ? 'c-income' : 'c-expense'}}">
+        {{daily.isPositive ? '+' : '-'}}¥{{daily.netText}}
+      </text>
     </view>
-    <view class="today-hero num c-expense">-¥{{daily.expenseText}}</view>
   </view>
 
   <!-- 最近记录 -->
@@ -277,6 +294,15 @@
       <input class="f-input" value="{{fix.content}}" placeholder="如：货款" placeholder-class="ph" bindinput="onFixContent" adjust-position="{{false}}" bindfocus="onKbFocus" bindblur="onKbBlur" bindkeyboardheightchange="onKbHeight" />
     </view>
 
+    <!-- 品类：AI 归错时唯一的修正口（2026-09-22）。
+         做成**自由输入**而不是固定选项 —— 老板买什么只有他自己知道，
+         给一份预置品类等于逼他说"别的"。留空表示不分类，是合法选择。
+         改过之后后端会把它沉淀进词表，下一句解析就被喂回模型，越用越准。 -->
+    <view class="f-block">
+      <view class="f-label">品类（算在钱花在哪）</view>
+      <input class="f-input" value="{{fix.category}}" placeholder="如：买菜 / 五金 / 运费，留空=不分类" placeholder-class="ph" bindinput="onFixCategory" adjust-position="{{false}}" bindfocus="onKbFocus" bindblur="onKbBlur" bindkeyboardheightchange="onKbHeight" />
+    </view>
+
     <!-- 收付方式：AI 没归对（或压根没提）时，这是唯一的修正口 -->
     <view class="f-block">
       <view class="f-label">收付方式</view>
@@ -371,5 +397,75 @@
   <view class="sheet-ft">
     <view class="btn btn-ghost" bindtap="closeDaily">关闭</view>
     <view class="btn btn-primary" bindtap="shareDaily">分享给客户</view>
+  </view>
+</view>
+
+
+<!-- ============ 分享今日报表 ============ -->
+<view class="sheet-mask" wx:if="{{shareSheet}}" bindtap="closeShare" />
+<view class="sheet" wx:if="{{shareSheet}}" catchtap="noop">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">分享今日报表</text>
+    <view class="sheet-close" bindtap="closeShare"></view>
+  </view>
+  <view class="sheet-bd">
+    <view class="sh-note">带 {{daily.count}} 笔明细</view>
+
+    <!-- 分享这个页面：token备好时可点 -->
+    <block wx:if="{{shareReady}}">
+      <button class="sh-opt sh-opt-btn" open-type="share">
+        <view class="sh-ico sh-ico-key">
+          <image class="sh-ico-img" src="/images/ic-brand.svg" mode="aspectFit" />
+        </view>
+        <view class="sh-main">
+          <view class="sh-t">分享这个页面</view>
+          <view class="sh-d">对方用微信打开就能看这份报表，不用注册</view>
+        </view>
+        <view class="row-arrow"></view>
+      </button>
+    </block>
+
+    <view wx:elif="{{sharePreparing}}" class="sh-opt is-busy">
+      <view class="sh-ico sh-ico-key">
+        <image class="sh-ico-img" src="/images/ic-brand.svg" mode="aspectFit" />
+      </view>
+      <view class="sh-main">
+        <view class="sh-t">正在准备分享链接…</view>
+        <view class="sh-d">马上就好</view>
+      </view>
+    </view>
+
+    <view wx:else class="sh-opt" bindtap="ensureShareToken">
+      <view class="sh-ico sh-ico-key">
+        <image class="sh-ico-img" src="/images/ic-brand.svg" mode="aspectFit" />
+      </view>
+      <view class="sh-main">
+        <view class="sh-t">分享这个页面</view>
+        <view class="sh-d">上次没准备好，点一下重试</view>
+      </view>
+      <view class="row-arrow"></view>
+    </view>
+
+    <!-- 2026-09-22 移除「发图片到微信」这一项。
+         它绑的 goShareImage 在本页从来没有定义过（静态检查抓出来的），
+         也就是一个点了完全没反应的按钮 —— 留着比没有更坏。
+         发图片需要整条画布海报复用链（utils/canvas.js 的 planHeight / drawReport 等），
+         而报表页的同类功能是可用的。等把两页这份重复的分享弹层抽成公共组件时
+         （见优化方案 P1-8，这两页现在各有 8 个 .sh-* 类），再一起把它接回来。 -->
+
+    <view class="sh-opt" bindtap="goShareText">
+      <view class="sh-ico">
+        <image class="sh-ico-img" src="/images/ic-copy.svg" mode="aspectFit" />
+      </view>
+      <view class="sh-main">
+        <view class="sh-t">复制文字</view>
+        <view class="sh-d">明细全量不截断，适合粘到表格里逐条核</view>
+      </view>
+      <view class="row-arrow"></view>
+    </view>
+  </view>
+  <view class="sheet-ft">
+    <view class="btn btn-ghost btn-block" bindtap="closeShare">先不分享</view>
   </view>
 </view>

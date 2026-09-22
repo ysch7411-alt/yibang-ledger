@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const oss = require('../lib/oss');
+const log = require('../lib/log');
 
 function auth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -57,7 +58,7 @@ router.post('/upload', auth, (req, res) => {
       if (code === 'LIMIT_FILE_SIZE') {
         return res.json({ code: 413, msg: '文件超过 10MB，请压缩后再传' });
       }
-      console.error('上传中间件错误:', code || err.message, '| field:', err.field);
+      log.error('上传中间件错误:', code || err.message, '| field:', err.field);
       return res.json({ code: 400, msg: '上传失败：' + (code || err.message) });
     }
     handleUpload(req, res);
@@ -95,7 +96,7 @@ async function handleUpload(req, res) {
       }
     });
   } catch (err) {
-    console.error('文件上传OSS失败:', err && err.message, '| file:', req.file && req.file.originalname);
+    log.error('文件上传OSS失败:', err && err.message, '| file:', req.file && req.file.originalname);
     res.json({ code: 500, msg: '上传失败：' + (err.message || '未知错误') });
   }
 }
@@ -117,7 +118,7 @@ router.get('/list', auth, async (req, res) => {
     
     res.json({ code: 0, data: rows });
   } catch (err) {
-    console.error('获取文件列表失败:', err.message);
+    log.error('获取文件列表失败:', err.message);
     res.json({ code: 500, msg: '获取文件列表失败' });
   }
 });

@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../db/config');
 const jwt = require('jsonwebtoken');
 const opLog = require('../lib/operation-log');
+const log = require('../lib/log');
 
 function auth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -59,7 +60,7 @@ router.get('/members', auth, async (req, res) => {
 
     res.json({ code: 0, data: members });
   } catch (err) {
-    console.error('获取成员列表失败:', err);
+    log.error('获取成员列表失败:', err);
     res.json({ code: 500, msg: '获取成员列表失败' });
   }
 });
@@ -111,7 +112,7 @@ router.post('/add', auth, async (req, res) => {
       data: { id: targetUser.id, nickname: targetUser.nickname, role: Number(role), role_name: ROLE_NAMES[role] }
     });
   } catch (err) {
-    console.error('添加成员失败:', err);
+    log.error('添加成员失败:', err);
     res.json({ code: 500, msg: '添加成员失败' });
   }
 });
@@ -142,7 +143,7 @@ router.post('/change-role', auth, async (req, res) => {
     await pool.query('UPDATE users SET role = ? WHERE id = ?', [Number(role), user_id]);
     res.json({ code: 0, msg: `已修改为${ROLE_NAMES[role]}` });
   } catch (err) {
-    console.error('修改角色失败:', err);
+    log.error('修改角色失败:', err);
     res.json({ code: 500, msg: '修改角色失败' });
   }
 });
@@ -183,7 +184,7 @@ router.post('/remove', auth, async (req, res) => {
 
     res.json({ code: 0, msg: '已移除' });
   } catch (err) {
-    console.error('移除成员失败:', err);
+    log.error('移除成员失败:', err);
     res.json({ code: 500, msg: '移除成员失败' });
   }
 });
@@ -221,7 +222,7 @@ router.get('/my-role', auth, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('获取角色信息失败:', err);
+    log.error('获取角色信息失败:', err);
     res.json({ code: 500, msg: '获取角色信息失败' });
   }
 });
@@ -238,7 +239,7 @@ router.get('/logs', auth, async (req, res) => {
     const logs = await opLog.getList(shopOwnerId, limit, offset);
     res.json({ code: 0, data: logs });
   } catch (err) {
-    console.error('获取操作日志失败:', err);
+    log.error('获取操作日志失败:', err);
     res.json({ code: 500, msg: '获取操作日志失败' });
   }
 });

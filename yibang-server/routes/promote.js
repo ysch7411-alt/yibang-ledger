@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const { getAccessToken } = require('../lib/wxtoken');
+const log = require('../lib/log');
 
 function auth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -52,7 +53,7 @@ router.get('/info', auth, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('推广信息错误:', err);
+    log.error('推广信息错误:', err);
     res.json({ code: 500, msg: '获取推广信息失败' });
   }
 });
@@ -78,7 +79,7 @@ router.post('/bind', auth, async (req, res) => {
     );
     res.json({ code: 0, msg: '绑定成功', data: { id: result.insertId } });
   } catch (err) {
-    console.error('绑定邀请错误:', err);
+    log.error('绑定邀请错误:', err);
     res.json({ code: 500, msg: '绑定失败' });
   }
 });
@@ -127,14 +128,14 @@ router.get('/wxacode', auth, async (req, res) => {
     if (magic.indexOf('ffd8') !== 0 && magic !== '89504e47') {
       let msg = '';
       try { msg = JSON.parse(buf.toString('utf8')).errmsg || ''; } catch (e) { msg = buf.toString('utf8').slice(0, 120); }
-      console.error('生成小程序码失败:', msg);
+      log.error('生成小程序码失败:', msg);
       return res.json({ code: 500, msg: '生成小程序码失败：' + (msg || '返回的不是图片') });
     }
 
     fs.writeFileSync(file, buf);
     res.json({ code: 0, data: { imageBase64: buf.toString('base64'), cached: false } });
   } catch (err) {
-    console.error('小程序码错误:', err.message);
+    log.error('小程序码错误:', err.message);
     res.json({ code: 500, msg: '生成小程序码失败' });
   }
 });

@@ -16,17 +16,10 @@ function splitLines(text) {
 
 Page(Object.assign({
   data: {
-    loading: true,
-    stat: { incomeText: '0.00', expenseText: '0.00', netText: '0.00', isPositive: true },
-    verdict: '',
-    topCustomers: [],
-    tips: [],
-
-    /* 键盘避让：AI 弹层的输入条也在底部，同样会被键盘切（见 utils/keyboard.js） */
+    /* 键盘避让：输入条在页面最底部，键盘弹起时要整页上挪（见 utils/keyboard.js） */
     kbLift: 0,
 
-    /* AI 问答（2026-09-20 从查询页整块搬来） */
-    showAi: false,
+    /* AI 问答（2026-09-20 从查询页整块搬来；2026-09-22 从底部弹层升为页面主体） */
     aiInput: '',
     aiHistory: [],
     aiThinking: false,
@@ -37,20 +30,94 @@ Page(Object.assign({
     showUpload: false,
     working: false,
     workingText: '',
+    /* 订阅消息（真推送）：要不要在落地页问一句、以及用哪个模板。
+       模板 id 由后端配置下发（前端只是拿去调 wx.requestSubscribeMessage），
+       **不在这里硬编码** —— 换模板不该要发版。 */
+    pushAsk: false,
+    pushTmplId: '',
+
+    /**
+     * 空状态里展示的「四件事」。
+     * 名字两字一组：老板记不住"五种查询能力的区别"，但 查账/报账/记账/比账 能背下来 ——
+     * 背下来之后"问什么、不问什么"他心里就有数了。
+     * ⚠️ 和 lib/skills 里的能力清单必须对得上：改一边就要改另一边，
+     *    否则空状态承诺的东西后端答不了（比不承诺更糟）。
+     */
+    skills: [
+      { k: '查账', d: '本月赚了多少、谁欠我最多' },
+      { k: '报账', d: '今天有没有要注意的' },
+      { k: '记账', d: '说一句就帮你记进去' },
+      { k: '比账', d: '我的成本跟同行比高不高' }
+    ],
+
     /**
      * 快捷问题**必须跟着页面走**。
-     * 查询页原来那三个里，「这个月赚了多少钱」「谁欠我最多」在本页的 hero 和
-     * 「欠得最多的客户」卡里已经有答案了 —— 摆在这儿等于让用户把刚看过的数字再问一遍，
-     * 还占了三个最显眼的位置。换成 hero 答不了的那两类：支出结构、环比。
+     * 这一页原来有「概览 hero + 欠得最多的客户卡」，于是「这个月赚了多少钱」「谁欠我最多」
+     * 在页面上已经有答案了 —— 摆进快捷问题等于让用户把刚看过的数字再问一遍。
+     * 现在按**四件事**各配一个（报账 / 查账 / 比账；记账不是问句，靠上面的清单承载），
+     * 这样用户点任意一个都能碰到一件真实能力。
+     * ⚠️ 线上以后台配置 layout.quickQuestions 为准，这里是拉不到配置时的兜底。
      */
-    quickAsks: ['这个月哪项支出最大？', '上个月比这个月怎么样？', '这个月花得最多的是哪几天？']
+    quickAsks: ['今天有什么要注意的？', '谁欠我最多？', '我的支出占比算高吗？']
   },
+
+  /* 2026-09-22 删掉了 onLoad(ask=1) 的自动开弹层逻辑：
+     本页现在整页就是对话，不再需要"进来就帮他把弹层打开"。
+     summary.goAdvisor 那边也同步去掉了 ?ask=1 参数。 */
 
   onShow() {
     this.syncQuickAsks();
-    this.loadData();
+    // 本页 2026-09-22 提成了独立 tab（tabBar 第 3 项：0=记账 1=报表 2=参谋 3=我的）
     const tb = typeof this.getTabBar === 'function' && this.getTabBar();
-    if (tb) tb.setData({ selected: 3 });
+    if (tb) tb.setData({ selected: 2 });
+    this.loadPushState();
+  },
+
+  /* ═══════════ 订阅消息（真推送）═══════════
+     微信允许的"每天早上推一条"只有一条路：**一次性订阅**。
+     用户授权一次 → 后端能发一条。所以要做的不是"授权一次永久推送"，
+     而是**每次他愿意点，就攒一次额度**。
+     攒够（≥3 次）就不再问 —— 一次性订阅本来就该省着用，
+     天天弹窗要授权会把人烦走，那比推不出去更糟。 */
+  async loadPushState() {
+    const r = await api.call(app.request('/notifications/subscribe', { silent: true }));
+    if (!r || r.code !== 0 || !r.data || !r.data.configured) {
+      // 没配模板就当这功能没开（后端也会这么返回），**不弹任何东西**
+      if (this.data.pushAsk) this.setData({ pushAsk: false });
+      return;
+    }
+    this.setData({
+      pushTmplId: r.data.tmplId,
+      pushAsk: Number(r.data.remain || 0) < 3
+    });
+  },
+
+  /** 用户点「好」→ 拉起微信的订阅授权弹窗。**必须由点击触发**，微信的硬要求 */
+  askPush() {
+    const tmplId = this.data.pushTmplId;
+    if (!tmplId) return;
+    wx.requestSubscribeMessage({
+      tmplIds: [tmplId],
+      success: (res) => {
+        if (res[tmplId] !== 'accept') {
+          // 用户点了拒绝：这次不问了，下次打开再说（不追问、不解释，尊重他的选择）
+          this.setData({ pushAsk: false });
+          return;
+        }
+        // 授权成功才去后端记额度 —— 这一步失败也不打扰用户，
+        // 只是这次额度没攒上，下次打开会再问一遍
+        api.call(app.request('/notifications/subscribe', { method: 'POST', silent: true }))
+          .then((r) => {
+            this.setData({ pushAsk: false });
+            wx.showToast({ title: (r && r.code === 0) ? '好了，有事我叫你' : '稍后再试', icon: 'none' });
+          });
+      },
+      /* ⚠️ fail 必写：这个接口在部分基础库/场景下会失败，
+         不写的话用户点了毫无反应（这个项目已经栽过好几次"失败静默"）。 */
+      fail: () => {
+        wx.showToast({ title: '没能打开订阅，稍后再试', icon: 'none' });
+      }
+    });
   },
 
   /** 快捷问题跟随远程配置；后台改了下一次 onShow 就换（不等发版） */
@@ -66,108 +133,15 @@ Page(Object.assign({
     }).catch(() => {});
   },
 
-  async loadData() {
-    // 有数据就不闪骨架屏（切 tab 回来的数据其实没变，闪一下只是晃眼）——详见 summary.js 同处注释
-    if (!this._loaded) this.setData({ loading: true });
+  /* 2026-09-22 这一块（loadData / buildVerdict / buildTips / goSummary / goDetail）整段删除。
+     它们只服务于「概览 hero + 经营提示 + 欠得最多的客户」——那三块按老板要求拿掉了：
+     本页还原成一个**纯粹的对话窗口**，点进来就能问，不再先给一份概览。
+     连带的好处：打开这一页不再拉"本月汇总 + 往来列表"两个接口，进页面更快。
 
-    const [month, contacts] = await Promise.all([
-      api.getMonthSummary(fmt.ym()),
-      api.getContactList(1)
-    ]);
-
-    const net = month.income - month.expense;
-    const isPositive = net >= 0;
-
-    const debtors = contacts
-      .filter((c) => c._balance > 0)
-      .sort((a, b) => b._balance - a._balance)
-      .slice(0, 5);
-
-    const totalDebt = debtors.reduce((s, c) => s + c._balance, 0) || 1;
-    const maxDebt = debtors.length ? debtors[0]._balance : 1;
-
-    const topCustomers = debtors.map((c) => ({
-      id: c.id,
-      name: c.name,
-      amountText: fmt.money(c._balance),
-      percent: Math.max(6, Math.round((c._balance / maxDebt) * 100)),
-      share: Math.round((c._balance / totalDebt) * 100)
-    }));
-
-    this.setData({
-      stat: {
-        incomeText: fmt.money(month.income),
-        expenseText: fmt.money(month.expense),
-        netText: fmt.money(Math.abs(net)),
-        isPositive
-      },
-      verdict: this.buildVerdict(net, month, topCustomers),
-      // topCustomers 仍然算、仍然存 —— buildTips 的第一条「优先催收」要用它。
-      // 2026-09-20 按老板要求把「欠得最多的客户」那张卡删了（和报表页重复），
-      // 但**数据链路没删**：经营提示里还在用。别顺手把这里也清掉。
-      topCustomers,
-      tips: this.buildTips(net, month, topCustomers)
-    });
-
-    this.setData({ loading: false });
-    this._loaded = true;   // 之后切回来就不再闪骨架屏
-  },
-
-  buildVerdict(net, month, top) {
-    if (month.income === 0 && month.expense === 0) return '本月还没有记账，先记两笔我就能分析了';
-    if (net > 0) return `本月进账比出账多 ¥${fmt.money(net)}，经营是正的`;
-    if (net < 0) return `本月出账比进账多 ¥${fmt.money(-net)}，留意一下大额支出`;
-    return '本月收支刚好持平';
-  },
-
-  /**
-   * 经营提示 —— 完全由本地规则生成（不发大模型请求）。
-   * 原来标题写成「💡 AI 经营建议」属于过度承诺，这里如实标注为「经营提示」。
-   */
-  buildTips(net, month, top) {
-    const tips = [];
-
-    if (top.length > 0) {
-      tips.push({
-        title: `优先催收：${top[0].name}`,
-        desc: `欠款 ¥${top[0].amountText}，占应收总额的 ${top[0].share}%。先跟这一家沟通，回款效率最高。`
-      });
-    }
-
-    if (month.income > 0 || month.expense > 0) {
-      tips.push(
-        net >= 0
-          ? { title: '本月盈利', desc: `收入 ¥${fmt.money(month.income)} 覆盖了支出 ¥${fmt.money(month.expense)}，可以按现在的路子继续做。` }
-          : { title: '本月超支', desc: `支出 ¥${fmt.money(month.expense)} 高于收入 ¥${fmt.money(month.income)}，建议先翻一遍大额支出项。` }
-      );
-    }
-
-    if (month.income > 0) {
-      const rate = Math.round((month.expense / month.income) * 100);
-      tips.push({
-        title: `支出占收入 ${rate}%`,
-        desc: rate > 80 ? '这个比例偏高，利润空间被压得很薄。' : '这个比例还算健康，留出了利润空间。'
-      });
-    }
-
-    if (tips.length === 0) {
-      tips.push({
-        title: '先攒数据',
-        desc: '坚持记 1 个月，就能看到收支结构、客户欠款和利润趋势了。'
-      });
-    }
-
-    return tips.slice(0, 4);
-  },
-
-  goSummary() {
-    wx.switchTab({ url: '/pages/summary/summary' });
-  },
-
-  goDetail(e) {
-    const id = e.currentTarget.dataset.id;
-    if (id) wx.navigateTo({ url: '/pages/contact-detail/contact-detail?id=' + id });
-  },
+     ⚠️ 删掉的是**展示**，不是能力。「优先催收 / 本月超支 / 支出占比」这套本地规则
+     （原来在 buildTips 里）现在没有任何入口调用了 —— 如果以后要把它接回来，
+     `_snapshots/` 里有改动前的源码快照，`_verify/snapshot.sh --list` 可以查。
+     当时就该这么处理：留着不调用的函数等于埋一个"有人接回去却不知道它已过时"的坑。 */
 
   /* ---------------- AI 问答 ---------------- */
 
@@ -219,7 +193,11 @@ Page(Object.assign({
   },
 
   _startRecord() {
-    if (!this._rm) this._initRecorder();
+    /* 🔴 每次录音前都重新注册监听（2026-09-22 修，和记账页同一个根因）：
+       `wx.getRecorderManager()` 是**全局单例**，`onStop`/`onError` **后注册的会覆盖先注册的**。
+       只在第一次 `_initRecorder()` 的话，另一页后进来就会把本站的监听顶掉 ——
+       表现是"松手了界面还在'正在听'"，而实际处理录音的变成了另一页。 */
+    this._initRecorder();
     this._cancelled = false;
     this._pendingStop = false;
     try {
@@ -256,7 +234,12 @@ Page(Object.assign({
       const cancelled = this._cancelled;
       this._cancelled = false;
       this.setData({ recording: false });
-      if (cancelled || !res || !res.tempFilePath) return;
+      // 静默 return 要留痕（和记账页一致）：否则"按了没反应"永远查不出卡在哪
+      if (cancelled) { app.beacon('adv-rec-abort', ''); return; }
+      if (!res || !res.tempFilePath) {
+        app.beacon('adv-rec-nofile', JSON.stringify(res || null).slice(0, 80));
+        return;
+      }
       await this.askByVoice(res.tempFilePath);
     });
     rm.onError((err) => {
@@ -422,12 +405,57 @@ Page(Object.assign({
     }
   },
 
-  openAi() {
-    this.setData({ showAi: true, scrollTo: '' });
+  /* 2026-09-22 删掉 openAi() / closeAi()（原来是开关底部对话弹层用的）。
+     对话升为页面主体后没有"开/关"这回事了 —— 退出就是导航栏返回。 */
+
+  /**
+   * 撤销刚记的那一笔（2026-09-22）。
+   *
+   * 「对话即入账」是**写操作**，而写操作必须有回头路 —— 自动入账尤其如此：
+   * 识别错一个字（"还了"听成"还欠"）就会把老板的账本弄脏，而他未必当场发现。
+   *
+   * 两点刻意的做法：
+   *  ① 用 api.call 而不是 api.safe：safe 在成功但无 data 时会返回 undefined，
+   *     我没法区分"撤销成功"和"没成功"；call 会明确给出 code。
+   *  ② 撤销成功后**不删掉这条消息**，只标记成「已撤销」——
+   *     直接让消息消失，老板反而会怀疑"到底撤了没有"。
+   */
+  async undoRecord(e) {
+    const i = e.currentTarget.dataset.i;
+    const item = this.data.aiHistory[i];
+    const ids = (item && item.card && item.card.undo) || [];
+    if (!ids.length) return;
+
+    wx.showLoading({ title: '撤销中…', mask: true });
+    let ok = 0;
+    for (const id of ids) {
+      const r = await api.call(app.request('/record/delete', { method: 'POST', data: { id }, silent: true }));
+      if (r && r.code === 0) ok++;
+    }
+    wx.hideLoading();
+
+    if (ok === ids.length) {
+      // 全部撤掉了才标记已撤销；部分失败要留着按钮让老板再点一次
+      this.setData({ ['aiHistory[' + i + '].undone']: true });
+      wx.showToast({ title: '已撤销', icon: 'none' });
+    } else {
+      wx.showToast({ title: '没撤销成功，再试一次', icon: 'none' });
+    }
   },
 
-  closeAi() {
-    this.setData({ showAi: false, aiThinking: false });
+  /**
+   * 返回主界面（清掉当前这轮对话）。
+   *
+   * 为什么必须有：本页是 **tab 页**，而 tab 页的导航栏**不会有返回箭头**
+   * （微信框架规则：tab 页是顶层页面）。用户聊完想回到"四件事"那个起始界面时，
+   * 会发现没有任何路可走 —— 这不是体验瑕疵，是**真的走不回去**。
+   *
+   * 清掉的是页面内存里的对话，**不动账本**：
+   * 已经入的账留在库里（要撤得用那张卡片上的「记错了，撤销」）。
+   * 这两件事必须分清楚 —— 否则用户会以为"返回"把账也退了。
+   */
+  newChat() {
+    this.setData({ aiHistory: [], aiInput: '', aiThinking: false, scrollTo: '' });
   },
 
   onAiInput(e) {
@@ -462,12 +490,23 @@ Page(Object.assign({
     // 显示给用户的话要短。OCR 读出来的原文可能有几百字，
     // 全塞进自己的气泡里就是"乱七八糟"——那是给 AI 的上下文，不是给人看的。
     const shown = '我拍了一张图，帮我看看';
-    const history = this.data.aiHistory.concat([{ role: 'user', content: shown, image: imagePath || '' }]);
+    /* ⚠️ 用户消息必须带 lines（2026-09-22 修，用户报"只能看到 AI 的回复、看不到自己的问题"）。
+       模板渲染消息体时走的是 `wx:if="{{item.card}}" ... wx:else → item.lines` 这条链，
+       **`content` 从头到尾没有任何地方在读**。用户消息原来只推了 { role, content }，
+       于是 lines 是 undefined、循环渲染出 0 行 —— 气泡是个**空的橙色小条**，
+       看着就像自己的话没发出去。AI 那边因为带了 lines 所以正常，症状才这么不对称。 */
+    const history = this.data.aiHistory.concat([{ role: 'user', content: shown, image: imagePath || '', lines: [shown] }]);
     this.setData({ aiHistory: history, aiInput: '', aiThinking: true }, () => this.scrollToBottom());
 
     try {
       const prior = this.data.aiHistory.slice(-6).map((m) => ({ role: m.role, content: m.content }));
-      const res = await app.request('/ai/chat', { method: 'POST', data: { question: q, history: prior }, silent: true });
+      // 同上：拍照问这一路也必须给足 60 秒，否则真机上同样会 15 秒超时
+      const res = await app.request('/ai/chat', {
+        method: 'POST',
+        data: { question: q, history: prior },
+        silent: true,
+        timeout: api.AI_TIMEOUT
+      });
       if (res && res.code === 0 && res.data && res.data.answer) {
         this.setData({
           aiHistory: history.concat([{
@@ -477,11 +516,16 @@ Page(Object.assign({
           aiThinking: false
         });
       } else {
+        /* 兜底文案必须跟着页面走（2026-09-22）。
+           ⚠️ 这里原来写着「本页的『经营提示』是照账目直接算的，可以先看那个」——
+           而经营提示板块在同一次改造里已经从本页删掉了，这句话等于让用户去找一个不存在的东西。
+           **删页面元素时，要连着搜一遍"提到这个元素的文案"**，否则残留的指引比没有更糟。 */
+        const sorry = '这张图我没看明白。\n换个清楚点的照片，或者直接打字问我，比如「这个月花了多少」。';
         this.setData({
           aiHistory: history.concat([{
             role: 'ai',
-            content: '这类问题我暂时答不了。\n本页的「经营提示」是照账目直接算的，可以先看那个；想看某一笔具体的账，去「查询」页翻。',
-            lines: ['这类问题我暂时答不了。', '本页的「经营提示」是照账目直接算的，可以先看那个；想看某一笔具体的账，去「查询」页翻。']
+            content: sorry,
+            lines: ['这张图我没看明白。', '换个清楚点的照片，或者直接打字问我，比如「这个月花了多少」。']
           }]),
           aiThinking: false
         });
@@ -499,14 +543,27 @@ Page(Object.assign({
     const q = (this.data.aiInput || '').trim();
     if (!q || this.data.aiThinking || this.data.working) return;
 
-    const history = this.data.aiHistory.concat([{ role: 'user', content: q }]);
+    const history = this.data.aiHistory.concat([{ role: 'user', content: q, lines: splitLines(q) }]);
     this.setData({ aiHistory: history, aiInput: '', aiThinking: true }, () => this.scrollToBottom());
 
     try {
       // 把最近的对话带上去，AI 才知道"那上月呢"里的"那"指的是什么。
       // 这里不截断也行，后端只取最后 3 轮 —— 多传几条不花钱，少传就真的丢了。
       const prior = this.data.aiHistory.slice(-6).map((m) => ({ role: m.role, content: m.content }));
-      const res = await app.request('/ai/chat', { method: 'POST', data: { question: q, history: prior }, silent: true });
+      /* ⚠️ 必须显式传 AI_TIMEOUT（2026-09-22 修）—— 这是典型的"真机不通、模拟器却通"。
+         app.request 默认只等 **15 秒**，而 app.js 的注释里早就写着"AI 类接口必须显式传更长"
+         （2026-09-19 真机就因此报过 `request:fail timeout`）。
+         全站其它 AI 调用（/record/ai-parse、/ai/vision、/ai/asr、/purchase/parse-doc）
+         都传了 60 秒，**只有两处 /ai/chat 漏了**。
+         后端调 qwen-plus 允许 45 秒，前端却只等 15 秒 —— 模型一慢，后端还在算，
+         前端已经放弃，用户看到的就是"没反应 / 答不了"。
+         模拟器网络是本机、几乎无抖动所以看不出，手机上就露馅。 */
+      const res = await app.request('/ai/chat', {
+        method: 'POST',
+        data: { question: q, history: prior },
+        silent: true,
+        timeout: api.AI_TIMEOUT
+      });
       if (res && res.code === 0 && res.data && res.data.answer) {
         this.setData({
           aiHistory: history.concat([{
@@ -519,13 +576,10 @@ Page(Object.assign({
           aiThinking: false
         });
       } else {
-        // 接口没通时**说清楚它能答什么**，别让用户对着一个对话框反复试。
-        // 兜底文案要跟着页面走：这里已经是参谋页，不能再写「去上面的搜索查」。
+        // 兜底文案同样要跟着页面走：经营提示板块已从本页删除，不能再让用户去看它
+        const sorry = '这类问题我暂时答不了。\n换个问法试试，比如「这个月花了多少」「谁欠我最多」；想看某一笔具体的账，去「查询」页翻。';
         this.setData({
-          aiHistory: history.concat([{
-            role: 'ai',
-            content: '这类问题我暂时答不了。\n本页的「经营提示」是照账目直接算的，可以先看那个；想看某一笔具体的账，去「查询」页翻。'
-          }]),
+          aiHistory: history.concat([{ role: 'ai', content: sorry, lines: sorry.split('\n') }]),
           aiThinking: false
         });
       }

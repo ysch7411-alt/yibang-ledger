@@ -16,9 +16,14 @@
 
 // 接口类型 → 每天限多少次
 const QUOTAS = {
-  voice: 50,       // 语音记账（asr + parse 算一次？不，asr是识别，parse是结构化，分开算？先合并算）
-  vision: 20,      // 图片识别
-  chat: 30         // AI 问答
+  voice: 50,       // 语音识别（/ai/asr）
+  vision: 20,      // 图片识别（/ai/vision、/purchase/parse-doc）
+  chat: 30,        // AI 问答（/ai/chat）
+  /* 2026-09-22 审查补上：`/record/ai-parse` 是**调用最频繁**的 AI 接口
+     （每次语音或打字记账都走它），但原来既没有 aiLimit 也没有 bumpCount —— **完全没有限流**。
+     配额给到 80：正常老板一天记 20~30 笔，离 80 还远；
+     而一个恶意账号最多也只能刷 80 次，模型预算烧不穿。 */
+  parse: 80        // 记账文本结构化（/record/ai-parse）
 };
 
 // key: `${userId}:${type}:${dateStr}` → count

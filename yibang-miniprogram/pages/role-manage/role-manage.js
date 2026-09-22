@@ -58,7 +58,14 @@ Page({
       this.setData({ loading: true });
       const res = await app.request('/roles/members');
       if (res.code === 0) {
-        this.setData({ members: res.data });
+        /* 头像首字在 JS 里算好：WXML 的数据绑定**不支持方法调用**，
+           模板里原来写的 {{item.nickname.charAt(0)}} 不报错但渲染为空白，
+           于是成员头像一直是个空橙圆圈（contacts / contact-detail 同样毛病）。 */
+        const members = (res.data || []).map(m => ({
+          ...m,
+          initial: (m.nickname || '?').slice(0, 1)
+        }));
+        this.setData({ members });
       }
     } catch (err) {
       console.error('加载成员列表失败:', err);

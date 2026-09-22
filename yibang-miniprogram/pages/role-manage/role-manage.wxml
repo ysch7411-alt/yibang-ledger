@@ -1,5 +1,5 @@
 <!--pages/role-manage/role-manage.wxml-->
-<view class="container">
+<view class="container container-page">
 
   <!-- 顶部说明 -->
   <view class="tip-card">
@@ -37,7 +37,7 @@
 
   <view wx:else class="card card-flush">
     <view class="member-item" wx:for="{{members}}" wx:key="id">
-      <view class="member-avatar">{{item.nickname ? item.nickname.charAt(0) : '?'}}</view>
+      <view class="member-avatar">{{item.initial}}</view>
       <view class="member-info">
         <view class="member-name">
           {{item.nickname || '易帮用户'}}

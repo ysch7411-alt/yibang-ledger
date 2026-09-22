@@ -234,6 +234,32 @@ if (fs.existsSync(appJsonPath)) {
   }
 }
 
+// 5) AI 类接口必须显式传 timeout（2026-09-22 加）
+//    判据来自一个真机才暴露的 bug：app.request 默认只等 **15 秒**，
+//    而 AI 接口在后端允许 45~90 秒。前端等不到就断了，用户看到"没反应/答不了"；
+//    模拟器网络是本机几乎无抖动所以看不出，**只有真机露馅**。
+//    全站本来只有两处 /ai/chat 漏了，已补；这条检查防止以后再漏。
+//    （app.js 里对 request 默认值的注释早就写着"AI 类接口必须显式传更长"，靠人记是不可靠的。）
+const AI_ENDPOINT = /\/(ai\/|record\/ai-parse|purchase\/parse-doc|file\/upload)/;
+files.filter((f) => f.endsWith('.js')).forEach((f) => {
+  const src = fs.readFileSync(f, 'utf8');
+  // 先剥注释，免得例子里的调用被当成真代码（这个坑项目里栽过多次）
+  const s = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  const re = /(?:app\(\)|app)\.request\(/g;
+  let m;
+  while ((m = re.exec(s))) {
+    const seg = s.slice(m.index, m.index + 400);
+    const u = seg.match(/['"`]([^'"`]+)['"`]/);
+    if (!u || !AI_ENDPOINT.test(u[1])) continue;
+    if (!/timeout\s*:/.test(seg)) {
+      problems.push(
+        '[AI 超时] ' + rel(f) + ' → ' + u[1] +
+        ' 没传 timeout（默认 15 秒，AI 接口要 60 秒，真机会 request:fail timeout）'
+      );
+    }
+  }
+});
+
 if (problems.length) {
   console.log('发现 ' + problems.length + ' 个问题：\n');
   problems.forEach((p) => console.log('  ' + p));

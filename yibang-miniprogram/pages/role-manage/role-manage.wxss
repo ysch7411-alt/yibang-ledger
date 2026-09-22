@@ -1,5 +1,12 @@
-/* pages/role-manage/role-manage.wxss */
+/* pages/role-manage/role-manage.wxss —— 成员与角色
+   ⚠️ 本文件在 2026-09-23 的一次批量脚本事故中丢失了绝大部分内容，下面为重建版。
+   重建依据：① 页面 wxml 的实际结构与类名；② app.wxss 的令牌与公共类；③ 同站既有规格。
 
+   角色色标的口径：**不新造颜色**，映射到已有的语义令牌 ——
+     店主 = 品牌色（这是"店的主人"）／合伙人 = info 蓝／经理 = warn 橙／员工 = 灰（权限最低）
+   同一套映射同时用于上面的图例小圆点和列表里的角色标签，两处必须一致。 */
+
+/* ---------------- 顶部说明卡 ---------------- */
 .tip-card {
   margin: 24rpx;
   padding: 28rpx;
@@ -10,222 +17,217 @@
 .tip-title {
   font-size: 30rpx;
   font-weight: 600;
-  color: #101828;
+  color: var(--t1);
   margin-bottom: 8rpx;
 }
 .tip-desc {
   font-size: 24rpx;
-  color: #667085;
+  color: var(--t3);
   line-height: 1.5;
 }
 
-/* 角色说明 */
+/* ---------------- 角色说明图例 ---------------- */
 .role-legend {
-  display: flex;
-  flex-wrap: wrap;
-  padding: 0 36rpx 16rpx;
-  gap: 16rpx 24rpx;
+  margin: 0 24rpx 28rpx;
+  padding: 20rpx 24rpx;
+  background: var(--card);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-card);
 }
 .legend-item {
   display: flex;
   align-items: center;
+  padding: 10rpx 0;
 }
 .legend-dot {
   width: 16rpx;
   height: 16rpx;
+  flex: none;
+  margin-right: 14rpx;
   border-radius: 50%;
-  margin-right: 8rpx;
 }
-.dot-owner { background: #E4551D; }
-.dot-boss { background: #F79009; }
-.dot-manager { background: #12B76A; }
-.dot-staff { background: #667085; }
+/* 与下面 .role-tag 的四个色保持同一映射 */
+.dot-owner   { background: var(--brand); }
+.dot-boss    { background: var(--info); }
+.dot-manager { background: var(--warn); }
+.dot-staff   { background: var(--t4); }
 .legend-text {
-  font-size: 22rpx;
-  color: #667085;
-}
-
-.section-title {
+  flex: 1;
+  min-width: 0;
   font-size: 26rpx;
-  font-weight: 600;
-  color: #98A2B3;
-  padding: 16rpx 36rpx;
+  color: var(--t2);
 }
 
-/* 成员列表 */
+/* ---------------- 成员列表 ---------------- */
+/* .section-title 在 app.wxss 里已有全局定义，本页不重复定义
+   （静态检查把它报成"缺失"是假阳性 —— 已逐条核对过）。 */
+
 .member-item {
   display: flex;
   align-items: center;
-  padding: 24rpx;
-  border-bottom: 1rpx solid #F2F4F7;
+  min-height: 120rpx;
+  padding: 24rpx 28rpx;
 }
-.member-item:last-child {
-  border-bottom: none;
+.member-item + .member-item {
+  border-top: 1rpx solid var(--line);
 }
 .member-avatar {
-  width: 72rpx;
-  height: 72rpx;
+  width: 76rpx;
+  height: 76rpx;
+  flex: none;
+  margin-right: 22rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FF8A50 0%, #E4551D 100%);
-  color: #FFFFFF;
-  font-size: 28rpx;
+  background: var(--brand-weak);
+  color: var(--brand-ink);
+  font-size: 30rpx;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 20rpx;
-  flex-shrink: 0;
 }
 .member-info {
   flex: 1;
-  min-width: 0;
+  min-width: 0;      /* 必须：名字长时右侧「改角色/移除」不能被挤出去 */
 }
 .member-name {
-  font-size: 28rpx;
+  font-size: 30rpx;
   font-weight: 600;
-  color: #101828;
-  margin-bottom: 8rpx;
+  color: var(--t1);
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .member-role {
+  margin-top: 8rpx;
   display: flex;
   align-items: center;
-  gap: 12rpx;
 }
+/* 角色标签。四个色与上面的图例一一对应 */
 .role-tag {
-  font-size: 20rpx;
-  padding: 4rpx 12rpx;
-  border-radius: 8rpx;
-  font-weight: 500;
-}
-.role-1 { background: rgba(228, 85, 29, .1); color: #E4551D; }
-.role-2 { background: rgba(247, 144, 9, .1); color: #F79009; }
-.role-3 { background: rgba(18, 183, 106, .1); color: #12B76A; }
-.role-4 { background: rgba(102, 112, 133, .1); color: #667085; }
-.member-phone {
+  flex: none;
+  padding: 4rpx 16rpx;
+  border-radius: var(--r-full);
   font-size: 22rpx;
-  color: #98A2B3;
+  font-weight: 600;
+}
+.role-1 { background: var(--brand-weak); color: var(--brand-ink); }   /* 店主 */
+.role-2 { background: var(--info-weak); color: var(--info); }         /* 合伙人 */
+.role-3 { background: var(--warn-weak); color: var(--warn); }         /* 经理 */
+.role-4 { background: var(--fill); color: var(--t3); }                /* 员工 */
+.member-phone {
+  margin-left: 14rpx;
+  font-size: 24rpx;
+  color: var(--t3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .member-actions {
+  flex: none;
+  margin-left: 16rpx;
   display: flex;
-  gap: 12rpx;
-  flex-shrink: 0;
+  align-items: center;
 }
+/* 行内小按钮。规格对齐 summary 页的 .action-btn，但宽度跟着文字走 */
 .action-btn {
-  padding: 10rpx 20rpx;
-  border-radius: 12rpx;
-  background: #F2F4F7;
-  font-size: 22rpx;
-  color: #475467;
+  min-height: 64rpx;
+  padding: 0 20rpx;
+  margin-left: 12rpx;
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--t2);
+  background: var(--fill);
 }
 .action-btn:active {
-  opacity: 0.7;
+  opacity: .8;
 }
 .action-danger {
-  background: rgba(240, 68, 56, .1);
-  color: #F04438;
+  color: var(--expense);
+  background: var(--expense-weak);
 }
 
-/* 添加成员 */
+/* ---------------- 添加成员 ---------------- */
 .add-section {
-  padding: 24rpx 36rpx;
+  margin: 8rpx 24rpx 0;
 }
 .add-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24rpx;
-  border-radius: 16rpx;
-  border: 2rpx dashed rgba(228, 85, 29, .4);
-  background: rgba(228, 85, 29, .04);
+  /* 触控区 ≥88rpx（全站规范） */
+  min-height: 88rpx;
+  border-radius: var(--r-full);
+  background: var(--card);
+  border: 2rpx dashed var(--brand-line);
+  color: var(--brand-ink);
 }
 .add-btn:active {
-  opacity: 0.7;
+  background: var(--brand-weak);
 }
 .add-icon {
-  font-size: 32rpx;
-  color: #E4551D;
-  margin-right: 8rpx;
-  font-weight: 300;
+  font-size: 34rpx;
+  font-weight: 600;
+  margin-right: 10rpx;
 }
 .add-text {
-  font-size: 28rpx;
-  color: #E4551D;
-  font-weight: 500;
-}
-
-/* 表单 */
-.f-block {
-  margin-bottom: 28rpx;
-}
-.f-label {
-  font-size: 26rpx;
+  font-size: 29rpx;
   font-weight: 600;
-  color: #344054;
-  margin-bottom: 12rpx;
-}
-.f-required {
-  color: #E4551D;
-}
-.f-input {
-  width: 100%;
-  padding: 24rpx 28rpx;
-  background: #F9FAFB;
-  border-radius: 16rpx;
-  font-size: 28rpx;
-  color: #101828;
-  box-sizing: border-box;
-}
-.ph {
-  color: #98A2B3;
 }
 
-/* 角色选择 */
+/* ---------------- 弹层里的角色选择 ---------------- */
+/* 三个选项各自带一行说明，所以不能用 .seg（那是等宽的文字开关）—— 这里是大块单选卡 */
 .role-picker {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
 }
 .role-option {
-  padding: 24rpx;
-  border-radius: 16rpx;
-  background: #F9FAFB;
-  border: 2rpx solid transparent;
-  transition: all 0.2s;
-}
-.role-option.is-on {
-  background: rgba(228, 85, 29, .06);
-  border-color: #E4551D;
+  padding: 22rpx 24rpx;
+  margin-bottom: 16rpx;
+  border-radius: var(--r-md);
+  background: var(--card);
+  border: 2rpx solid var(--line);
 }
 .role-option:active {
-  transform: scale(0.98);
+  background: var(--fill);
+}
+.role-option.is-on {
+  border-color: var(--brand-btn);
+  background: var(--brand-weak);
 }
 .role-option-name {
-  font-size: 28rpx;
+  font-size: 29rpx;
   font-weight: 600;
-  color: #101828;
-  margin-bottom: 6rpx;
-}
-.role-option.is-on .role-option-name {
-  color: #E4551D;
+  color: var(--t1);
 }
 .role-option-desc {
+  margin-top: 4rpx;
   font-size: 24rpx;
-  color: #98A2B3;
+  color: var(--t3);
 }
-
+/* 弹层底部那句提示（"对方需先注册…"） */
 .add-note {
-  margin-top: 20rpx;
-  padding: 20rpx;
-  background: #FFFBEB;
-  border-radius: 12rpx;
-  font-size: 22rpx;
-  color: #B54708;
-  line-height: 1.5;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--t3);
+  line-height: 1.6;
 }
 
-.bottom-space {
-  height: 60rpx;
+/* ---------------- 表单小细节与页尾 ---------------- */
+.f-required {
+  color: var(--expense);
+  font-size: 26rpx;
 }
+.bottom-space {
+  height: 40rpx;
+}
+
+/* 弹层贴底已在公共层收口（变量 `--sheet-rest`），本页**不需要再覆盖 .sheet** ——
+   见 app.wxss 的 page{} 里那个变量的说明。
+   2026-09-22 前这里要各写一遍 bottom + 安全区 padding，而**全站 6 个二级页曾同时漏掉**，
+   表现是弹层底下漏出一条缝、或弹层里的输入框被键盘压住。 */

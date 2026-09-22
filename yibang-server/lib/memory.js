@@ -80,13 +80,26 @@ async function upsertTerm(pool, userId, kind, alias, canonical, refId, source) {
 async function learnFromParse(pool, userId, records) {
   const learned = [];
   for (const r of records) {
-    if (r.contactName) {
-      const refId = await ensureContact(pool, userId, r.contactName, r.type);
-      const isNew = await upsertTerm(pool, userId, 'contact', r.contactName, r.contactName, refId, 'auto');
-      if (isNew) learned.push('往来对象「' + r.contactName + '」');
+    /* ⚠️ 字段名有两个来源：/ai-parse 产出的是 `contact`，而更早的调用方用的是 `contactName`。
+       2026-09-22 发现这里只认 `contactName`，而唯一的调用点（routes/record.js 的 /ai-parse）
+       传的是 `contact` —— 于是"往来对象自动沉淀"这条路**一直是死的**：
+       不报错、不影响记账，只是"越用越懂"的自动半边少了一半。
+       （事由那条没受影响，它读的是 content。）
+       两种都认，免得以后再因为字段名对不上而静默失效。 */
+    const name = String(r.contactName || r.contact || '').trim();
+    if (name) {
+      const refId = await ensureContact(pool, userId, name, r.typeCode || r.type);
+      const isNew = await upsertTerm(pool, userId, 'contact', name, name, refId, 'auto');
+      if (isNew) learned.push('往来对象「' + name + '」');
     }
     if (r.content) {
       await upsertTerm(pool, userId, 'reason', r.content, r.content, null, 'auto');
+    }
+    /* 品类（2026-09-22）：把这次见到的品类沉淀进 kind='category' 词表。
+       下一句解析时 buildParsePrompt 会把它喂回模型，让同一类东西的叫法收敛
+       —— 这正是采购线在用的机制，两条线共用同一张词表。 */
+    if (r.category) {
+      await upsertTerm(pool, userId, 'category', r.category, r.category, null, 'auto');
     }
   }
   return learned;

@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const log = require('./log');
 
 /* ---------------- 上传文件解析 ---------------- */
 
@@ -126,6 +127,35 @@ function extractJson(text) {
  *   收入(1)/支出(2) 是现金流水，不影响往来余额
  * 原来这张表从来没人维护，所以应收应付永远显示 0。
  */
+/**
+ * 记账账号解析 —— 「员工录的账要等老板审」（2026-09-23 用户定的产品口径）。
+ *
+ * 背景：`users.boss_id` 指向老板。路由 `/staff/pending` 查的是
+ * `user_id = 老板id AND status = 0`，所以员工录的账**本来就该落在老板账下**：
+ *   ① `user_id` = 老板的 id（否则老板的报表算不进去，员工记的账等于没记）
+ *   ② `status` = 0 待审（老板审过才入账）
+ *   ③ `created_by` = 员工自己的 id（老板知道是谁录的）
+ * `boss_id` 为空 = 本人就是老板 → 照旧：落自己账下、status=1 直接入账。
+ *
+ * ⚠️ **失败时"放行"而不是"拦住"**：这条查询要是撞上瞬时故障，
+ *    宁可退回"本人记账、直接入账"（= 现在的行为），也不能让**记账整个失败** ——
+ *    这个产品的第一原则是"说一声就记上"，为此牺牲一次归属准确性是可以接受的
+ *    （事后能从 created_by 和 pm2 日志看出来）。反过来拦住的话，
+ *    老板会发现"记不上了"，那是比归属错更严重的问题。
+ *
+ * @returns {Promise<{ownerId:number, isStaff:boolean, status:number}>}
+ */
+async function resolveAccount(pool, userId) {
+  try {
+    const [rows] = await pool.query('SELECT boss_id FROM users WHERE id = ? LIMIT 1', [userId]);
+    const bossId = rows && rows.length ? rows[0].boss_id : null;
+    if (bossId) return { ownerId: Number(bossId), isStaff: true, status: 0 };
+  } catch (e) {
+    log.error('[resolveAccount] 查 boss_id 失败，按本人账号放行:', e && e.message);
+  }
+  return { ownerId: userId, isStaff: false, status: 1 };
+}
+
 async function recalcBalance(pool, userId, contactId) {
   if (!contactId) return null;
   const [rows] = await pool.query(
@@ -276,6 +306,25 @@ function normType(v) {
   return TYPE_CODE[String(v == null ? '' : v).trim()] || null;
 }
 
+/**
+ * 品类归一（2026-09-22）。
+ *
+ * 与 normType 的关键差别：**品类是自由文本，不是封闭枚举**。
+ * type 只有 6 个合法值，非法就拒；但老板说得出「五金」「电料」「买菜」，
+ * 也可能说出我们没见过的词 —— 用白名单校验会把他的真实业务挡在门外。
+ * 所以这里只做"把脏东西收拾干净"：去首尾空白、把连续空白压成一个、限长 32。
+ *
+ * 返回 null 表示"这条账没有品类"，是合法状态（老数据、或确实归纳不出）。
+ * 注意：不返回空字符串 —— 空串进 MySQL 会变成 ''，统计里就会多出一个叫 "" 的分组，
+ * 与"未分类"看起来像两回事，实际上是一回事。
+ */
+function normCategory(v) {
+  if (v == null) return null;
+  const s = String(v).replace(/[\u0000-\u001f\u007f]/g, '').trim().replace(/\s+/g, ' ');
+  if (!s) return null;
+  return s.length > 32 ? s.slice(0, 32) : s;
+}
+
 // DECIMAL(10,2)：最多 8 位整数 + 2 位小数。超出会被 MySQL 悄悄截断，
 // 用户存 999999999.99 拿回去变成 99999999.99 —— 数字对不上。
 const AMOUNT_MIN = 0.01;
@@ -292,6 +341,91 @@ function normAmount(raw, qty, unitPrice) {
   return { ok: true, amount: amt, fixed: fixed };
 }
 
+/* ---------------- 营业日计算 ---------------- */
+
+/**
+ * 本地日期 → 'YYYY-MM-DD'
+ *
+ * 🔴 **绝不能用 `date.toISOString().slice(0,10)` 代替它。**
+ * 服务器时区是 UTC+8，而 `toISOString()` 会先转成 UTC：
+ * 本地 2026-09-19 00:00 → `2026-09-18T16:00:00Z` → 切出来是 **09-18，少一天**。
+ * 实测后果：`getBusinessDate` 在**早上 8 点前**返回前一天 ——
+ * 早餐店/早市老板早上记账，账会落到昨天（2026-09-22 修）。
+ *
+ * 同理，从 MySQL 拿到的 DATE 是**本地时间的 Date 对象**，
+ * `String(它).slice(0,10)` 得到的是 `"Sat Sep 19"` 这种串，不是日期。
+ * **数据库侧一律用 `DATE_FORMAT(col,'%Y-%m-%d')` 取字符串**，不要拿 Date 对象自己拼。
+ */
+function ymd(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+/**
+ * 本地时间 → 'YYYY-MM-DD HH:mm:ss'（导出、日志用）
+ * 和 ymd 是同一个理由：**不要用 toISOString()** ——
+ * 它会把本地时间减 8 小时，导出表里的"记录时间"会集体早 8 小时。
+ */
+function stamp(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  return ymd(d) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+/**
+ * 根据营业日截止时间，计算当前时间属于哪个营业日
+ * @param {Date} now - 当前时间
+ * @param {string} endTime - 营业日截止时间，格式 "HH:mm"，如 "02:00"
+ * @returns {string} 营业日日期，格式 "YYYY-MM-DD"
+ */
+function getBusinessDate(now, endTime) {
+  if (!endTime || endTime === '00:00') {
+    return ymd(now);
+  }
+  const parts = String(endTime).split(':');
+  const endHour = parseInt(parts[0], 10) || 0;
+  const endMin = parseInt(parts[1], 10) || 0;
+  
+  const nowHour = now.getHours();
+  const nowMin = now.getMinutes();
+  
+  // 如果当前时间在截止时间之前（比如凌晨1点，截止时间是凌晨2点），算前一天
+  if (nowHour < endHour || (nowHour === endHour && nowMin < endMin)) {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return ymd(yesterday);
+  }
+  return ymd(now);
+}
+
+/**
+ * 获取某个营业日的时间范围（用于报表查询）
+ * @param {string} date - 营业日日期，格式 "YYYY-MM-DD"
+ * @param {string} endTime - 营业日截止时间，格式 "HH:mm"
+ * @returns {Object} { from: "YYYY-MM-DD HH:mm:ss", to: "YYYY-MM-DD HH:mm:ss" }
+ */
+function getBusinessDateRange(date, endTime) {
+  if (!endTime || endTime === '00:00') {
+    return { from: date + ' 00:00:00', to: date + ' 23:59:59' };
+  }
+  // 营业日 = 当天截止时间之后 到 第二天截止时间之前
+  // 比如截止时间02:00，营业日9月22日 = 9月22日02:00:00 到 9月23日01:59:59
+  const from = date + ' ' + endTime + ':00';
+  const nextDay = new Date(date + 'T00:00:00');
+  nextDay.setDate(nextDay.getDate() + 1);
+  const nextDayStr = ymd(nextDay);     // ⚠️ 不能用 toISOString：会少一天（见 ymd 的注释）
+  const parts = String(endTime).split(':');
+  const endHour = parseInt(parts[0], 10) || 0;
+  const endMin = parseInt(parts[1], 10) || 0;
+  // 截止时间前1秒
+  let toMin = endMin - 1;
+  let toHour = endHour;
+  if (toMin < 0) { toMin = 59; toHour -= 1; }
+  const toHourStr = String(toHour).padStart(2, '0');
+  const toMinStr = String(toMin).padStart(2, '0');
+  const to = nextDayStr + ' ' + toHourStr + ':' + toMinStr + ':59';
+  return { from, to };
+}
+
 module.exports = {
   resolveUpload,
   detectKind,
@@ -300,11 +434,18 @@ module.exports = {
   extractJson,
   cleanOcrText,
   recalcBalance,
+  resolveAccount,
   ensureContact,
   isDay,
   dayOr,
   isMonth,
+  ymd,
+  stamp,
+  // 2026-09-23 补导出：这个函数出过真实的线上 bug（早 8 点前记账落到前一天），
+  // 而它原来没导出 → 测不到 ✗。**出过事的函数必须能被测。**
+  getBusinessDate,
   normType,
+  normCategory,
   normAmount,
   num,
   round2,

@@ -4,6 +4,7 @@ const pool = require('../db/config');
 const jwt = require('jsonwebtoken');
 const opLog = require('../lib/operation-log');
 const notify = require('../lib/notification');
+const log = require('../lib/log');
 
 function auth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -79,7 +80,7 @@ router.get('/status', auth, async (req, res) => {
       res.json({ code: 0, data: { status: 1, month } });
     }
   } catch (err) {
-    console.error('获取报表状态失败:', err);
+    log.error('获取报表状态失败:', err);
     res.json({ code: 500, msg: '获取报表状态失败' });
   }
 });
@@ -132,7 +133,7 @@ router.post('/confirm', auth, async (req, res) => {
 
     res.json({ code: 0, msg: '报表已确认，所有合伙人均可查看' });
   } catch (err) {
-    console.error('确认报表失败:', err);
+    log.error('确认报表失败:', err);
     res.json({ code: 500, msg: '确认报表失败' });
   }
 });
@@ -170,7 +171,7 @@ router.post('/unconfirm', auth, async (req, res) => {
 
     res.json({ code: 0, msg: '已取消确认，报表恢复为草稿状态' });
   } catch (err) {
-    console.error('取消确认失败:', err);
+    log.error('取消确认失败:', err);
     res.json({ code: 500, msg: '取消确认失败' });
   }
 });
@@ -194,7 +195,7 @@ router.get('/confirmed-list', auth, async (req, res) => {
 
     res.json({ code: 0, data: reports });
   } catch (err) {
-    console.error('获取已确认报表列表失败:', err);
+    log.error('获取已确认报表列表失败:', err);
     res.json({ code: 500, msg: '获取已确认报表列表失败' });
   }
 });
@@ -252,7 +253,7 @@ router.post('/request-unlock', auth, async (req, res) => {
 
     res.json({ code: 0, msg: '解锁申请已提交，等待店主审批' });
   } catch (err) {
-    console.error('申请解锁失败:', err);
+    log.error('申请解锁失败:', err);
     res.json({ code: 500, msg: '申请解锁失败' });
   }
 });
@@ -311,7 +312,7 @@ router.post('/approve-unlock', auth, async (req, res) => {
 
     res.json({ code: 0, msg: '已批准解锁，报表恢复为草稿状态' });
   } catch (err) {
-    console.error('批准解锁失败:', err);
+    log.error('批准解锁失败:', err);
     res.json({ code: 500, msg: '批准解锁失败' });
   }
 });
@@ -370,7 +371,7 @@ router.post('/reject-unlock', auth, async (req, res) => {
 
     res.json({ code: 0, msg: '已拒绝解锁申请，报表保持锁定状态' });
   } catch (err) {
-    console.error('拒绝解锁失败:', err);
+    log.error('拒绝解锁失败:', err);
     res.json({ code: 500, msg: '拒绝解锁失败' });
   }
 });
@@ -396,7 +397,7 @@ router.get('/unlock-requests', auth, async (req, res) => {
 
     res.json({ code: 0, data: requests });
   } catch (err) {
-    console.error('获取解锁申请列表失败:', err);
+    log.error('获取解锁申请列表失败:', err);
     res.json({ code: 500, msg: '获取失败' });
   }
 });

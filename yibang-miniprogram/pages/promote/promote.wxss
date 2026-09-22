@@ -86,35 +86,36 @@
   padding-top: 6rpx;
 }
 
-/* 原生 button 复位后再套 .btn 的视觉（.bottom-bar .btn 已给 flex:1）。
-   不复位的话 button 自带的 padding / line-height 会让文字不居中。 */
-.bottom-bar .btn {
+/* 原生 button 复位后再套 .btn 的视觉（.bottom-bar .btn 已给 flex:1） */
+.btn-share {
   margin: 0;
   padding: 0;
   line-height: normal;
   border: none;
   font-weight: 600;
 }
+button.btn-share::after {
+  border: none;
+}
 
-/* ---------- 分销海报 ---------- */
-/* 离屏画布：必须真实存在且可渲染，2d canvas 用 display:none 拿不到 node，画不出来 */
+/* ---------------- 海报：离屏画布 ---------------- */
+/* ⚠️ 2d canvas 用 display:none 拿不到 node（wx.createSelectorQuery 查不到尺寸），
+   画不出来 —— 所以必须**挪到屏幕外**，而不是藏起来。 */
 .ps-canvas {
   position: fixed;
-  left: -9999px;
+  left: -9999rpx;
   top: 0;
   z-index: -1;
 }
 
-/* 本页是从「我的」navigateTo 打开的二级页，**没有 TabBar**。
-   .sheet 默认停在 bottom: var(--tabbar-h)，在这一页会凭空悬空 108rpx、
-   底边露出下面的内容 —— 压回屏幕底部。 */
+/* ---------------- 海报预览弹层 ---------------- */
+/* 海报是竖长图，弹层要比常规 .sheet 更高，给图留够可视面积；
+   底部两个按钮固定在 .sheet-ft（公共层）里，这里只负责中间那块可滚动区。 */
 .ps-sheet {
-  bottom: 0;
+  max-height: 92vh;
 }
-
-/* 海报约 750×1200，弹层里放不下，要能上下滚 */
 .ps-bd {
-  overflow-y: auto;
+  text-align: center;
 }
 .ps-img {
   display: block;
@@ -123,52 +124,58 @@
   background: var(--fill);
 }
 .ps-hint {
-  padding: 18rpx 0 12rpx;
-  text-align: center;
+  margin: 20rpx 0 8rpx;
   font-size: 24rpx;
   color: var(--t3);
+  line-height: 1.6;
+  text-align: left;
 }
 
-/* 扫一扫试扫入口：小程序里长按图识别不了码，给一个显式的 scanCode 入口 */
+/* ---------------- 「扫一扫试扫」入口 ---------------- */
+/* 整行可点。规格与分享弹层里的 .sh-opt 一致：左侧图标 + 主副文案 + 右箭头。 */
 .ps-scan {
   display: flex;
   align-items: center;
-  gap: 18rpx;
-  margin: 0 0 8rpx;
-  padding: 20rpx 24rpx;
-  background: var(--brand-weak);
-  border: 1rpx solid var(--brand-line);
+  min-height: 112rpx;
+  margin-top: 16rpx;
+  padding: 0 24rpx;
   border-radius: var(--r-md);
+  background: var(--card);
+  border: 1rpx solid var(--line);
+  text-align: left;
 }
-.ps-scan-hover {
-  opacity: .85;
+.ps-scan-hover,
+.ps-scan:active {
+  background: var(--fill);
 }
 .ps-scan-ico {
-  width: 40rpx;
-  height: 40rpx;
+  width: 44rpx;
+  height: 44rpx;
   flex: none;
+  margin-right: 20rpx;
 }
 .ps-scan-main {
   flex: 1;
-  min-width: 0;
+  min-width: 0;      /* 必须：副文案长了会把右箭头挤出去 */
 }
 .ps-scan-t {
   display: block;
-  font-size: 28rpx;
+  font-size: 29rpx;
   font-weight: 600;
-  color: var(--brand-ink);
+  color: var(--t1);
 }
 .ps-scan-sub {
   display: block;
-  margin-top: 2rpx;
-  font-size: 22rpx;
+  margin-top: 4rpx;
+  font-size: 24rpx;
   color: var(--t3);
 }
 .ps-scan-arrow {
-  width: 14rpx;
-  height: 14rpx;
+  width: 16rpx;
+  height: 16rpx;
   flex: none;
-  border-top: 3rpx solid var(--t4);
-  border-right: 3rpx solid var(--t4);
+  margin-left: 16rpx;
+  border-top: 2rpx solid var(--t4);
+  border-right: 2rpx solid var(--t4);
   transform: rotate(45deg);
 }

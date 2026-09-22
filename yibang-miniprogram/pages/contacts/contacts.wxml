@@ -1,11 +1,15 @@
 <!--pages/contacts/contacts.wxml-->
-<view class="container" style="{{_cv}}">
+<view class="container container-page" style="{{_cv}}">
 
-  <!-- 顶部标题栏 -->
+  <!-- 顶部标题栏。
+       2026-09-23：页头改成**带数据的一行**（原来写死「应收应付」，和导航栏重复、信息量为零 ✗）。
+       全站其它页的页头都是这个路子：记账页「9月23日」、报表页「本月账目」。
+       这里的第二行给"净头寸"—— 下面两张卡分别给了两边，唯独没给净额，
+       而老板真正想知道的是"我到底是净收还是净欠"。 -->
   <view class="page-head">
     <view class="page-head-left">
-      <view class="page-title">应收应付</view>
-      <view class="page-sub">谁欠我钱，我欠谁钱，一眼看清</view>
+      <view class="page-title">{{headTitle}}</view>
+      <view class="page-sub">{{headSub}}</view>
     </view>
     <view class="page-head-right">
       <view class="add-btn" bindtap="openAdd">
@@ -14,16 +18,18 @@
     </view>
   </view>
 
-  <!-- 应收应付汇总 -->
+  <!-- 应收应付汇总。措辞与报表页统一成「别人欠我的 / 我欠别人的」（2026-09-22）：
+       同一个数字在两个页面原来是两种说法（报表页"别人欠我的"，这里"别人欠我"），
+       用户会怀疑是不是两回事。口语那版对非财务的小店老板更好读。 -->
   <view class="card sum-card">
     <view class="sum-col" bindtap="filterType" data-type="receivable">
-      <view class="sum-k">别人欠我</view>
+      <view class="sum-k">别人欠我的</view>
       <view class="sum-v num c-income">¥{{summary.receivableText}}</view>
       <view class="sum-s">{{receivableCount}} 位 ›</view>
     </view>
     <view class="sum-line"></view>
     <view class="sum-col" bindtap="filterType" data-type="payable">
-      <view class="sum-k">我欠别人</view>
+      <view class="sum-k">我欠别人的</view>
       <view class="sum-v num c-expense">¥{{summary.payableText}}</view>
       <view class="sum-s">{{payableCount}} 位 ›</view>
     </view>
@@ -32,7 +38,7 @@
   <!-- 采购单管理入口 -->
   <view class="card entry-card" bindtap="goPurchase">
     <view class="entry-icon">
-      <image class="entry-icon-img" src="/images/ic-gear.svg" mode="aspectFit" />
+      <image class="entry-icon-img" src="/images/ic-order.svg" mode="aspectFit" />
     </view>
     <view class="entry-info">
       <view class="entry-title">采购单管理</view>
@@ -41,17 +47,19 @@
     <view class="entry-arrow"></view>
   </view>
 
-  <!-- 筛选标签 -->
-  <view class="filter-bar">
-    <view class="filter-item {{filterType === 'all' ? 'is-on' : ''}}" bindtap="setFilter" data-type="all">全部</view>
-    <view class="filter-item {{filterType === 'receivable' ? 'is-on' : ''}}" bindtap="setFilter" data-type="receivable">应收</view>
-    <view class="filter-item {{filterType === 'payable' ? 'is-on' : ''}}" bindtap="setFilter" data-type="payable">应付</view>
+  <!-- 筛选标签：跟上面的口径用同一套词（原来写"应收/应付"，
+       而这两栏的大字写着"别人欠我的" —— 一页两套术语，用户得自己翻译）。
+       类名 2026-09-23 改用公共的 .chip-bar / .chip —— 站内"筛选标签"只该有一套长相。 -->
+  <view class="chip-bar">
+    <view class="chip {{filterType === 'all' ? 'is-on' : ''}}" bindtap="setFilter" data-type="all">全部</view>
+    <view class="chip {{filterType === 'receivable' ? 'is-on' : ''}}" bindtap="setFilter" data-type="receivable">别人欠我的</view>
+    <view class="chip {{filterType === 'payable' ? 'is-on' : ''}}" bindtap="setFilter" data-type="payable">我欠别人的</view>
   </view>
 
   <!-- 往来对象列表 -->
   <view wx:if="{{filteredList.length}}" class="contact-list">
     <view class="contact-item" wx:for="{{filteredList}}" wx:key="id" bindtap="goDetail" data-id="{{item.id}}">
-      <view class="contact-avatar">{{item.name.charAt(0)}}</view>
+      <view class="contact-avatar">{{item.initial}}</view>
       <view class="contact-info">
         <view class="contact-name">{{item.name}}</view>
         <view class="contact-remark">{{item.remark || (item.type === 1 ? '客户' : '供应商')}}</view>
@@ -60,18 +68,21 @@
         <view class="balance-v num {{item.balance > 0 ? 'c-income' : (item.balance < 0 ? 'c-expense' : '')}}">
           {{item.balance > 0 ? '+' : (item.balance < 0 ? '-' : '')}}¥{{item.balanceText}}
         </view>
-        <view class="balance-label">{{item.balance > 0 ? '应收' : (item.balance < 0 ? '应付' : '已结清')}}</view>
+        <view class="balance-label">{{item.balance > 0 ? '欠我的' : (item.balance < 0 ? '我欠的' : '已结清')}}</view>
       </view>
       <view class="contact-arrow"></view>
     </view>
   </view>
 
-  <!-- 空状态 -->
-  <view wx:else class="empty-state">
-    <image class="empty-icon" src="/images/ic-empty.svg" mode="aspectFit" />
+  <!-- 空状态：并入全站公共 .empty 体系。
+       原来这一页自己写了一套 .empty-state / .empty-icon / .empty-btn，
+       而 app.wxss 里早有等价的 .empty / .empty-ico / .empty-action —— 两套并存
+       只会让"空状态长什么样"在不同页面各说各话。 -->
+  <view wx:else class="empty">
+    <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
     <view class="empty-title">还没有往来对象</view>
     <view class="empty-desc">添加客户或供应商，自动记录欠款</view>
-    <view class="empty-btn" bindtap="openAdd">+ 添加往来对象</view>
+    <view class="empty-action" bindtap="openAdd">+ 添加往来对象</view>
   </view>
 
   <view class="bottom-space"></view>
@@ -105,9 +116,10 @@
 
     <view class="f-block">
       <view class="f-label">类型</view>
-      <view class="type-picker">
-        <view class="type-item {{addForm.type === 1 ? 'is-on' : ''}}" bindtap="setAddType" data-type="1">客户</view>
-        <view class="type-item {{addForm.type === 2 ? 'is-on' : ''}}" bindtap="setAddType" data-type="2">供应商</view>
+      <!-- 类名 2026-09-23 改用公共的 .seg / .seg-i（原来是本页自造的 .type-picker / .type-item） -->
+      <view class="seg">
+        <view class="seg-i {{addForm.type === 1 ? 'is-on' : ''}}" bindtap="setAddType" data-type="1">客户</view>
+        <view class="seg-i {{addForm.type === 2 ? 'is-on' : ''}}" bindtap="setAddType" data-type="2">供应商</view>
       </view>
     </view>
 

@@ -39,6 +39,8 @@ Page({
   data: {
     loading: true,
     inviteCount: 0,
+    // 页头那行（带数据的标题），加载完由 loadData 填；先给占位避免首帧空白
+    headTitle: '邀请好友',
     progressPercent: 0,
     inviteList: [],
     rules: [
@@ -69,7 +71,14 @@ Page({
     const count = Number((d && d.inviteCount) || 0);
     const list = (d && d.list) || [];
 
+    /* 页头（2026-09-23 统一）：从写死的「推荐赚钱」改成**带数据的一行**。
+       老板点进这一页最想知道的就是"还差几个人" —— 页头是首屏第一行，该直接给结论。
+       （下面那张进度卡也写着这个数，但那是卡内的次要文字，眼睛要往下找。）
+       全站口径一致：记账页「9月23日」、报表页「本月账目」、往来页「N 位往来对象」。 */
+    const headTitle = count >= 2 ? '已解锁终身版' : ('还差 ' + (2 - count) + ' 人');
+
     this.setData({
+      headTitle,
       inviteCount: count,
       progressPercent: Math.min((count / 2) * 100, 100),
       inviteList: list.map((it) => Object.assign({}, it, {

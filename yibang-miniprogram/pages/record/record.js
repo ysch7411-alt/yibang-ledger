@@ -6,6 +6,7 @@ const api = require('../../utils/api');
 const fmt = require('../../utils/format');
 const kb = require('../../utils/keyboard');
 const cfgStore = require('../../utils/config');
+const share = require('../../utils/share');
 
 const RECEIPT_HOLD = 8000; // 结果条停留时长（留出「撤销」的操作窗口）
 
@@ -58,7 +59,10 @@ Page(Object.assign({
     showFix: false,
     fix: {
       id: null, amount: '', origAmount: '', type: 2, contactName: '', content: '',
-      payMethod: '', calc: '', recordDate: '', sourceText: '', aiType: null
+      payMethod: '', calc: '', recordDate: '', sourceText: '', aiType: null,
+      // 品类（2026-09-22）：AI 归错时的修正口。允许留空 ——「未分类」是合法状态，
+      // 不能逼老板在一个错的品类里选一个"最不坏的"
+      category: '', origCategory: ''
     },
     // 收付方式的候选。跟后端 detectMethod 的词表对齐，多一个「银行」把银行卡并进来。
     // 不放太多选项：老板常说的就这几个，一屏排得下才好点。
@@ -152,7 +156,16 @@ Page(Object.assign({
    * 微信会先派发 touchend、再派发 tap，所以 tap 里要再判一次 _longPress。
    */
   onFieldStart() {
-    if (this.data.working) return;
+    /* ⚠️ 这里原来是一句静默的 `if (this.data.working) return;`（2026-09-22 真机报障后改）。
+       一旦 working 卡在 true（上一次 ingest 没走完就会），**之后每次按住都毫无反应、
+       界面上没有任何变化、日志里也没有一条记录** —— 用户看到的就是"录音不出字、像是坏了"，
+       而我们连"它卡住了"都不知道。这是最坏的一种失败：既不成功、也不报错。
+       现在：明确告诉用户在忙 + 记一条信标，让下一次排查有据可查。 */
+    if (this.data.working) {
+      app.beacon('voice-blocked', 'working 卡住，workingText=' + (this.data.workingText || ''));
+      wx.showToast({ title: '上一次还没处理完，稍等一下再按', icon: 'none' });
+      return;
+    }
     this._longPress = false;
     if (this._pressTimer) clearTimeout(this._pressTimer);
     this._pressTimer = setTimeout(() => {
@@ -179,7 +192,16 @@ Page(Object.assign({
   },
 
   _startRecord() {
-    if (!this._rm) this._initRecorder();
+    /* 🔴 每次录音前都**重新注册**监听，不能只在第一次 `_initRecorder()`（2026-09-22 真机报障后改）。
+       `wx.getRecorderManager()` 返回的是**全局单例**，而 `onStop` / `onError`
+       **后注册的会覆盖先注册的** ✗ 于是：
+         先进记账页（注册记账的）→ 再进参谋页（参谋的把它覆盖掉）→
+         回记账页时 `this._rm` 已存在、**不会重新注册** → 它的监听一直是失效的 →
+         按住说话能录（start 在单例上）、松手却触发**参谋页**的 onStop（去上传+听写），
+         **本站的 UI 永远收不到"停"，卡在「正在听，松开就记…」** ✗
+       日志佐证：那几次只有参谋页的 `ai-voice-*` 信标（还错挂在 page=record 名下），
+       记账页自己的 `voice-start` 一条都没有。 */
+    this._initRecorder();
     this._cancelled = false;
     try {
       this._rm.start({
@@ -190,9 +212,14 @@ Page(Object.assign({
         format: 'mp3'
       });
       this.setData({ recording: true });
+      app.beacon('rec-start', '');
       wx.vibrateShort && wx.vibrateShort({ type: 'light' });
     } catch (e) {
+      // ⚠️ 原来是纯静默的（只 setData）—— 录音启动失败时用户按下去什么都没发生，
+      // 我们这边也查不到。现在记信标 + 说一句人话（麦克风被占用/权限/参数都可能走到这）。
+      app.beacon('rec-fail', (e && e.errMsg) || (e && e.message) || String(e));
       this.setData({ recording: false });
+      wx.showToast({ title: '录音没能启动，检查一下麦克风权限', icon: 'none' });
     }
   },
 
@@ -214,13 +241,23 @@ Page(Object.assign({
       const cancelled = this._cancelled;
       this._cancelled = false;
       this.setData({ recording: false });
-      if (cancelled || !res || !res.tempFilePath) return;
+      // ⚠️ 原来这里是**静默 return**（2026-09-22 改）：录音没产出文件时一声不响，
+      // 用户看到"按了、松了、什么都没发生"，我们这边连一步都没记。
+      // 现在把两种原因分开记，下次再看日志就知道到底卡在哪。
+      if (cancelled) { app.beacon('rec-abort', '用户划出取消'); return; }
+      if (!res || !res.tempFilePath) {
+        app.beacon('rec-nofile', 'onStop 没给 tempFilePath: ' + JSON.stringify(res || null).slice(0, 80));
+        wx.showToast({ title: '没录到声音，按住再说一次', icon: 'none' });
+        return;
+      }
       await this.transcribe(res.tempFilePath);
     });
     rm.onError((err) => {
       this.setData({ recording: false });
       if (this._pressTimer) { clearTimeout(this._pressTimer); this._pressTimer = null; }
       const msg = (err && err.errMsg) || '';
+      // 所有错误都记一条 —— 原来只有权限错误会弹窗，**其它错误连日志都没有**
+      app.beacon('rec-error', msg);
       if (/auth|deny|permission/i.test(msg)) {
         wx.showModal({
           title: '需要麦克风权限',
@@ -228,6 +265,8 @@ Page(Object.assign({
           confirmText: '去开启',
           success: (r) => { if (r.confirm) wx.openSetting({}); }
         });
+      } else {
+        wx.showToast({ title: '录音出错：' + (msg.slice(0, 20) || '原因未知'), icon: 'none' });
       }
     });
     this._rm = rm;
@@ -668,14 +707,17 @@ Page(Object.assign({
     if (saved.length === 1) {
       const r = saved[0];
       const label = fmt.isIncomeType(r.type) ? '收入' : fmt.TYPE_TEXT[r.type] || '支出';
-      // 算式和收付方式也要报出来：老板说「辣椒3斤5块一斤」，他要看到 3×5；
+      // 算式、收付方式、品类都要报出来：老板说「辣椒3斤5块一斤」，他要看到 3×5；
       // 说「收现金1265」，他要看到「现金」——只报一个总额等于没说。
+      // 品类（2026-09-22）尤其要说：它决定了这笔账在报表里归到哪一类，
+      // 老板第一眼就能发现"它归错了"，而不是月底看报表时才发现。
       const detail = [
         label + ' ¥' + fmt.money(r.amount),
         fmt.calcText(r),
         r.method,
         r.contactName,
-        r.content
+        r.content,
+        r.category ? '归到「' + r.category + '」' : ''
       ].filter(Boolean).join(' · ');
       return { tone: 'ok', title: '已记好', detail, said, ids, first: Object.assign({}, r, { id: ids[0] }) };
     }
@@ -896,6 +938,8 @@ Page(Object.assign({
         contactName: r.contact_name || '',
         content: r.content || '',
         payMethod: r.pay_method || '',
+        category: r.category || '',
+        origCategory: r.category || '',
         calc: fmt.calcText(r),
         recordDate: fmt.dayKey(r.record_date) || fmt.ymd()
       }
@@ -1029,6 +1073,12 @@ Page(Object.assign({
   onFixContent(e) {
     this.setData({ 'fix.content': e.detail.value });
   },
+  /* 品类（2026-09-22）：自由输入而不是从固定列表里选 ——
+     老板卖什么、买什么只有他自己知道，给一份预置品类等于逼他说"别的"。
+     已经用过的品类会由后端喂回模型，所以第二次就会自动填对。 */
+  onFixCategory(e) {
+    this.setData({ 'fix.category': e.detail.value });
+  },
   pickFixMethod(e) {
     this.setData({ 'fix.payMethod': e.currentTarget.dataset.v || '' });
   },
@@ -1053,6 +1103,10 @@ Page(Object.assign({
       amount: nextAmount,
       content: fix.content,
       pay_method: fix.payMethod || '',
+      // 品类（2026-09-22）：改了就提交，也顺手把「AI 原来归的」一起带上，
+      // 后端据此把新品类沉淀进词表（下一句解析会用它）。
+      // 传空串表示老板主动清掉品类 ——「未分类」是合法选择，不能被当成"没改"。
+      category: fix.category || '',
       record_date: fix.recordDate,
       contact_name: fix.contactName,
       // 这两项是「越用越懂」的原料：老板原话 + AI 当时给的答案，
@@ -1062,7 +1116,8 @@ Page(Object.assign({
       aiResult: {
         type: fix.aiType,
         contactName: (this.data.receipt && this.data.receipt.first && this.data.receipt.first.contactName) || '',
-        content: (this.data.receipt && this.data.receipt.first && this.data.receipt.first.content) || ''
+        content: (this.data.receipt && this.data.receipt.first && this.data.receipt.first.content) || '',
+        category: fix.origCategory || ''
       }
     };
     // 老板把金额手改了，那「3 斤 × ¥5.00」这个算式就不再成立了，
@@ -1114,18 +1169,36 @@ Page(Object.assign({
     this.setData({ showDaily: false });
   },
 
-  shareDaily() {
+  /* 今日收支的纯文本 —— 分享弹层的「复制文字」与日汇总弹层的「分享给客户」共用。
+     抽出来是因为这两个入口本来各拼一份文案，改一处忘一处，发出去的数字就会对不上。 */
+  buildDailyText() {
     const { daily, todayLabel } = this.data;
-    const text =
+    return (
       '📊 易帮账本 · ' + todayLabel + ' 收支汇总\n\n' +
       '💰 收入：¥' + daily.incomeText + '\n' +
       '💸 支出：¥' + daily.expenseText + '\n' +
       '📈 结余：' + (daily.isPositive ? '+' : '-') + '¥' + daily.netText + '（' + daily.count + ' 笔）\n\n' +
-      '智能记账，越记越明白';
+      '智能记账，越记越明白'
+    );
+  },
+
+  copyDailyText() {
     wx.setClipboardData({
-      data: text,
+      data: this.buildDailyText(),
       success: () => wx.showToast({ title: '已复制，粘贴发客户', icon: 'none' })
     });
+  },
+
+  shareDaily() {
+    this.copyDailyText();
+  },
+
+  /* 分享弹层里的「复制文字」。
+     原来这个按钮绑的是 goShareText，而 record.js 里**从来没有定义过这个函数** ——
+     点了完全没反应（同弹层的「发图片到微信」绑的 goShareImage 同样不存在）。
+     这里接到同一个文本构造器上；发图片那条见 record.wxml 里的说明。 */
+  goShareText() {
+    this.copyDailyText();
   },
 
   goSummary() {
@@ -1136,7 +1209,43 @@ Page(Object.assign({
     wx.navigateTo({ url: '/pages/search/search' });
   },
 
+
+  /* ================= 分享今日报表 ================= */
+  shareToday() {
+    this.openShare();
+  },
+
+  openShare() {
+    this.setData({ shareSheet: true });
+    this.ensureShareToken();
+  },
+
+  closeShare() {
+    this.setData({ shareSheet: false });
+  },
+
+  noop() {},
+
+  /**
+   * 备好今日记账的分享链接。
+   * 状态机统一在 utils/share.js（原来这里是三份拷贝之一，漏了失败路径会卡死）。
+   */
+  ensureShareToken() {
+    share.ensure(this, {
+      key: '3-today',
+      data: { type: 3, period: 'today', expire_days: 7 }
+    });
+  },
+
   onShareAppMessage() {
-    return { title: '易帮账本 · 说一声话就把账记了', path: '/pages/record/record' };
+    this.setData({ shareSheet: false });
+    const t = this.data.shareToken;
+    if (!t) {
+      return { title: '易帮账本 · 说一声话就记账', path: '/pages/record/record' };
+    }
+    return {
+      title: '易帮账本 · 今日报表',
+      path: '/pages/report-view/report-view?token=' + t
+    };
   }
 }, kb.methods));   // 键盘避让：onKbFocus / onKbBlur / onKbHeight / setKb

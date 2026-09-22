@@ -16,6 +16,7 @@ Component({
     list: [
       { pagePath: '/pages/record/record', text: '记账', icon: '/images/tab-record.svg', iconOn: '/images/tab-record-on.svg' },
       { pagePath: '/pages/summary/summary', text: '报表', icon: '/images/tab-chart.svg', iconOn: '/images/tab-chart-on.svg' },
+      { pagePath: '/pages/advisor/advisor', text: 'AI 参谋', icon: '/images/tab-advisor.svg', iconOn: '/images/tab-advisor-on.svg' },
       { pagePath: '/pages/profile/profile', text: '我的', icon: '/images/tab-mine.svg', iconOn: '/images/tab-mine-on.svg' }
     ],
     _cv: '',

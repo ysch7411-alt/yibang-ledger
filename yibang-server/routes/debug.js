@@ -1,4 +1,5 @@
 const express = require('express');
+const log = require('../lib/log');
 const router = express.Router();
 
 /**
@@ -17,7 +18,7 @@ router.post('/beacon', (req, res) => {
   try {
     const b = req.body || {};
     const cut = (v, n) => String(v == null ? '' : v).replace(/\s+/g, ' ').slice(0, n);
-    console.log('[beacon] ' + JSON.stringify({
+    log.info('[beacon] ' + JSON.stringify({
       t: new Date().toISOString(),
       step: cut(b.step, 60),
       detail: cut(b.detail, 300),

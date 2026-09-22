@@ -12,9 +12,9 @@
     <text class="loading-text">加载中...</text>
   </view>
 
-  <!-- 空状态 -->
-  <view wx:elif="{{list.length === 0}}" class="empty-state">
-    <view class="empty-ico">📋</view>
+  <!-- 空状态：并入全站公共 .empty 体系（原来是自己写的 .empty-state） -->
+  <view wx:elif="{{list.length === 0}}" class="empty">
+    <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
     <view class="empty-title">还没有操作记录</view>
     <view class="empty-desc">成员管理和报表操作会记录在这里</view>
   </view>
@@ -22,16 +22,19 @@
   <!-- 日志列表 -->
   <view wx:else class="log-list">
     <view class="log-item" wx:for="{{list}}" wx:key="id">
+      <!-- 2026-09-22：图标从 emoji 换成本地 SVG（原来 9 处 emoji，
+           含 ➕/➖/✔️/✖️ 这类纯符号，在安卓上会被渲染成字体自带的方块或彩色图形）。
+           语义与原 emoji 一一对应，颜色统一成品牌橙。 -->
       <view class="log-ico {{item.action}}">
-        <text wx:if="{{item.action === 'confirm_report'}}">✅</text>
-        <text wx:elif="{{item.action === 'unconfirm_report'}}">↩️</text>
-        <text wx:elif="{{item.action === 'add_member'}}">➕</text>
-        <text wx:elif="{{item.action === 'remove_member'}}">➖</text>
-        <text wx:elif="{{item.action === 'change_role'}}">🎭</text>
-        <text wx:elif="{{item.action === 'request_unlock'}}">🔓</text>
-        <text wx:elif="{{item.action === 'approve_unlock'}}">✔️</text>
-        <text wx:elif="{{item.action === 'reject_unlock'}}">✖️</text>
-        <text wx:else>📌</text>
+        <image wx:if="{{item.action === 'confirm_report'}}" class="log-ico-img" src="/images/ic-check-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.action === 'unconfirm_report'}}" class="log-ico-img" src="/images/ic-undo-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.action === 'add_member'}}" class="log-ico-img" src="/images/ic-person-add-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.action === 'remove_member'}}" class="log-ico-img" src="/images/ic-person-minus-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.action === 'change_role'}}" class="log-ico-img" src="/images/ic-role-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.action === 'request_unlock'}}" class="log-ico-img" src="/images/ic-lock-open-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.action === 'approve_unlock'}}" class="log-ico-img" src="/images/ic-check-o.svg" mode="aspectFit" />
+        <image wx:elif="{{item.action === 'reject_unlock'}}" class="log-ico-img" src="/images/ic-close-o.svg" mode="aspectFit" />
+        <image wx:else class="log-ico-img" src="/images/ic-info.svg" mode="aspectFit" />
       </view>
       <view class="log-content">
         <view class="log-title">

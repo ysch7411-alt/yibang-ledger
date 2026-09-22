@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/config');
 const jwt = require('jsonwebtoken');
+const log = require('../lib/log');
 
 function auth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -62,7 +63,7 @@ router.post('/approve', auth, async (req, res) => {
     }
     res.json({ code: 0, msg: '审核完成' });
   } catch (err) {
-    console.error('审核失败:', err && err.message);
+    log.error('审核失败:', err && err.message);
     res.json({ code: 500, msg: '审核失败' });
   }
 });

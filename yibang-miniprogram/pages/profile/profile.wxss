@@ -1,3 +1,12 @@
+
+/* 右侧值样式 */
+.acc-val {
+  flex: none;
+  margin-left: 16rpx;
+  font-size: 27rpx;
+  color: #667085;
+  font-variant-numeric: tabular-nums;
+}
 /* 消息通知铃铛 */
 .me-notify {
   position: relative;
@@ -43,7 +52,11 @@
   margin: 24rpx 0 24rpx;
   padding: 40rpx 36rpx 16rpx;
   border-radius: var(--r-lg);
-  background: linear-gradient(140deg, #E4551D 0%, #C9451A 100%);
+  /* 这张卡上同时有 38/40rpx 的大字（3:1 即可）和 24/25rpx 的小字（要 4.5:1）。
+     原来压在 #E4551D→#C9451A 上亮端只有 3.74:1 —— 大字够、小字不够。
+     收口到品牌渐变后亮端 4.75:1，两种字号都过。 */
+  background: #C9451A;
+  background: var(--brand-grad);
   box-shadow: 0 16rpx 36rpx -18rpx rgba(201, 69, 26, .7);
   position: relative;
   overflow: hidden;
@@ -56,6 +69,10 @@
   width: 116rpx;
   height: 116rpx;
   border-radius: 50%;
+  /* 半透明白底 + 白字，这里是**刻意**的：首字 56rpx＝28px，属 WCAG 的"大字"（≥24px），
+     只要 3:1；实测在收口后的品牌渐变上约 3.38:1 ✓。
+     对比 contact-detail 的 .info-avatar（40rpx＝20px，属小字要 4.5:1）——
+     那一处已经改成半透明黑底。同一套规则、不同字号，处理方式自然不同，别一刀切。 */
   background: rgba(255, 255, 255, .22);
   border: 2rpx solid rgba(255, 255, 255, .35);
   display: flex;
@@ -77,7 +94,9 @@
 .me-shop {
   margin-top: 6rpx;
   font-size: 25rpx;
-  color: rgba(255, 255, 255, .8);
+  /* 原来是 rgba(255,255,255,.8)：半透明白等于把文字掺进橙色底，实测再掉到约 3.6:1。
+     小字必须是纯白（4.75:1）—— 层级交给字号和字重，不靠透明度。 */
+  color: #fff;
 }
 .me-plan {
   height: 52rpx;
@@ -90,7 +109,10 @@
   flex-shrink: 0;
 }
 .me-plan.free {
-  background: rgba(255, 255, 255, .2);
+  /* 原来是 rgba(255,255,255,.2) —— 半透明白底把白字所在的背景**提亮**了，
+     实测对比度掉到约 3.5:1（24rpx 小字要 4.5:1）。
+     改成半透明**黑**底（压暗底色），白字升到约 7:1，而且视觉上依然是一个"淡标签"。 */
+  background: rgba(0, 0, 0, .22);
   color: #fff;
 }
 .me-plan.pro {
@@ -120,7 +142,9 @@
 .me-stat-k {
   margin-top: 6rpx;
   font-size: 24rpx;
-  color: rgba(255, 255, 255, .75);
+  /* 同上：24rpx 小字不能用半透明白（会掉到约 3.3:1），必须纯白。
+     和上面的 40rpx 数字靠字号拉开层级即可。 */
+  color: #fff;
 }
 .me-sep {
   width: 2rpx;
@@ -268,13 +292,67 @@
   line-height: 1.65;
   color: var(--t3);
 }
-/* 表单三件套在这里也定义一份：profile.wxss 是页面级作用域，
-   拿不到 record.wxss 里的同名类 */
-.f-input {
-  height: 88rpx;
-  padding: 0 24rpx;
-  border-radius: var(--r-sm);
+/* 表单三件套（.f-block / .f-label / .f-input）已收口到 app.wxss（2026-09-22）。
+   原来这里写着"页面级作用域拿不到 record.wxss 里的同名类，所以定义一份" ——
+   正是这种"各页各抄一份"导致 4 份定义慢慢漂移，其中两份漏写 height 把文字裁掉了。 */
+
+/* ---------- 营业日截止时间弹层（2026-09-22）----------
+   替掉 wx.showActionSheet：它 itemList 上限 6 项，这里有 7 项，超限直接失败。
+   改成弹层后还能给每项配一句说明 —— 选项本身（「凌晨2点前」）老板不一定看得懂，
+   说明那句话才是他真正做判断的依据。 */
+.de-hint {
+  padding: 2rpx 0 10rpx;
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: var(--t3);
+}
+.de-opt {
+  display: flex;
+  align-items: center;
+  /* 触控区 ≥88rpx（全站规范） */
+  min-height: 108rpx;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.de-opt:last-child {
+  border-bottom: none;
+}
+.de-opt:active {
   background: var(--fill);
+}
+.de-main {
+  flex: 1;
+  min-width: 0;
+}
+.de-t {
   font-size: 29rpx;
   color: var(--t1);
+}
+.de-opt.is-on .de-t {
+  color: var(--brand-ink);
+  font-weight: 600;
+}
+.de-d {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: var(--t3);
+}
+/* 选中打勾：纯 CSS 画，不额外引一个图标文件（勾只有一个用处，不值得多个资源） */
+.de-check {
+  flex: none;
+  position: relative;
+  width: 36rpx;
+  height: 36rpx;
+  margin-left: 16rpx;
+}
+.de-check::after {
+  content: '';
+  position: absolute;
+  left: 11rpx;
+  top: 4rpx;
+  width: 11rpx;
+  height: 20rpx;
+  border-right: 4rpx solid var(--brand-ink);
+  border-bottom: 4rpx solid var(--brand-ink);
+  transform: rotate(45deg);
 }

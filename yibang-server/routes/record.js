@@ -2,14 +2,19 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/config');
 const jwt = require('jsonwebtoken');
+// 2026-09-22 审查补上：/ai-parse 是全站调用最频繁的 AI 接口，原来**既没限流也没计数**
+const { aiLimit, bumpCount } = require('../lib/rate-limit');
 const {
-  callModel, extractJson, recalcBalance, ensureContact, isDay, dayOr, isMonth,
+  callModel, extractJson, recalcBalance, resolveAccount, ensureContact, isDay, dayOr, isMonth,
   // 2026-09-20 归一化/校验下沉到 ledger：create 和 update 必须用同一套，
   // 之前各写一遍，update 就漏了金额验算、两处都不校验 type
   normType, normAmount, num, round2, reconcileAmount,
+  // 2026-09-22 品类（「钱花在哪」）：自由文本而非封闭枚举，所以只做清洗不做白名单
+  normCategory,
   TYPE_CODE, VALID_TYPES, AMOUNT_MAX
 } = require('../lib/ledger');
-const { loadTerms, normalizeText, canonicalizeName, learnFromParse, learnFromCorrection } = require('../lib/memory');
+const { loadTerms, normalizeText, canonicalizeName, learnFromParse, learnFromCorrection, upsertTerm } = require('../lib/memory');
+const log = require('../lib/log');
 
 // 中间件：验证token
 function auth(req, res, next) {
@@ -89,6 +94,10 @@ const PARSE_PROMPT = [
   '  · 对方欠我但还没给钱 → 应收；我欠对方但还没给钱 → 应付',
   '- contact: 往来对象姓名；没提到就填空字符串',
   '- content: 事由，短一点，比如「货款」「房租」「买菜」。**没说事由就留空，不要硬编**',
+  '- category: 品类，2~5 个字的**简短**词，用来回答「钱花在哪了」。要具体到"这一类东西叫什么"：',
+  '  · 支出类如：买菜 / 五金 / 电料 / 包装 / 房租 / 运费 / 工资 / 烟酒 / 维修',
+  '  · 收入类如：货款 / 零售 / 利息 / 废品',
+  '  确实归纳不出就留空字符串，**不要硬编** —— 硬编出来的品类会让统计里多出一堆没用的类，比空着更糟',
   '- date: YYYY-MM-DD。用户说「昨天」「前天」「上周五」等相对时间要换算成具体日期；没说就用 __TODAY__',
   '',
   '【算钱规则 · 最重要】',
@@ -108,17 +117,45 @@ const PARSE_PROMPT = [
   '金额自己乘出来。**宁可填了再交，也绝对不要返回一条字段全是 0 / 空 的记录。**',
   '',
   '输出格式（只输出 JSON，不要任何解释）：',
-  '{"records":[{"amount":金额,"qty":数量,"unit":"单位","unit_price":单价,"method":"方式","type":"类型","contact":"对象","content":"事由","date":"日期"}]}',
+  '{"records":[{"amount":金额,"qty":数量,"unit":"单位","unit_price":单价,"method":"方式","type":"类型","contact":"对象","content":"事由","category":"品类","date":"日期"}]}',
   '',
   '下面三条是**格式示例**，绝不要把示例里的数字或文字当作用户说的内容：',
-  '{"records":[{"amount":15,"qty":3,"unit":"斤","unit_price":5,"method":"","type":"支出","contact":"","content":"辣椒","date":"__TODAY__"}]}',
-  '{"records":[{"amount":600,"qty":3,"unit":"趟","unit_price":200,"method":"","type":"支出","contact":"","content":"拉货","date":"__TODAY__"}]}',
-  '{"records":[{"amount":300,"qty":0,"unit":"","unit_price":0,"method":"","type":"收入","contact":"","content":"废铁款","date":"__TODAY__"}]}',
+  '{"records":[{"amount":15,"qty":3,"unit":"斤","unit_price":5,"method":"","type":"支出","contact":"","content":"辣椒","category":"买菜","date":"__TODAY__"}]}',
+  '{"records":[{"amount":600,"qty":3,"unit":"趟","unit_price":200,"method":"","type":"支出","contact":"","content":"拉货","category":"运费","date":"__TODAY__"}]}',
+  '{"records":[{"amount":300,"qty":0,"unit":"","unit_price":0,"method":"","type":"收入","contact":"","content":"废铁款","category":"废品","date":"__TODAY__"}]}',
   '注意示例里 method 全是空的 —— 那是因为这三个例子本来就没提收付方式。',
   '用户提到方式时必须照实填，比如「今天收现金1265元」→ method 填「现金」、content 留空。',
+  '注意三条示例的 category 各不相同（买菜 / 运费 / 废品），因为它们是各自那句话归纳出来的。',
+  '**你必须根据当前这句话重新判断 category，绝对不要照抄示例里的品类** ——',
+  '比如用户说「买螺丝 15 块」，category 应该是「五金」而不是示例里的任何一个。',
   '',
   '只有这句话里确实一个钱数都没有时，才返回 {"records":[]}'
 ].join('\n');
+
+/**
+ * 组装解析提示词，并把「这家店已经用过的品类」喂进去（2026-09-22）。
+ *
+ * 不做这步的话，同一类东西会被叫成「钢材 / 钢铁 / 钢」，统计里就变成三样，
+ * 老板看到的"钱花在哪"就会被拆得七零八落。采购线早就这么做了
+ * （见 purchase.js 的 buildDocPrompt）—— 这里复用**同一张** merchant_terms(kind='category')
+ * 词表，所以采购和日常收支的品类会收敛到同一套说法。
+ *
+ * ⚠️ 复用调用方**已经查好的 terms**，不额外查一次库：
+ * /ai-parse 已经是录入链路上最慢的一段（模型 500ms 起），能省一次查询就省一次。
+ */
+function buildParsePrompt(terms, today) {
+  let hint = '';
+  try {
+    const cats = [...new Set(
+      (terms || [])
+        .filter((t) => t.kind === 'category' && t.canonical)
+        .map((t) => String(t.canonical).trim())
+        .filter(Boolean)
+    )].slice(0, 40);
+    if (cats.length) hint = '\n这家店已经用过的品类（**优先从中选，尽量别造新的**）：' + cats.join('、');
+  } catch (e) { /* 词表读不到就算了，不影响识别本身 */ }
+  return PARSE_PROMPT.replace('__TODAY__', today) + hint;
+}
 
 /**
  * 收付方式：模型没给时的确定性兜底。
@@ -152,7 +189,7 @@ function todayStr() {
 }
 
 // AI识别记账（支持一句话多笔）
-router.post('/ai-parse', auth, async (req, res) => {
+router.post('/ai-parse', auth, aiLimit('parse'), async (req, res) => {
   const { text } = req.body;
   if (!text) {
     return res.json({ code: 400, msg: '缺少文本内容' });
@@ -166,14 +203,19 @@ router.post('/ai-parse', auth, async (req, res) => {
     const terms = await loadTerms(pool, req.userId);
     const norm = normalizeText(text, terms);
 
-    const raw = await callModel({
-      model: MODEL_TEXT,
-      messages: [
-        { role: 'system', content: PARSE_PROMPT.replace('__TODAY__', today) },
-        { role: 'user', content: norm.text }
-      ],
-      temperature: 0.1
-    }, 45000);
+      const raw = await callModel({
+        model: MODEL_TEXT,
+        messages: [
+          { role: 'system', content: buildParsePrompt(terms, today) },
+          { role: 'user', content: norm.text }
+        ],
+        temperature: 0.1
+      }, 45000);
+
+      /* ⚠️ 这行不能省：aiLimit 读的就是 bumpCount 累出来的计数。
+         只挂 aiLimit 而不计数 = **限额永远是 0/80，形同虚设**（一个"看起来修好了"的假修复）。
+         位置和 /ai/asr 一致：模型调用成功之后再计，失败不扣额度。 */
+      bumpCount(req);
 
     const parsed = extractJson(raw) || {};
     let list = [];
@@ -198,6 +240,8 @@ router.post('/ai-parse', auth, async (req, res) => {
           type: TYPE_TEXT[TYPE_CODE[String(o.type || '').trim()]] || '支出',
           contact: canonicalizeName(String(o.contact || '').trim(), terms),
           content: String(o.content || '').trim(),
+          // 品类（2026-09-22）：模型归纳出来的「钱花在哪」，归一后带出去
+          category: normCategory(o.category),
           date: dayOr(o.date, today)
         };
       })
@@ -213,14 +257,14 @@ router.post('/ai-parse', auth, async (req, res) => {
 
     res.json({ code: 0, data: payload });
   } catch (err) {
-    console.error('AI解析错误:', err.message);
+    log.error('AI解析错误:', err.message);
     res.json({ code: 500, msg: 'AI解析失败' });
   }
 });
 
 // 创建记账记录
 router.post('/create', auth, async (req, res) => {
-  const { contact_id, contact_name, type, amount, content, record_date, qty, unit, unit_price, pay_method } = req.body;
+  const { contact_id, contact_name, type, amount, content, record_date, qty, unit, unit_price, pay_method, category } = req.body;
 
   // 2026-09-20：类型和金额都改成"该拒就拒"。之前 type 只转数字不校验，
   // 实测 type=99 / type=-1 都能入库 —— 那种记录汇总时归不到任何一类、
@@ -234,9 +278,22 @@ router.post('/create', auth, async (req, res) => {
   const amt = normAmount(amount, qty, unit_price);
   if (!amt.ok) return res.json({ code: 400, msg: amt.why });
 
+  // 品类（2026-09-22）：**只清洗、不拒绝**。
+  // 与 type 的纪律不同 —— type 非法必须拒（否则报表数字会错而页面看不出来），
+  // 但品类是自由文本，老板说得出「五金」「电料」就该存下来；归纳不出就给 null。
+  const cat = normCategory(category);
+
   const q = num(qty);
   const up = num(unit_price);
-  const day = dayOr(record_date, todayStr());
+  // 营业日：如果用户没指定日期，根据营业日截止时间自动算
+  let day = dayOr(record_date, null);
+  if (!day) {
+    try {
+      const [userRows] = await pool.query("SELECT business_day_end FROM users WHERE id = ?", [req.userId]);
+      const endTime = userRows[0]?.business_day_end || "00:00";
+      day = getBusinessDate(new Date(), endTime);
+    } catch (e) { day = todayStr(); }
+  }
 
   const dkey = [req.userId, typeCode, amt.amount, String(content || '').trim(), day].join('|');
   const dupId = recallCreate(dkey);
@@ -247,29 +304,47 @@ router.post('/create', auth, async (req, res) => {
   }
 
   try {
+    /* 「员工录的账要等老板审」（2026-09-23 用户定的口径）。
+       员工（users.boss_id 指向老板）录的账：落**老板账下** + status=0 待审 + created_by 记员工。
+       老板本人：落自己账下 + status=1 直接入账（= 原来行为，零变化）。
+       ⚠️ 必须在 ensureContact 之前解析 —— 往来对象也要建在老板账下，
+          否则员工的"张老板"会在他自己账里，老板那边看不到。 */
+    const acct = await resolveAccount(pool, req.userId);
+
     // 前端可能只拿得到人名（AI 识别的就是名字），建档交给后端
     let cid = contact_id || null;
     if (!cid && contact_name) {
-      cid = await ensureContact(pool, req.userId, contact_name, typeCode);
+      cid = await ensureContact(pool, acct.ownerId, contact_name, typeCode);
     }
 
     const [result] = await pool.query(
-      'INSERT INTO transactions (user_id, contact_id, type, amount, qty, unit, unit_price, pay_method, content, record_date, status, created_by) ' +
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)',
+      'INSERT INTO transactions (user_id, contact_id, type, amount, qty, unit, unit_price, pay_method, category, content, record_date, status, created_by) ' +
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
-        req.userId, cid, typeCode, amt.amount,
+        acct.ownerId, cid, typeCode, amt.amount,
         q && q > 0 ? q : null,
         String(unit || '').trim().slice(0, 16) || null,
         up && up > 0 ? up : null,
         String(pay_method || '').trim().slice(0, 16) || null,
+        cat,
         String(content || '').slice(0, 255),
         // 日期不合法就落到今天，而不是把脏日期塞进 DATE 列让 MySQL 报错
         day,
+        acct.status,
         req.userId
       ]
     );
 
     rememberCreate(dkey, result.insertId);
+
+    // 把这次用到的品类沉淀进商家词表（kind='category'）：下次解析会被喂回模型，
+    // 同一类东西的叫法越用越统一（采购线用的是同一张词表）。
+    // 学不会不能影响记账本身，所以单独 try —— 记账已经成功了。
+    if (cat) {
+      try { await upsertTerm(pool, req.userId, 'category', cat, cat, null, 'auto'); }
+      catch (e) { /* 忽略：词表是锦上添花，不是记账的必要条件 */ }
+    }
+
     const balance = await recalcBalance(pool, req.userId, cid);
 
     res.json({
@@ -277,7 +352,7 @@ router.post('/create', auth, async (req, res) => {
       data: { id: result.insertId, contact_id: cid, balance, amountFixed: !!(amt.fixed && amt.fixed.fixed) }
     });
   } catch (err) {
-    console.error('记账错误:', err);
+    log.error('记账错误:', err);
     res.json({ code: 500, msg: '记账失败' });
   }
 });
@@ -285,7 +360,7 @@ router.post('/create', auth, async (req, res) => {
 // 修改一笔（零表单录入的「改一下」）
 router.post('/update', auth, async (req, res) => {
   const { id, type, amount, content, record_date, contact_id, contact_name, sourceText, aiResult,
-    qty, unit, unit_price, pay_method } = req.body;
+    qty, unit, unit_price, pay_method, category } = req.body;
   if (!id) return res.json({ code: 400, msg: '缺少记录 id' });
 
   try {
@@ -347,6 +422,14 @@ router.post('/update', auth, async (req, res) => {
       fields.push('pay_method = ?');
       params.push(String(pay_method || '').trim().slice(0, 16) || null);
     }
+    // 品类（2026-09-22）：「改一下」面板里 AI 归错类时唯一的修正口。
+    // 注意这里**允许清空**（传空串 → null）——「未分类」是合法状态，
+    // 老板可以把乱归的品类去掉，而不是被迫留一个错的。
+    const nextCat = category === undefined ? undefined : normCategory(category);
+    if (nextCat !== undefined) {
+      fields.push('category = ?');
+      params.push(nextCat);
+    }
     // 只有"改了数量或单价、但没同时改金额"时才代算；老板明确给了 amount 就以他的为准
     if (amount === undefined && q > 0 && up > 0) {
       const calc = round2(q * up);
@@ -375,6 +458,17 @@ router.post('/update', auth, async (req, res) => {
       await recalcBalance(pool, req.userId, nextContactId);
     }
 
+    /* 品类纠正回流（2026-09-22）：老板把 AI 归的品类改成对的，是最值钱的一次学习。
+       ⚠️ 只沉淀 canonical 本身（alias === canonical），**绝不建 alias→canonical 映射**：
+       normalizeText 会拿所有"别名 ≠ 标准名"的词条去改写用户原话，
+       要是把「螺丝 → 五金」建成映射，下一句「买螺丝15块」会被改写成「买五金15块」
+       —— 等于把老板说的话改掉。alias === canonical 的词条会被 normalizeText 主动跳过（安全）。
+       这样做的效果是：新品类进入"这家店用过的品类"清单，下一句解析时被喂回模型。 */
+    if (nextCat) {
+      try { await upsertTerm(pool, req.userId, 'category', nextCat, nextCat, null, 'user'); }
+      catch (e) { /* 忽略：不影响这笔修改本身 */ }
+    }
+
     // 「改一下」是"越用越懂"里最值钱的一次学习：老板把 AI 的错答案改成对的，
     // 这个映射必须留下来，否则下次同一个说法还会错。
     let learned = [];
@@ -393,7 +487,7 @@ router.post('/update', auth, async (req, res) => {
 
     res.json({ code: 0, msg: '修改成功', data: { learned } });
   } catch (err) {
-    console.error('修改错误:', err);
+    log.error('修改错误:', err);
     res.json({ code: 500, msg: '修改失败' });
   }
 });
@@ -415,7 +509,7 @@ router.post('/delete', auth, async (req, res) => {
 
     res.json({ code: 0, msg: '已撤销' });
   } catch (err) {
-    console.error('删除错误:', err);
+    log.error('删除错误:', err);
     res.json({ code: 500, msg: '撤销失败' });
   }
 });
@@ -442,8 +536,18 @@ router.get('/group', auth, async (req, res) => {
   const key = Object.prototype.hasOwnProperty.call(GROUP_BY, by) ? by : 'day';
   const expr = GROUP_BY[key];
 
+  /* 员工读侧收口（2026-09-23）：员工只该看到**自己提交的**账，
+     而不是老板的全账 —— 产品口径是"员工只能记账"。
+     口径与 /daily-summary 保持一致（都用 created_by = 自己 + status = 1）：
+     ⚠️ 不能一边让人看到待审明细、一边汇总里又不算它 —— 那会造成"明细和汇总对不上"，
+        正是这个项目早先修过的一类 bug。 */
+  const acct = await resolveAccount(pool, req.userId);
   const where = ['user_id = ?', 'status = 1'];
-  const params = [req.userId];
+  const params = [acct.ownerId];
+  if (acct.isStaff) {
+    where.push('created_by = ?');
+    params.push(req.userId);
+  }
   if (isDay(from)) {
     where.push('record_date >= ?');
     params.push(from);
@@ -490,8 +594,74 @@ router.get('/group', auth, async (req, res) => {
 
     res.json({ code: 0, data: { by: key, from: from || null, to: to || null, list, total } });
   } catch (err) {
-    console.error('分组汇总失败:', err.message);
+    log.error('分组汇总失败:', err.message);
     res.json({ code: 500, msg: '获取汇总失败' });
+  }
+});
+
+/**
+ * 按维度聚合日常收支（2026-09-22）：回答「钱花在哪了 / 钱从哪来」。
+ *
+ * 为什么要这个接口：在它之前，报表只能给"这个月花了多少"这一个总数，
+ * 老板真正想知道的是"花在哪了"。采购线早就有 /purchase/stats（按供应商/品类），
+ * 但那只覆盖采购单据；日常收支（买菜、房租、运费、工资…）完全没有维度。
+ *
+ * 与前缀口径完全对齐（这是硬不变量，改动前先看 /group 的注释）：
+ *   · 只算已入账 status = 1；应收应付 (3,4) 不计入收支
+ *   · dir=out → type IN (2,6)；dir=in → type IN (1,5)
+ *   · 区间由**服务端**算法，不信客户端时钟
+ *
+ * 参数：from / to（YYYY-MM-DD，可选）、groupBy（category|method）、dir（in|out）
+ * 返回：按金额倒序 [{ key, amount, count, share }] + total
+ *   · share 在服务端算好 —— 前端各算一次迟早出现"饼图加起来不是 100%"
+ *   · 空值归到「未分类」/「未填写」，**不能悄悄丢掉**：丢掉的话各项之和就对不上总数了
+ */
+const STAT_DIM = {
+  category: { col: 'category', blank: '未分类' },
+  method: { col: 'pay_method', blank: '未填写' }
+};
+
+router.get('/stats', auth, async (req, res) => {
+  const { from, to, groupBy = 'category', dir = 'out' } = req.query;
+
+  // 白名单取列名与方向：绝不把参数拼进 SQL
+  const dimKey = Object.prototype.hasOwnProperty.call(STAT_DIM, groupBy) ? groupBy : 'category';
+  const dim = STAT_DIM[dimKey];
+  const isIn = dir === 'in';
+  const typeCond = isIn ? 'type IN (1,5)' : 'type IN (2,6)';
+
+  const where = ['user_id = ?', 'status = 1', typeCond];
+  const params = [req.userId];
+  if (isDay(from)) { where.push('record_date >= ?'); params.push(from); }
+  if (isDay(to)) { where.push('record_date <= ?'); params.push(to); }
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT ' + dim.col + ' AS k, COALESCE(SUM(amount), 0) AS amt, COUNT(*) AS cnt ' +
+      'FROM transactions WHERE ' + where.join(' AND ') +
+      ' GROUP BY ' + dim.col + ' ORDER BY amt DESC LIMIT 50',
+      params
+    );
+
+    const list = rows.map((r) => ({
+      key: String(r.k == null ? '' : r.k).trim() || dim.blank,
+      amount: Math.round(Number(r.amt || 0) * 100) / 100,
+      count: Number(r.cnt) || 0
+    }));
+
+    const total = Math.round(list.reduce((s, x) => s + x.amount, 0) * 100) / 100;
+    // 占比在服务端算：前端两处各算一次，迟早在饼图和列表之间对不上
+    list.forEach((x) => {
+      x.share = total > 0 ? Math.round((x.amount / total) * 1000) / 10 : 0;
+    });
+
+    res.json({
+      code: 0,
+      data: { groupBy: dimKey, dir: isIn ? 'in' : 'out', from: from || null, to: to || null, total, list }
+    });
+  } catch (err) {
+    log.error('收支维度统计失败:', err.message);
+    res.json({ code: 500, msg: '获取统计失败' });
   }
 });
 
@@ -520,8 +690,14 @@ router.get('/list', auth, async (req, res) => {
   // 用 record_date（DATE 类型）做闭区间比较，跟日报的口径一致。
   // isDay 用 lib/ledger 里的那份：它还会挡住 '2026-13-99' 这类"格式合法但日子不存在"的输入，
   // 否则脏日期会一路传到 MySQL 报错，接口变成 500。
+  /* 员工读侧收口（2026-09-23）—— 同 /group，见那里的说明 */
+  const acct = await resolveAccount(pool, req.userId);
   const where = ['t.user_id = ?'];
-  const params = [req.userId];
+  const params = [acct.ownerId];
+  if (acct.isStaff) {
+    where.push('t.created_by = ?');
+    params.push(req.userId);
+  }
   if (isDay(from)) {
     where.push('t.record_date >= ?');
     params.push(from);
@@ -575,7 +751,7 @@ router.get('/list', auth, async (req, res) => {
 
     res.json({ code: 0, data: rows });
   } catch (err) {
-    console.error('获取记录失败:', err.message);
+    log.error('获取记录失败:', err.message);
     res.json({ code: 500, msg: '获取记录失败' });
   }
 });
@@ -585,20 +761,27 @@ router.get('/daily-summary', auth, async (req, res) => {
   const { date } = req.query;
 
   try {
+    /* 员工读侧收口（2026-09-23）：员工只看**自己提交的**账（口径同 /group、/list ✓），
+       否则他会看到老板当天的全部进账与支出 —— 而"员工只能记账"。
+       ⚠️ 三处查询必须**同时**加，漏一处就会出现"汇总对了、明细多了"这种自相矛盾。 */
+    const acct = await resolveAccount(pool, req.userId);
+    const staffCond = acct.isStaff ? ' AND created_by = ?' : '';
+    const staffParam = acct.isStaff ? [req.userId] : [];
+
     const [income] = await pool.query(
-      'SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE user_id = ? AND type IN (1,5) AND record_date = ? AND status = 1',
-      [req.userId, date]
+      'SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE user_id = ? AND type IN (1,5) AND record_date = ? AND status = 1' + staffCond,
+      [acct.ownerId, date].concat(staffParam)
     );
 
     const [expense] = await pool.query(
-      'SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE user_id = ? AND type IN (2,6) AND record_date = ? AND status = 1',
-      [req.userId, date]
+      'SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE user_id = ? AND type IN (2,6) AND record_date = ? AND status = 1' + staffCond,
+      [acct.ownerId, date].concat(staffParam)
     );
 
     const [details] = await pool.query(
       // 同上：补 id DESC，让同秒记的几笔有稳定顺序
-      'SELECT t.*, c.name as contact_name FROM transactions t LEFT JOIN contacts c ON t.contact_id = c.id WHERE t.user_id = ? AND t.record_date = ? AND t.status = 1 ORDER BY t.created_at DESC, t.id DESC',
-      [req.userId, date]
+      'SELECT t.*, c.name as contact_name FROM transactions t LEFT JOIN contacts c ON t.contact_id = c.id WHERE t.user_id = ? AND t.record_date = ? AND t.status = 1' + (acct.isStaff ? ' AND t.created_by = ?' : '') + ' ORDER BY t.created_at DESC, t.id DESC',
+      [acct.ownerId, date].concat(staffParam)
     );
 
     const inc = Number(income[0].total);
@@ -635,7 +818,7 @@ router.get('/month-summary', auth, async (req, res) => {
       data: { month, income, expense, net: income - expense, count: Number(rows[0].cnt) }
     });
   } catch (err) {
-    console.error('本月汇总错误:', err);
+    log.error('本月汇总错误:', err);
     res.json({ code: 500, msg: '获取本月汇总失败' });
   }
 });
@@ -664,7 +847,7 @@ router.get('/range-summary', auth, async (req, res) => {
       data: { from, to, income, expense, net: income - expense, count: Number(rows[0].cnt) }
     });
   } catch (err) {
-    console.error('范围汇总错误:', err);
+    log.error('范围汇总错误:', err);
     res.json({ code: 500, msg: '获取汇总失败' });
   }
 });

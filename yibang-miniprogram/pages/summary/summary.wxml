@@ -1,8 +1,11 @@
-﻿<!--pages/summary/summary.wxml-->
+<!--pages/summary/summary.wxml-->
 <view class="container" style="{{_cv}}">
+  <!-- 页内标题改成"信息型"：导航栏已经写着「经营情况」，
+       这里再复述一遍等于白占一行 44rpx 大字。
+       现在放的是"下面这堆数字是哪个口径的" —— 跟今日/本月切换联动，随切随变。 -->
   <view class="page-head">
     <view class="page-head-left">
-      <view class="page-title">经营情况</view>
+      <view class="page-title">{{periodLabel}}账目</view>
       <view class="page-sub">不用会计，一眼看懂</view>
     </view>
     <view class="page-head-right">
@@ -45,6 +48,11 @@
     </view>
   </view>
 
+  <!-- 2026-09-22：AI 参谋入口从这里（结余卡正下方）挪到了**整页最底部**，见文件末尾。
+       原来它紧贴在「分享报表」主按钮上方，两块橙色上下叠着互相抢；而且
+       "看完结余接着追问"这个理由也站不住 —— 老板更常见的动作是先去翻明细。
+       挪走之后这一段的阅读顺序回到最简：结论 → 分享 → 钱花在哪 → 明细。 -->
+
   <!-- 操作按钮区：分享收支报表 -->
   <view class="action-bar">
     <!-- 分享报表 -->
@@ -53,20 +61,92 @@
     </view>
   </view>
 
-  <!-- 应收应付卡片：往来情况 -->
-  <view class="card debt-card">
-    <view class="debt-col" bindtap="goContacts">
-      <view class="debt-k">别人欠我的</view>
-      <view class="debt-v num c-income">¥{{receivable}}</view>
-      <view class="debt-s">{{receivableCount}} 位往来 ›</view>
+  <!-- ══════ 钱花在哪（品类分布）══════
+       2026-09-22 新增。在它之前，报表只能回答"这个月花了多少"这一个总数，
+       而老板真正想知道的是"花在哪了" —— 那样才知道下个月该省哪一块。
+
+       三态必须**分开**显示：加载中 / 取不到（可点重试） / 真的没有账。
+       把"取不到"画成一张空表，老板会以为账丢了（项目里栽过这类假象）。
+
+       条形长度以**榜首**为基准而不是以总额，并设 6% 下限 ——
+       否则第一名占比很高时，后面几项会细成一条看不见的线。 -->
+  <view class="card cat-card {{catDir === 'in' ? 'is-in' : 'is-out'}}">
+    <view class="cat-hd">
+      <text class="card-title">钱花在哪</text>
+      <view class="cat-seg">
+        <view class="cat-seg-i {{catDir === 'out' ? 'is-on' : ''}}" data-d="out" bindtap="pickCatDir">花了</view>
+        <view class="cat-seg-i {{catDir === 'in' ? 'is-on' : ''}}" data-d="in" bindtap="pickCatDir">赚了</view>
+      </view>
     </view>
-    <view class="debt-line"></view>
-    <view class="debt-col" bindtap="goContacts">
-      <view class="debt-k">我欠别人的</view>
-      <view class="debt-v num c-expense">¥{{payable}}</view>
-      <view class="debt-s">{{payableCount}} 位往来 ›</view>
+    <view class="cat-sub">{{catLabel}} · {{catDir === 'out' ? '按品类看支出' : '按品类看收入'}}</view>
+
+    <view wx:if="{{catLoading}}" class="cat-loading">
+      <view class="skeleton-line" style="width: 100%;"></view>
+      <view class="skeleton-line mt-16" style="width: 82%;"></view>
+      <view class="skeleton-line mt-16" style="width: 64%;"></view>
+    </view>
+
+    <view wx:elif="{{catFailed}}" class="cat-tip is-bad" bindtap="retryCatStat">没读到，点这里重试</view>
+
+    <view wx:elif="{{!catStat || catStat.list.length === 0}}" class="cat-tip">
+      {{catDir === 'out' ? '这段时间还没有支出' : '这段时间还没有收入'}}
+    </view>
+
+    <block wx:else>
+      <view class="cat-row" wx:for="{{catStat.list}}" wx:key="key">
+        <view class="cat-top">
+          <text class="cat-name ellipsis">{{item.key}}</text>
+          <text class="cat-share num">{{item.share}}%</text>
+          <text class="cat-amt num">¥{{item.amountText}}</text>
+        </view>
+        <view class="cat-track">
+          <view class="cat-fill" style="width: {{item.pct}}%;"></view>
+        </view>
+      </view>
+      <view class="cat-ft">
+        <text>合计 ¥{{catStat.totalText}}</text>
+        <text class="cat-dot">·</text>
+        <text>{{catStat.count}} 类</text>
+      </view>
+    </block>
+  </view>
+
+
+  <!-- 功能入口区：按日查询 -->
+  <view class="card entry-list">
+    <!-- 按日查询 -->
+    <view class="entry-row" wx:if="{{_f && _f.calendar}}" bindtap="toggleCal">
+      <view class="entry-ico"><image class="entry-ico-img" src="/images/ic-clock-w.svg" mode="aspectFit" /></view>
+      <view class="entry-main">
+        <view class="entry-title">{{calOpen ? '收起日历' : '按日查询'}}</view>
+        <view class="entry-desc">选某一天看当天的收支明细</view>
+      </view>
+      <view class="entry-arrow"></view>
+    </view>
+
+    <!-- 申请解锁：只在「本月报表已被确认锁定」时出现。
+         2026-09-22 —— 这块原来是彻底的死代码：openUnlock() 全项目无人调用、
+         弹层还被嵌在分享弹层内部（只有分享弹层打开时才可能渲染）、
+         连 9 个类名都全项目没有定义。但后端 /reports/request-unlock 一直是好的，
+         所以按真实状态把它接上，而不是删掉了事。
+         status：1 草稿（不显示）/ 2 已确认锁定（可申请）/ 3 申请中（显示进度、不可再点）。 -->
+    <view class="entry-row" wx:if="{{reportStatus && reportStatus.status === 2}}" bindtap="openUnlock">
+      <view class="entry-ico"><image class="entry-ico-img" src="/images/ic-lock-open-w.svg" mode="aspectFit" /></view>
+      <view class="entry-main">
+        <view class="entry-title">申请解锁本月报表</view>
+        <view class="entry-desc">本月报表已确认锁定，需要修改请申请解锁</view>
+      </view>
+      <view class="entry-arrow"></view>
+    </view>
+    <view class="entry-row is-pending" wx:elif="{{reportStatus && reportStatus.status === 3}}">
+      <view class="entry-ico"><image class="entry-ico-img" src="/images/ic-clock-w.svg" mode="aspectFit" /></view>
+      <view class="entry-main">
+        <view class="entry-title">解锁申请中</view>
+        <view class="entry-desc">已提交申请，等店主批准后就能改</view>
+      </view>
     </view>
   </view>
+
   <!-- ============ 报表日历（默认不出现）============
        整张卡片的开关就是上面那行小字「按日查询」。不点，页面上就没有日历。
        日视图的格子里**只放日期数字 + 收/支色条，不放金额**：
@@ -140,16 +220,49 @@
         <text>{{calSel.count}} 笔</text>
       </view>
       <view class="cal-sel-share" bindtap="shareSelectedDay">
-        <text class="cal-sel-share-ico">📤</text>
+        <image class="cal-sel-share-ico" src="/images/ic-share-w.svg" mode="aspectFit" />
         <text>分享这天报表</text>
       </view>
     </view>
   </view>
 
+  <!-- 应收应付卡片：往来情况 -->
+  <view class="card debt-card">
+    <view class="debt-col" bindtap="goContacts">
+      <view class="debt-k">别人欠我的</view>
+      <view class="debt-v num c-income">¥{{receivable}}</view>
+      <view class="debt-s">{{receivableCount}} 位往来 ›</view>
+    </view>
+    <view class="debt-line"></view>
+    <view class="debt-col" bindtap="goContacts">
+      <view class="debt-k">我欠别人的</view>
+      <view class="debt-v num c-expense">¥{{payable}}</view>
+      <view class="debt-s">{{payableCount}} 位往来 ›</view>
+    </view>
+  </view>
+
+
+  <!-- 搜索账目入口 -->
+  <view class="card entry-list">
+    <view class="entry-row" bindtap="goSearch">
+      <view class="entry-ico"><image class="entry-ico-img" src="/images/ic-search-w.svg" mode="aspectFit" /></view>
+      <view class="entry-main">
+        <view class="entry-title">搜索账目</view>
+        <view class="entry-desc">搜人名、事由、金额，快速找到记录</view>
+      </view>
+      <view class="entry-arrow"></view>
+    </view>
+  </view>
 
   <!-- 每月汇总表已移除（2026-09-19 用户要求）：
        月度是低频数据，放在报表页只是占地方。要看某个月的账，去「查询」页
        按范围筛（那边有「本月」，并且会按天分组给出每天的收支）。 -->
+
+  <!-- AI 参谋入口在 2026-09-22 从本页**撤掉**了：
+       它已经提成 tabBar 的第 3 个 tab（记账 / 报表 / AI 参谋 / 我的），
+       底部常驻、随时可点。这里再留一个就是重复入口 ——
+       而且原来它紧挨着「分享报表」主按钮，两块橙色上下叠着互相抢。
+       本页的阅读顺序回到最简：结论 → 分享 → 钱花在哪 → 明细。 -->
 
 
   <view class="sum-tail"></view>
@@ -172,7 +285,7 @@
 <view class="sheet" wx:if="{{shareSheet}}" catchtap="noop">
   <view class="sheet-handle"></view>
   <view class="sheet-hd">
-    <text class="sheet-title">分享{{period === 'today' ? '今日' : '本月'}}报表</text>
+    <text class="sheet-title">分享报表</text>
     <view class="sheet-close" bindtap="closeShare"></view>
   </view>
   <view class="sheet-bd">
@@ -221,7 +334,7 @@
 
     <view class="sh-opt {{sharing ? 'is-busy' : ''}}" bindtap="shareAsImage">
       <view class="sh-ico">
-        <image class="sh-ico-img" src="/images/ic-scan.svg" mode="aspectFit" />
+        <image class="sh-ico-img" src="/images/ic-image.svg" mode="aspectFit" />
       </view>
       <view class="sh-main">
         <view class="sh-t">发图片到微信</view>
@@ -232,7 +345,7 @@
 
     <view class="sh-opt" bindtap="shareAsText">
       <view class="sh-ico">
-        <image class="sh-ico-img" src="/images/ic-say.svg" mode="aspectFit" />
+        <image class="sh-ico-img" src="/images/ic-copy.svg" mode="aspectFit" />
       </view>
       <view class="sh-main">
         <view class="sh-t">复制文字</view>
@@ -244,32 +357,52 @@
   <view class="sheet-ft">
     <view class="btn btn-ghost btn-block" bindtap="closeShare">先不分享</view>
   </view>
+</view>
 
-<!-- ============ 申请解锁弹层 ============ -->
-<view wx:if="{{showUnlock}}" class="sheet-mask" bindtap="closeUnlock">
-  <view class="sheet-panel unlock-panel" catchtap="noop">
-    <view class="sheet-title">申请解锁报表</view>
-    <view class="sheet-desc">本月报表已确认并锁定，如需修改请申请解锁，店主批准后即可修改。</view>
-    
-    <view class="unlock-form">
-      <view class="unlock-label">申请原因（选填）</view>
-      <textarea 
-        class="unlock-textarea" 
-        placeholder="例如：有一笔账记错了需要修改"
+<!-- ============ 申请解锁弹层 ============
+     2026-09-22 重写，修掉三重毛病：
+     ① 位置 —— 原来它被写在上面那个「分享弹层」的 <view class="sheet"> **内部**，
+        只有 shareSheet 为真时才可能被渲染（分享弹层没开时，申请解锁永远不出现）。
+        现在与分享弹层同级、独立开关。
+     ② 形态 —— 原来是 .sheet-panel 居中弹窗，与全站"底部弹层优先"的规范不一致。
+     ③ 样式 —— sheet-panel / unlock-panel / sheet-btn / sheet-actions / unlock-form /
+        unlock-label / sheet-desc 这 9 个类名**全项目都没有定义**，
+        真渲染出来会是一个没有样式的裸块。改用 .sheet / .sheet-bd / .sheet-ft 标准件。
+     入口见上方「申请解锁本月报表」那一行（按 reportStatus.status === 2 显示）。 -->
+<view class="sheet-mask" wx:if="{{showUnlock}}" bindtap="closeUnlock" />
+<!-- --kb-lift：这里有个 textarea，键盘弹起时必须整层上挪，否则「提交申请」够不着 -->
+<view class="sheet" wx:if="{{showUnlock}}" style="--kb-lift: {{kbLift}}px;">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">申请解锁报表</text>
+    <view class="sheet-close" bindtap="closeUnlock"></view>
+  </view>
+
+  <view class="sheet-bd">
+    <view class="sh-note">本月报表已确认锁定。提交申请后，店主批准就能改。</view>
+
+    <view class="f-block">
+      <view class="f-label">申请原因（选填）</view>
+      <textarea
+        class="unlock-textarea"
+        placeholder="例如：有一笔账记错了，需要改一下"
+        placeholder-class="ph"
         value="{{unlockReason}}"
         bindinput="onUnlockReason"
+        bindfocus="onKbFocus"
+        bindblur="onKbBlur"
+        bindkeyboardheightchange="onKbHeight"
         maxlength="200"
         auto-height
       />
       <view class="unlock-count">{{unlockReason.length}}/200</view>
     </view>
+  </view>
 
-    <view class="sheet-actions">
-      <view class="sheet-btn sheet-btn-cancel" bindtap="closeUnlock">取消</view>
-      <view class="sheet-btn sheet-btn-confirm {{unlocking ? 'is-loading' : ''}}" bindtap="submitUnlock">
-        <text wx:if="{{unlocking}}">提交中...</text>
-        <text wx:else>提交申请</text>
-      </view>
+  <view class="sheet-ft">
+    <view class="btn btn-ghost" bindtap="closeUnlock">取消</view>
+    <view class="btn btn-primary {{unlocking ? 'is-disabled' : ''}}" bindtap="submitUnlock">
+      {{unlocking ? '提交中…' : '提交申请'}}
     </view>
   </view>
-</view></view>
+</view>

@@ -1,233 +1,196 @@
 /* pages/advisor/advisor.wxss */
 
-.adv-tail {
-  height: 40rpx;
-}
+/* ---------- 整页对话布局（2026-09-22 改造）----------
+   这一页原来是「深色洞察卡 hero + 追问条 + 经营提示列表 + 底部对话弹层」——
+   从报表页点进来先看到一份概览，还要再点一次才弹出对话，等于两次点击才问到问题。
+   按老板要求还原成一个**纯粹的对话窗口**：概览 / 提示 / 页内入口全部拿掉，
+   对话从弹层升为页面主体。
 
-/* ---------- 洞察卡 ----------
-   它和下面那张「追问条」是**一块**：上圆下圆，中间无缝拼成整体。
-   为什么这么做：追问是结论的延续（看完数字下一个念头就是"那 XX 呢"），
-   拼在一起才读得出这层关系；拆成两张卡就变成"两个不相干的模块"了。
-   代价是 hero 单独看是上圆下平，所以两者必须始终同时存在。 */
-.hero {
-  position: relative;
-  border-radius: var(--r-lg) var(--r-lg) 0 0;
-  padding: 36rpx 32rpx 28rpx;
-  margin-bottom: 0;
-  background: linear-gradient(140deg, #1F2937 0%, #111827 100%);
-  /* 外阴影交给下面的 .ask-entry 提供 —— 两块各自投影会在拼缝处叠出一条脏边 */
-  box-shadow: none;
+   布局：整页是一个纵向 flex 容器，上面是消息滚动区（flex:1），下面是固定在底部的输入条。
+
+   🔴 **高度必须用 `page { height:100% }` + `height:100%`，不要用 `100vh`**（2026-09-22 真机报障后改）：
+   小程序的 `vh` 是**相对整屏**算的（含导航栏区），而页面可视区是"导航栏以下"——
+   写 `height: 100vh` 会让页面比可视区高出一截，**多出来的部分露在 tabBar 下面**：
+   表现就是底部一大片空白，页面还能整页滚。（模拟器**不重现**这个问题，只有真机能看出来。）
+   `page { height: 100% }` 拿到的才是"页面可视高度"，是微信里可靠的写法。
+   `overflow: hidden` 让整页不再滚动 —— 这一页只有一个滚动区，就是消息列表。 */
+page {
+  height: 100%;
   overflow: hidden;
 }
-.hero::after {
-  content: "";
-  position: absolute;
-  right: -80rpx;
-  top: -80rpx;
-  width: 260rpx;
-  height: 260rpx;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 107, 53, .22) 0%, rgba(255, 107, 53, 0) 70%);
-}
-.hero-cap {
-  font-size: 25rpx;
-  color: rgba(255, 255, 255, .62);
-}
-.hero-v {
-  margin: 10rpx 0 6rpx;
-  font-size: 72rpx;
-  font-weight: 700;
-  line-height: 1.1;
-}
-/* 深底上的收支色单独取更亮的版本，保证可读 */
-.hero-up { color: #4ADE80; }
-.hero-down { color: #FCA5A5; }
-.hero-verdict {
-  font-size: 25rpx;
-  color: rgba(255, 255, 255, .78);
-}
-.hero-grid {
+.chat-page {
   display: flex;
-  align-items: stretch;
-  margin-top: 28rpx;
-  padding-top: 24rpx;
-  border-top: 1rpx solid rgba(255, 255, 255, .12);
-}
-.hero-col {
-  flex: 1;
-  min-width: 0;
-}
-.hero-k {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, .55);
-}
-.hero-n {
-  margin-top: 6rpx;
-  font-size: 34rpx;
-  font-weight: 700;
-  color: #fff;
-}
-.hero-sep {
-  width: 2rpx;
-  background: rgba(255, 255, 255, .12);
-  margin: 0 24rpx;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  /* 底部要让出 tabBar（2026-09-22 本页成为 tab 页）：
+     自定义 tabBar 是浮在页面上方的，会盖住底部约 120rpx ——
+     不让出来的话，输入条正好被压在它底下，点不到。
+     ⚠️ 用 max() 而不是相加：相加的话键盘弹起时会浮起一条缝（项目踩过这个坑，
+        见 app.wxss 里 .sheet 的注释）。
+     ⚠️ 安全区留白交给 .ibar 自己的 padding-bottom（它已经含 env()），这里不重复算。 */
+  padding-bottom: max(var(--tabbar-h), var(--kb-lift, 0px));
+  background: var(--bg);
 }
 
-/* ---------- 排行 ---------- */
-/* 前三名用颜色区分，扫一眼就知道轻重 */
+/* ---------- 页内返回入口 ----------
+   只在聊过之后出现（见 advisor.wxml 的注释）：tab 页的导航栏不会给返回箭头，
+   聊完想回主界面就没路可走，所以补这一条。
 
-
-/* ---------- 经营提示 ---------- */
-.tips-card {
-  border-left: none;
-}
-.tip {
-  display: flex;
-  align-items: flex-start;
-  padding: 20rpx 0;
-  border-bottom: 1rpx solid var(--line);
-}
-.tip:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-.tip-dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  background: var(--brand);
-  margin: 16rpx 20rpx 0 2rpx;
-  flex-shrink: 0;
-}
-.tip-main {
-  flex: 1;
-  min-width: 0;
-}
-.tip-t {
-  font-size: 29rpx;
-  font-weight: 600;
-  color: var(--t1);
-}
-.tip-d {
-  margin-top: 6rpx;
-  font-size: 26rpx;
-  color: var(--t3);
-  line-height: 1.65;
-}
-
-/* ---------- AI 追问条 ----------
-   样式上刻意做成「一行的输入条」而不是「又一张卡片」：
-   卡片是"看"的，条是"点/说"的。老板看到浅橙底 + 深橙圆图标 + 圆箭头，
-   不用读文字也知道这里能问。
-   它是 .hero 的下半截（上圆下圆拼合），所以圆角只做下面两个角。 */
-/* ══════ AI 追问入口（2026-09-20 老板要求"做大、做醒目"）══════
-   原来 108rpx 高、图标 64rpx，混在 hero 下面不显眼。
-   现在：整卡 152rpx 高、图标 88rpx、标题 34rpx，箭头也放大成 56rpx 实心圆。
-   配色仍是"浅橙卡 + 深橙圆"那一套，跟全站一致，只是把存在感提上来。 */
-.ask-entry {
-  display: flex;
-  align-items: center;
-  min-height: 152rpx;
-  padding: 32rpx 32rpx;
-  margin-bottom: 24rpx;
-  background: linear-gradient(120deg, #FFEDE2 0%, #FFFBF8 100%);
-  border-radius: 0 0 var(--r-lg) var(--r-lg);
-  /* 整块（hero + 这条）的外阴影，由这里统一提供 */
-  box-shadow: 0 16rpx 40rpx -20rpx rgba(16, 24, 40, .6);
-}
-.ask-entry:active {
-  background: #FFE0CC;
-}
-/* 深橙圆底 + 白图标：sparkle 原图是灰描边（#98A2B3），
-   放在这个底上等于隐形，所以用了白色版 ic-sparkle-w.svg */
-.ask-ico {
-  width: 88rpx;
-  height: 88rpx;
+   做成"左箭头 + 文字"的浅色胶囊，而不是光秃秃的文字链 ——
+   全站规范是触控区 ≥88rpx，27rpx 的纯文字才三四十 rpx 高，老板（40-60 岁）点不准。
+   flex: none 不能被上面的消息区挤扁。 */
+.chat-top {
   flex: none;
-  margin-right: 24rpx;
-  border-radius: 50%;
-  background: var(--brand-btn);
   display: flex;
   align-items: center;
-  justify-content: center;
-  /* 一圈同色外发光，让小圆点在浅橙底上更跳 */
-  box-shadow: 0 8rpx 20rpx -8rpx rgba(201, 69, 26, .55);
+  padding: 6rpx 32rpx 0;
 }
-.ask-ico-img {
-  width: 48rpx;
-  height: 48rpx;
-}
-.ask-main {
-  flex: 1;
-  min-width: 0;
-}
-.ask-t {
-  font-size: 34rpx;
-  font-weight: 600;
+.chat-top-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 88rpx;
+  padding: 0 26rpx 0 20rpx;
+  border-radius: var(--r-full);
+  background: var(--card);
+  border: 1rpx solid var(--line);
+  font-size: 27rpx;
   color: var(--brand-ink);
 }
-.ask-d {
-  margin-top: 8rpx;
-  font-size: 26rpx;
-  color: var(--t3);
+.chat-top-btn-hover,
+.chat-top-btn:active {
+  background: var(--brand-weak);
 }
-/* 实心圆箭头 —— 裸 › 太轻，容易被当成装饰而不是按钮 */
-.ask-go {
-  position: relative;
-  width: 56rpx;
-  height: 56rpx;
+/* 左箭头：border + rotate 画，和 app.wxss 里 .row-arrow（右箭头）是同一套手法镜像过来 */
+.chat-top-ico {
+  width: 18rpx;
+  height: 18rpx;
+  margin-right: 10rpx;
   flex: none;
-  margin-left: 20rpx;
-  border-radius: 50%;
-  background: var(--brand-btn);
-}
-.ask-go::after {
-  content: "";
-  position: absolute;
-  left: 21rpx;
-  top: 19rpx;
-  width: 15rpx;
-  height: 15rpx;
-  border-top: 4rpx solid #fff;
-  border-right: 4rpx solid #fff;
-  transform: rotate(45deg);
+  border-left: 3rpx solid var(--brand-ink);
+  border-top: 3rpx solid var(--brand-ink);
+  transform: rotate(-45deg);
 }
 
-/* ---------- AI 对话弹层 ----------
-   2026-09-20 从 pages/search 整块搬来（含样式），只改了入口位置与快捷问题。
-   本页在 tabBar.list 里，所以 .sheet 默认停在 tabBar 之上是对的。 */
-.chat-sheet {
-  height: 80vh;
-  /* 键盘弹起时整层上挪（.sheet 的 bottom 会跟着 --kb-lift 走），
-     高度也得同步让出来，否则输入条仍被顶出可视区 */
-  height: calc(80vh - var(--kb-lift, 0px));
-}
+/* 消息滚动区 */
 .chat-body {
   flex: 1;
   min-height: 0;
   width: 100%;              /* scroll-view 兜底：不给宽度，内容一宽就把滚动区本身撑破 */
   padding: 8rpx 32rpx;
-  box-sizing: border-box;   /* 宽度含内边距，否则右边又被顶出 64rpx */
+  box-sizing: border-box;
 }
+
+/* 2026-09-22 同时删除：.adv-tail / .hero* / .tips-card / .tip* / .ask-entry.is-joined / .chat-sheet。
+   它们服务的概览与提示区已经不在模板里了，留着就是死 CSS。
+   （.ask-entry 的底样式在 app.wxss —— 报表页还在用，那个不能删。） */
 .chat-hello {
-  padding: 40rpx 0 20rpx;
+  padding: 16rpx 0 12rpx;
   text-align: center;
+}
+/* 标题行：小图标 + 一行字。原来是一个 120rpx 的大图标 + 一个标题行两行占位，
+   空状态整体比可视区还高，scroll-view 会停在底部（客人第一眼看到的是中间几行）。 */
+.chat-hd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chat-hd-ico {
+  width: 34rpx;
+  height: 34rpx;
+  margin-right: 10rpx;
+  flex: none;
+}
+.chat-hd-t {
+  font-size: 29rpx;
+  font-weight: 600;
+  color: var(--t1);
 }
 .chat-asks {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 24rpx;
+  margin-top: 16rpx;
 }
 .chat-ask {
   width: 100%;
-  padding: 24rpx 28rpx;
-  margin-bottom: 16rpx;
+  padding: 18rpx 24rpx;
+  margin-bottom: 10rpx;
   border-radius: var(--r-md);
-  background: var(--fill);
+  /* 同上：从 --fill 改成白卡 + 发丝边，否则在 --bg 页面上几乎看不见 */
+  background: var(--card);
+  border: 1rpx solid var(--line);
   font-size: 27rpx;
   color: var(--t2);
   text-align: left;
+}
+
+/* 四件事清单（空状态最上面）。
+   每行：两字的名字（品牌橙强调）+ 一句"它能干什么"。
+   刻意排在快捷问题**上面** —— 快捷问题回答的是"我该问什么"，
+   而这份清单回答的是"它到底能干什么"，后者才是新用户的第一疑问。 */
+.chat-skills {
+  margin-top: 18rpx;
+}
+.chat-skill {
+  display: flex;
+  align-items: baseline;
+  text-align: left;
+  padding: 16rpx 24rpx;
+  margin-bottom: 10rpx;
+  border-radius: var(--r-md);
+  background: var(--card);
+  border: 1rpx solid var(--line);
+}
+.chat-skill-t {
+  flex: none;
+  width: 96rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--brand-ink);
+}
+.chat-skill-d {
+  flex: 1;
+  min-width: 0;
+  font-size: 25rpx;
+  color: var(--t3);
+}
+
+/* 订阅消息授权入口。
+   一行放完：一句问话 + 一个「好」。刻意不做成大卡片 ——
+   它是**可选的加值服务**，不该跟上面"四件事"抢注意力；
+   而且微信要求授权必须由点击触发，问太长反而像推销。 */
+.chat-push {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16rpx;
+  padding: 16rpx 20rpx 16rpx 24rpx;
+  border-radius: var(--r-md);
+  background: var(--brand-weak);
+  border: 1rpx solid var(--brand-line);
+}
+.chat-push-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  color: var(--brand-ink);
+}
+.chat-push-yes {
+  flex: none;
+  display: flex;
+  align-items: center;
+  /* 触控区 ≥88rpx（全站规范）：这个按钮就俩字，全靠 padding 撑 */
+  min-height: 88rpx;
+  padding: 0 32rpx;
+  border-radius: var(--r-full);
+  background: var(--brand-btn);
+  color: #fff;
+  font-size: 27rpx;
+}
+.chat-push-yes-hover,
+.chat-push-yes:active {
+  opacity: .88;
 }
 .chat-ask:active {
   background: #E7EBF0;
@@ -257,7 +220,12 @@
   border-radius: 22rpx;
   font-size: 28rpx;
   line-height: 1.6;
-  background: var(--fill);
+  /* ⚠️ 2026-09-22 底色从 var(--fill) 改成 var(--card) + 发丝边框。
+     原因：这一页原来对话装在**白色弹层**里，--fill(#F2F4F7) 压在纯白上刚好看得出来；
+     改成整页对话后页面底色是 --bg(#F6F7F9)，和 --fill 几乎同色 ——
+     气泡直接"消失"，只剩字浮在页面上。浅灰底上必须用白卡 + 一道细边才立得住。 */
+  background: var(--card);
+  border: 1rpx solid var(--line);
   color: var(--t1);
   border-bottom-left-radius: 6rpx;
   word-break: break-word;
@@ -265,6 +233,8 @@
 }
 .chat-item.user .chat-bubble {
   background: var(--brand-btn);
+  /* 用户气泡是实心橙，不需要发丝边 */
+  border-color: transparent;
   color: #fff;
   border-bottom-left-radius: 22rpx;
   border-bottom-right-radius: 6rpx;
@@ -361,6 +331,36 @@
 .chat-bubble-thinking {
   color: var(--t3);
 }
+/* 撤销入口。做成一个浅橙小胶囊而不是纯文字链：
+   全站规范是触控区 ≥88rpx，纯文字链在 25rpx 字号下只有三四十 rpx 高，
+   老板（40-60 岁）点不准。padding 撑到 85rpx 左右才够用。 */
+.cc-undo {
+  margin-top: 18rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid var(--line);
+}
+.cc-undo-btn {
+  display: inline-block;
+  padding: 22rpx 30rpx;
+  border-radius: var(--r-full);
+  border: 1rpx solid var(--brand-line);
+  background: var(--brand-weak);
+  color: var(--brand-ink);
+  font-size: 25rpx;
+}
+.cc-undo-btn:active {
+  background: #FFE8DC;
+}
+.cc-undo-done {
+  display: inline-block;
+  padding: 22rpx 30rpx;
+  font-size: 25rpx;
+  color: var(--t4);
+}
 .chat-pad {
   height: 20rpx;
 }
+
+/* 2026-09-22 删除本页的 .sheet 贴底覆盖：
+   这一页已经没有底部弹层了（对话升为页面主体、输入条在 .chat-page 里），
+   留着这段覆盖就是死 CSS。安全区内边距改由 .chat-page 一起处理下面那条输入条。 */

@@ -1,4 +1,4 @@
-<!--pages/profile/profile.wxml-->
+﻿<!--pages/profile/profile.wxml-->
 <view class="container" style="{{_cv}}">
 
   <!-- 身份卡：全站唯一使用满品牌色的区域，承担「我是谁 + 我的规模」 -->
@@ -40,6 +40,18 @@
   </view>
 
   <view class="card card-flush">
+    <view class="row row-tap" bindtap="chooseBusinessDay">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-clock.svg" mode="aspectFit" /></view>
+      <view class="row-main">
+        <view class="row-title">营业日截止时间</view>
+        <view class="row-sub">凌晨几点前记账算前一天，适合夜宵店</view>
+      </view>
+      <view class="acc-val">{{businessDayEndLabel}}</view>
+      <view class="row-arrow"></view>
+    </view>
+  </view>
+
+  <view class="card card-flush">
     <view class="row row-tap" bindtap="openDataManage">
       <view class="row-ico"><image class="row-ico-img" src="/images/ic-folder-d.svg" mode="aspectFit" /></view>
       <view class="row-main">
@@ -58,7 +70,12 @@
         <view class="row-title">成员管理</view>
         <view class="row-sub">团队成员管理</view>
       </view>
-      <view wx:if="{{pendingCount > 0}}" class="tag tag-warn">{{pendingCount}} 条待审</view>
+      <!-- ⚠️ 用 catchtap 而不是 bindtap（2026-09-23 修）：
+           这个标签在「成员管理」那一行**内部**，bindtap 会冒泡上去、
+           同时触发整行的 goRoleManage —— 两个页面一起跳，用户会懵。
+           catchtap 只触发自己那一个。
+           加 › 是为了让它看起来像个能点的东西（原来只是个静态徽标）。 -->
+      <view wx:if="{{pendingCount > 0}}" class="tag tag-warn" catchtap="goPending">{{pendingCount}} 条待审 ›</view>
       <view class="row-arrow"></view>
     </view>
   </view>
@@ -147,5 +164,35 @@
   <view class="sheet-ft">
     <view class="btn btn-ghost" bindtap="closeProfile">取消</view>
     <view class="btn btn-primary {{savingProfile ? 'is-disabled' : ''}}" bindtap="saveProfile">保存</view>
+  </view>
+</view>
+
+<!-- ============ 营业日截止时间（2026-09-22）============
+     原来是 wx.showActionSheet，传了 7 个选项 —— 而官方文档写明 itemList
+     「数组长度最大为 6」，超限直接失败；加上没写 fail 回调，失败完全静默，
+     用户点了毫无反应。改用底部弹层：没有项数限制，还能给每项配一句说明，
+     弹层的样式也和全站一致（这件事项目里本来就定了"底部弹层优先"）。 -->
+<view class="sheet-mask" wx:if="{{dayEndSheet}}" bindtap="closeDayEnd" />
+<view class="sheet" wx:if="{{dayEndSheet}}" catchtap="noop">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">营业日截止时间</text>
+    <view class="sheet-close" bindtap="closeDayEnd"></view>
+  </view>
+  <view class="sheet-bd">
+    <view class="de-hint">选「凌晨几点前」，那个点之前记的账就算前一天。夜宵店选 2~3 点最合适。</view>
+    <view
+      wx:for="{{dayEndOptions}}"
+      wx:key="v"
+      class="de-opt {{item.v === businessDayEnd ? 'is-on' : ''}}"
+      data-v="{{item.v}}"
+      bindtap="pickDayEnd"
+    >
+      <view class="de-main">
+        <view class="de-t">{{item.t}}</view>
+        <view class="de-d">{{item.d}}</view>
+      </view>
+      <view wx:if="{{item.v === businessDayEnd}}" class="de-check"></view>
+    </view>
   </view>
 </view>

@@ -24,13 +24,31 @@ Page(Object.assign({
     // 改昵称 / 店名
     showProfile: false,
     form: { nickname: '', shop_name: '' },
-    savingProfile: false
+    savingProfile: false,
+    businessDayEnd: '00:00',
+    businessDayEndLabel: '按自然日',
+    /* 营业日截止时间：**不能用 wx.showActionSheet**（2026-09-22 修）。
+       官方文档：itemList「数组长度最大为 6」，而这里有 7 个选项 ——
+       超限会直接失败，又因为没写 fail 回调，失败是**完全静默**的：
+       用户点了没反应、控制台也没有任何日志，看着就像"这一行坏了"。
+       改用底部弹层，顺带能给每项配一句说明（showActionSheet 塞不下）。 */
+    dayEndSheet: false,
+    dayEndOptions: [
+      { v: '00:00', t: '按自然日', d: '半夜 0 点换天，大多数店用这个' },
+      { v: '01:00', t: '凌晨 1 点前', d: '1 点前记的账算前一天' },
+      { v: '02:00', t: '凌晨 2 点前', d: '适合夜宵店、烧烤摊' },
+      { v: '03:00', t: '凌晨 3 点前', d: '收摊特别晚的店' },
+      { v: '04:00', t: '凌晨 4 点前', d: '通宵营业的店' },
+      { v: '05:00', t: '凌晨 5 点前', d: '天快亮才收摊' },
+      { v: '06:00', t: '凌晨 6 点前', d: '早市、早餐店' }
+    ]
   },
 
   onShow() {
     this.loadData();
     const tb = typeof this.getTabBar === 'function' && this.getTabBar();
-    if (tb) tb.setData({ selected: 2 });
+    // 2026-09-22 加了 AI 参谋 tab，「我的」从第 3 项挪到第 4 项（索引 2 → 3）
+    if (tb) tb.setData({ selected: 3 });
   },
 
   async loadData() {
@@ -54,6 +72,8 @@ Page(Object.assign({
       pendingCount: staff.pendingCount,
       phone: maskPhone(info.phone),
       memo,
+      businessDayEnd: info.business_day_end || '00:00',
+      businessDayEndLabel: (info.business_day_end && info.business_day_end !== '00:00') ? '凌晨' + info.business_day_end + '前' : '按自然日',
       stat: {
         records: records.length,
         contacts: contacts.length,
@@ -126,9 +146,24 @@ Page(Object.assign({
   goToPromote() {
     wx.navigateTo({ url: '/pages/promote/promote' });
   },
-  goRoleManage() {
-    wx.navigateTo({ url: '/pages/role-manage/role-manage' });
-  },
+    goRoleManage() {
+      wx.navigateTo({ url: '/pages/role-manage/role-manage' });
+    },
+
+    /**
+     * 待审核记录：点「我的」页那个「N 条待审」标签进来。
+     *
+     * ⚠️ 2026-09-23 修：**这个入口原来根本不存在** ✗
+     * 本页会显示「3 条待审」的红标签（见 wxml），但那一整行绑的是 `goRoleManage` ——
+     * 点进去是「成员与角色」，**里面没有审核入口** ✗
+     * 而待审核页 `/pages/pending/pending` 全站唯一的入口在 `staff` 页里，
+     * 偏偏 `staff` 页自己没有任何 wxml 绑定它（是个不可达页面）✗
+     * → 结果：老板看到"有账要审"，却**找不到地方审**。
+     *   一个只喊人、不给人路的提示，比没有提示更伤。
+     */
+    goPending() {
+      wx.navigateTo({ url: '/pages/pending/pending' });
+    },
   goNotifications() {
     wx.navigateTo({ url: '/pages/notifications/notifications' });
   },
@@ -145,9 +180,10 @@ Page(Object.assign({
   goPurchase() {
     wx.navigateTo({ url: '/pages/purchase-list/purchase-list' });
   },
-  goAdvisor() {
-    wx.navigateTo({ url: '/pages/advisor/advisor' });
-  },
+  /* 2026-09-22 删除 goAdvisor()：本页 wxml 里从来没有绑定过它（全站只有报表页
+     末尾那个 AI 参谋入口在用），属于历史遗留的死方法 —— 和 account 页那两段
+     营业日方法同一个来路。真要在这里也放一个 AI 参谋入口，应该正经加一行并绑定它，
+     而不是把一个没人调的方法留在代码里。 */
   openDataManage() {
     wx.showActionSheet({
       itemList: ['导出Excel对账', '导出全部数据备份', '从备份文件恢复'],
@@ -159,9 +195,65 @@ Page(Object.assign({
         } else if (res.tapIndex === 2) {
           this.importBackup();
         }
+      },
+      /* 必须写 fail。wx.showActionSheet 失败时**界面上没有任何反馈**，
+         不写这一行就是"点了没反应、日志里也查不到"。
+         （营业日那个入口就是这么静默失效了很久，见本文件 chooseBusinessDay 的注释。） */
+      fail: (err) => {
+        // 用户自己点取消/点蒙层不算失败，别弹提示去打扰他
+        if (/cancel/i.test((err && err.errMsg) || '')) return;
+        wx.showToast({ title: '菜单没打开，再试一次', icon: 'none' });
       }
     });
   },
+  chooseBusinessDay() {
+    // 打开底部弹层（原来是 wx.showActionSheet，7 项超限导致点了彻底没反应）
+    this.setData({ dayEndSheet: true });
+  },
+
+  closeDayEnd() {
+    this.setData({ dayEndSheet: false });
+  },
+
+  /** 空处理：给 .sheet 的 catchtap 用，防止点弹层内部穿透到遮罩把层关掉 */
+  noop() {},
+
+  pickDayEnd(e) {
+    const v = e.currentTarget.dataset.v;
+    if (!v) return;
+    this.setData({ dayEndSheet: false });
+    // 选了跟当前一样的就不用白跑一趟保存
+    if (v !== this.data.businessDayEnd) this.saveBusinessDayEnd(v);
+  },
+
+  // 保存营业日截止时间
+  async saveBusinessDayEnd(value) {
+    wx.showLoading({ title: '保存中…', mask: true });
+    try {
+      const res = await app.request('/user/profile', {
+        method: 'POST',
+        data: { business_day_end: value },
+        silent: true
+      });
+      wx.hideLoading();
+      if (res && res.code === 0) {
+        if (app.globalData.userInfo) {
+          app.globalData.userInfo.business_day_end = value;
+        }
+        this.setData({
+          businessDayEnd: value,
+          businessDayEndLabel: value === '00:00' ? '按自然日' : '凌晨' + value + '前'
+        });
+        wx.showToast({ title: '已保存', icon: 'success' });
+      } else {
+        wx.showToast({ title: (res && res.msg) || '保存失败', icon: 'none' });
+      }
+    } catch (err) {
+      wx.hideLoading();
+      wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+    }
+  },
+
   goToAccount() {
     wx.navigateTo({ url: '/pages/account/account' });
   },
@@ -244,6 +336,11 @@ Page(Object.assign({
         } else if (res.tapIndex === 1) {
           this.importBackup();
         }
+      },
+      // 同上：失败要有反馈，否则"点了没反应"
+      fail: (err) => {
+        if (/cancel/i.test((err && err.errMsg) || '')) return;
+        wx.showToast({ title: '菜单没打开，再试一次', icon: 'none' });
       }
     });
   },

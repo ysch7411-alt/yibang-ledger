@@ -44,8 +44,37 @@
       <view class="rv-range">{{rangeText}}</view>
     </view>
 
-    <!-- 汇总 -->
-    <view class="card rv-sum">
+    <!-- ===== 汇总 =====
+         报表问"这个区间赚了没"，所以头条是结余；
+         对账单问"我还欠不欠、欠多少"，所以头条必须是**带方向的余额**
+         （「对方欠我 8000」比一个光秃秃的「余额 -8000」有用得多），
+         下面列出四个分项，让客户能自己加一遍核对 —— 这是对账单存在的意义。 -->
+    <view wx:if="{{kind === 'contact'}}" class="card rv-sum">
+      <view class="rv-sum-k">{{balLabel}}</view>
+      <view class="rv-sum-v num {{balTone === 'is-recv' ? 'c-income' : (balTone === 'is-pay' ? 'c-expense' : '')}}">
+        ¥{{balText}}
+      </view>
+      <view class="stmt-grid">
+        <view class="stmt-cell">
+          <view class="stmt-k">累计应收</view>
+          <view class="stmt-v num">¥{{recvText}}</view>
+        </view>
+        <view class="stmt-cell">
+          <view class="stmt-k">已回款</view>
+          <view class="stmt-v num">¥{{backText}}</view>
+        </view>
+        <view class="stmt-cell">
+          <view class="stmt-k">累计应付</view>
+          <view class="stmt-v num">¥{{payText}}</view>
+        </view>
+        <view class="stmt-cell">
+          <view class="stmt-k">已付款</view>
+          <view class="stmt-v num">¥{{doneText}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="card rv-sum">
       <view class="rv-sum-k">结余</view>
       <view class="rv-sum-v num {{isPositive ? 'c-income' : 'c-expense'}}">
         {{isPositive ? '+' : '-'}}¥{{netText}}
@@ -66,21 +95,23 @@
     <!-- 明细 -->
     <view class="rv-hd">
       <text class="rv-hd-t">明细</text>
-      <text class="rv-hd-n">共 {{count}} 笔</text>
+      <text class="rv-hd-n">{{kind === 'contact' ? '共 ' + count + ' 笔往来' : '共 ' + count + ' 笔'}}</text>
     </view>
 
     <view wx:if="{{rows.length === 0}}" class="card">
       <view class="empty">
         <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
-        <view class="empty-title">这段时间还没记账</view>
-        <view class="empty-desc">账本里还没有这个区间的记录。</view>
+        <view class="empty-title">{{kind === 'contact' ? '还没有往来记录' : '这段时间还没记账'}}</view>
+        <view class="empty-desc">{{kind === 'contact' ? '账本里还没有跟这个对象的往来。' : '账本里还没有这个区间的记录。'}}</view>
       </view>
     </view>
 
     <view wx:else class="card card-flush">
       <view class="rv-row" wx:for="{{rows}}" wx:key="id">
         <view class="rv-row-main">
-          <view class="rv-row-t line1">{{item.title}}</view>
+          <view class="rv-row-t line1">
+            <text wx:if="{{item.tag}}" class="tag rv-tag {{item.tagCls}}">{{item.tag}}</text>{{item.title}}
+          </view>
           <view class="rv-row-s">
             <text wx:if="{{item.date}}">{{item.date}} </text>
             <text>{{item.time}}</text>
@@ -92,12 +123,13 @@
     </view>
 
     <view wx:if="{{truncated}}" class="rv-trunc">
-      这一期共 {{count}} 笔，上面列出了前 {{rows.length}} 笔
+      {{kind === 'contact' ? '共 ' + count + ' 笔往来，上面列出了最近 ' + rows.length + ' 笔' : '这一期共 ' + count + ' 笔，上面列出了前 ' + rows.length + ' 笔'}}
     </view>
 
     <!-- 只读说明：让对方明确知道自己看到的是什么、能不能改 -->
     <view class="rv-note">
-      <text>这份报表只能看，不能改</text>
+      <text>{{kind === 'contact' ? '这份对账单只能看，不能改' : '这份报表只能看，不能改'}}</text>
+      <text wx:if="{{kind === 'contact' && asOf}}">数据截至 {{asOf}}，之后的账不会出现在这里。</text>
       <text wx:if="{{expireDay}}">链接有效到 {{expireDay}} 为止。</text>
     </view>
 

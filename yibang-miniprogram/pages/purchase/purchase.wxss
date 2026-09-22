@@ -67,6 +67,11 @@
   flex: 1;
   min-width: 0;
 }
+.po-name {
+  font-size: 31rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
 .po-spec {
   margin-top: 6rpx;
   font-size: 25rpx;
@@ -269,6 +274,9 @@
 }
 
 /* 底部安全留白（.container-cta 已留 190rpx，这里再加一段避免最后一行贴条） */
+.po-tail {
+  height: 24rpx;
+}
 
 /* ---------- 多张单据汇总 ---------- */
 .po-multi {

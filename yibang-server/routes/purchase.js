@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { callModel, extractJson, resolveUpload, detectKind, toDataUri, ensureContact, cleanOcrText, dayOr } = require('../lib/ledger');
 const { upsertTerm, loadTerms } = require('../lib/memory');
 const { aiLimit, bumpCount } = require('../lib/rate-limit');
+const log = require('../lib/log');
 
 function auth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -177,7 +178,7 @@ async function tryVisionDoc(filePath, format, prompt, today) {
     if (!parsed) return { status: 'no-json' };
     return { status: 'ok', doc: packDoc(parsed, normalizeItems(parsed.items), '', today) };
   } catch (err) {
-    console.error('视觉单次解析未成功，准备退回 OCR 路:', err.response?.data || err.message);
+    log.error('视觉单次解析未成功，准备退回 OCR 路:', err.response?.data || err.message);
     return { status: 'no-json' };
   }
 }
@@ -239,7 +240,7 @@ router.post('/parse-doc', auth, aiLimit('vision'), async (req, res) => {
     bumpCount(req);
     res.json({ code: 0, data: packDoc(parsed, normalizeItems(parsed.items), content, today) });
   } catch (err) {
-    console.error('单据解析错误:', err.response?.data || err.message);
+    log.error('单据解析错误:', err.response?.data || err.message);
     res.json({ code: 500, msg: '单据识别失败' });
   }
 });
@@ -328,7 +329,7 @@ router.post('/save', auth, async (req, res) => {
     res.json({ code: 0, msg: '采购单已保存', data: { orderId, total, itemCount: clean.length } });
   } catch (err) {
     await conn.rollback();
-    console.error('采购单保存错误:', err.message);
+    log.error('采购单保存错误:', err.message);
     res.json({ code: 500, msg: '保存失败' });
   } finally {
     conn.release();
@@ -419,7 +420,7 @@ router.get('/stats', auth, async (req, res) => {
 
     res.json({ code: 0, data: { groupBy, from, to, total, list } });
   } catch (err) {
-    console.error('采购统计错误:', err && err.message);
+    log.error('采购统计错误:', err && err.message);
     res.json({ code: 500, msg: '获取统计失败' });
   }
 });

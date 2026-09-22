@@ -1,89 +1,63 @@
 <!--pages/advisor/advisor.wxml-->
-<view class="container" style="{{_cv}}">
-  <view class="page-head">
-    <view class="page-title">经营小参谋</view>
-    <view class="page-sub">看看你的生意做得怎么样</view>
-  </view>
+<!-- AI 参谋：**整页就是一个对话窗口**（2026-09-22 按老板要求改造）。
 
-  <!-- 洞察卡：全站唯一的深色卡，专门承载「结论」，与操作型白卡拉开层级 -->
-  <view class="hero">
-    <view class="hero-cap">本月结余</view>
-    <view class="hero-v num {{stat.isPositive ? 'hero-up' : 'hero-down'}}">
-      {{stat.isPositive ? '+' : '-'}}¥{{stat.netText}}
+     改造前这一页是「概览 hero + 经营提示列表 + 底部弹层里的对话」——
+     从报表页点「拿不准的，问我」进来，看到的是一张概览，
+     还要**再点一次**才会弹出对话，等于两次点击才问到问题。
+     老板的原话是"点进去就是直接跟 ai 的对话聊天窗口整页都是"。
+
+     所以：概览、经营提示、页内入口**全部拿掉**，对话从弹层升为页面主体。
+     顺带这一页不再拉"本月汇总 + 往来列表"两份数据（那只喂给已删掉的概览区），
+     打开速度也快了。
+
+     页内不重复导航栏已经写过的标题 —— 这是本项目的既定约定
+     （记账页的注释里写着"页内标题只放导航栏说不出的事"）。
+     空状态里那句「你可以这样问我」+ 快捷问题，本身就是最好的开场说明。 -->
+<view class="chat-page" style="--kb-lift: {{kbLift}}px;">
+  <!-- 返回键（2026-09-22）。
+       tab 页的导航栏**永远不会出现返回箭头**（微信框架规则：tab 页是顶层页面）——
+       所以聊完想回到"四件事"那个主界面时，用户会找不到路。
+       这里补一个页内的返回入口，**只在聊过之后出现**：
+       主界面上本来就没有可返回的东西，一直挂着反而是干扰。
+       样式沿用项目既有做法：箭头用 border + rotate 画（同 app.wxss 的 .row-arrow），
+       不额外引图标文件 —— 只这一个用处，不值得多一个资源。 -->
+  <view wx:if="{{aiHistory.length}}" class="chat-top">
+    <view class="chat-top-btn" bindtap="newChat" hover-class="chat-top-btn-hover" hover-stay-time="60">
+      <view class="chat-top-ico"></view>
+      <text>返回</text>
     </view>
-    <view class="hero-verdict">{{verdict}}</view>
-    <view class="hero-grid">
-      <view class="hero-col">
-        <view class="hero-k">本月收入</view>
-        <view class="hero-n num">¥{{stat.incomeText}}</view>
-      </view>
-      <view class="hero-sep"></view>
-      <view class="hero-col">
-        <view class="hero-k">本月支出</view>
-        <view class="hero-n num">¥{{stat.expenseText}}</view>
-      </view>
-    </view>
-  </view>
-
-  <!-- AI 追问入口。
-       位置在「结论」正下方 —— 参谋页的阅读顺序是「结论 → 我的疑问 → 明细」，
-       用户看完 hero 里的数字，下一个念头就是"那 XX 呢"，这里是接住它的地方。
-       （也不放页面顶部：那会把 hero 这个真正的重点挤下去。）
-
-       文案有意避开了「这个月赚了多少」「谁欠我最多」——
-       这两句 hero 和下面那张卡已经答过了，再问一遍等于让用户重看一遍数字。
-       这里放的是 hero 答不了的那类：支出结构、环比。 -->
-  <view class="ask-entry" bindtap="openAi">
-    <view class="ask-ico">
-      <image class="ask-ico-img" src="/images/ic-sparkle-w.svg" mode="aspectFit" />
-    </view>
-    <view class="ask-main">
-      <view class="ask-t">拿不准的，问我</view>
-      <view class="ask-d">我盯着你的账呢</view>
-    </view>
-    <view class="ask-go"></view>
-  </view>
-
-
-  <!-- 经营提示：由本地规则生成，如实标注来源，不冒充大模型 -->
-  <view class="card tips-card">
-    <view class="card-hd">
-      <text class="card-title">经营提示</text>
-      <text class="card-more">据近 30 天账目</text>
-    </view>
-    <view wx:for="{{tips}}" wx:key="index" class="tip">
-      <view class="tip-dot"></view>
-      <view class="tip-main">
-        <view class="tip-t">{{item.title}}</view>
-        <view class="tip-d">{{item.desc}}</view>
-      </view>
-    </view>
-  </view>
-
-  <view class="adv-tail"></view>
-</view>
-
-<!-- ============ AI 问答（从查询页整块搬过来的） ============
-     为什么该在这儿而不是查询页：查询页的任务是「找出某一笔账」，
-     而 AI 答的是「这个月怎么样」这类汇总问题 —— 它跟「查询」是两种意图。
-     参谋页本来就是看结论的地方，追问就长在结论旁边。
-     标题保留「AI」二字：本页的「经营提示」是本地规则算的（已如实标注），
-     这里是大模型答的，两者必须能分清。 -->
-<view class="sheet-mask" wx:if="{{showAi}}" bindtap="closeAi" />
-<!-- 输入条在弹层底部，键盘弹起时必须整层上挪（--kb-lift 见 utils/keyboard.js） -->
-<view class="sheet chat-sheet" wx:if="{{showAi}}" style="--kb-lift: {{kbLift}}px;">
-  <view class="sheet-handle"></view>
-  <view class="sheet-hd">
-    <text class="sheet-title">AI 生意参谋</text>
-    <view class="sheet-close" bindtap="closeAi"></view>
   </view>
 
   <scroll-view scroll-y class="chat-body" scroll-into-view="{{scrollTo}}" scroll-with-animation>
     <view wx:if="{{aiHistory.length === 0}}" class="chat-hello">
-      <image class="empty-ico" src="/images/ic-sparkle.svg" mode="aspectFit" />
-      <view class="empty-title">你可以这样问我</view>
+      <!-- 2026-09-22：本页提成独立 tab 后，开场就把"我能做哪四件事"摆出来。
+           名字刻意压到两个字一组（查账/报账/记账/比账）——
+           老板不会去记"五种查询能力的区别"，但这两字一组他能背下来，
+           而且背下来之后**问什么、不问什么**他心里就有数了（范围克制才换来信任）。
+           ⚠️ 空状态必须**足够矮、一屏放得下**：原来是"大图标 + 标题 + 四行 + 副标题 + 三个问题"，
+              实测比可视区高，scroll-view 会停在底部，客人进来第一眼看到的是中间几行。
+              （判据：`.chat-skills` 的 offset 应该在一百多 pt，而不是 10pt。） -->
+      <view class="chat-hd">
+        <image class="chat-hd-ico" src="/images/ic-sparkle.svg" mode="aspectFit" />
+        <text class="chat-hd-t">我能帮你做这四件事</text>
+      </view>
+      <view class="chat-skills">
+        <view class="chat-skill" wx:for="{{skills}}" wx:key="k">
+          <text class="chat-skill-t">{{item.k}}</text>
+          <text class="chat-skill-d">{{item.d}}</text>
+        </view>
+      </view>
       <view class="chat-asks">
         <view wx:for="{{quickAsks}}" wx:key="*this" class="chat-ask" data-q="{{item}}" bindtap="askQuick">{{item}}</view>
+      </view>
+      <!-- 订阅消息的授权入口（2026-09-22）。
+           为什么放在落地页而不是弹窗打断：微信**要求订阅授权必须由用户点击触发**，
+           所以在用户有空、正在看"我能做什么"的时候顺手问一句最自然。
+           额度攒到 3 次以上就不再问了 —— 一次性订阅每授权一次只能发一条，
+           攒够了还去问，就成了骚扰。 -->
+      <view wx:if="{{pushAsk}}" class="chat-push">
+        <text class="chat-push-t">每天早上给你报个账？</text>
+        <view class="chat-push-yes" bindtap="askPush" hover-class="chat-push-yes-hover" hover-stay-time="60">好</view>
       </view>
     </view>
 
@@ -108,6 +82,16 @@
               <view class="cc-dot"></view>
               <text class="cc-pt-t">{{p}}</text>
             </view>
+          </view>
+          <!-- 撤销入口（2026-09-22）。
+               「对话即入账」是**写操作** —— 而自动入账恰恰是最需要撤销兜底的场景：
+               识别错一个字（把"还了"听成"还欠"）就会把老板的账本弄脏。
+               所以后端在建完记录后把 id 带回来，这里必须给一个能撤销的地方。
+               撤销后**不删掉这条消息**，只把它标成"已撤销" ——
+               老板需要看到"我确实记过、也撤掉了"，直接消失反而让人怀疑是不是真撤了。 -->
+          <view wx:if="{{item.card.undo}}" class="cc-undo">
+            <view wx:if="{{!item.undone}}" class="cc-undo-btn" data-i="{{index}}" bindtap="undoRecord">记错了，撤销</view>
+            <view wx:else class="cc-undo-done">已撤销</view>
           </view>
         </block>
 
@@ -165,7 +149,7 @@
 
     <!-- 上传面板：必须放在 .ibar **内部**，
          这样 bottom:calc(100%+16rpx) 的 100% 才是输入条的高度；
-         放在弹层根部的话 100% 是整个弹层，浮层会跑到屏幕外去。 -->
+         放在页面根部的话 100% 是整个页面，浮层会跑到屏幕外去。 -->
     <view class="ibar-upload" wx:if="{{showUpload}}">
       <view class="ibar-up-cell" wx:if="{{_f && _f.photoEntry}}" bindtap="pickCamera" hover-class="ibar-up-hover" hover-stay-time="60">
         <view class="ibar-up-ico"><image class="ibar-up-img" src="/images/ic-camera-d.svg" mode="aspectFit" /></view>

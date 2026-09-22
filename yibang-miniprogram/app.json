@@ -46,6 +46,10 @@
         "text": "报表"
       },
       {
+        "pagePath": "pages/advisor/advisor",
+        "text": "AI 参谋"
+      },
+      {
         "pagePath": "pages/profile/profile",
         "text": "我的"
       }

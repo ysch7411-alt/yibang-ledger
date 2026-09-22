@@ -81,3 +81,25 @@
   color: var(--t4);
   line-height: 1.7;
 }
+
+/* 底部固定操作栏 */
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20rpx 32rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  box-shadow: 0 -2rpx 12rpx rgba(0,0,0,0.06);
+  z-index: 100;
+}
+
+.bottom-bar .btn {
+  width: 100%;
+}
+
+/* 页面底部留白，避免内容被底部栏遮挡 */
+.container-page {
+  padding-bottom: 140rpx;
+}

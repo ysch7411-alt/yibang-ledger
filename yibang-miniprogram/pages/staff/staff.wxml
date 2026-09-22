@@ -1,5 +1,5 @@
 <!--pages/staff/staff.wxml-->
-<view class="container container-page" style="{{_cv}}">
+<view class="container container-page container-cta" style="{{_cv}}">
   <view class="page-head">
     <view class="page-title">员工管理</view>
     <view class="page-sub">员工录单，你审核后才入账</view>

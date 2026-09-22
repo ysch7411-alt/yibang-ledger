@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/config');
 const jwt = require('jsonwebtoken');
+const log = require('../lib/log');
 
 function auth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -83,14 +84,23 @@ router.get('/detail', auth, async (req, res) => {
     );
     if (!contacts.length) return res.json({ code: 404, msg: '往来对象不存在' });
 
+    /* 2026-09-22 修：原来这里是 SELECT *。
+       连接池没设 dateStrings/timezone，mysql2 会把 DATE 返回成 JS Date，
+       JSON 序列化后是 UTC 的 ISO 串 —— 页面直接打印 record_date，
+       于是往来详情里显示的是「2026-09-20T16:00:00.000Z」这种串，
+       而且**日期还差一天**（本地 9-21 零点 = UTC 9-20 16 点）。
+       按项目约定：DATE 一律在源头用 DATE_FORMAT 取成字符串，列清单显式写。 */
     const [records] = await pool.query(
-      'SELECT * FROM transactions WHERE user_id = ? AND contact_id = ? ORDER BY record_date DESC, id DESC LIMIT 200',
+      'SELECT id, type, amount, content, qty, unit, unit_price, pay_method, ' +
+      "DATE_FORMAT(record_date, '%Y-%m-%d') AS record_date, created_at " +
+      'FROM transactions WHERE user_id = ? AND contact_id = ? ' +
+      'ORDER BY record_date DESC, id DESC LIMIT 200',
       [req.userId, id]
     );
 
     res.json({ code: 0, data: { contact: contacts[0], records } });
   } catch (err) {
-    console.error('往来详情错误:', err);
+    log.error('往来详情错误:', err);
     res.json({ code: 500, msg: '获取详情失败' });
   }
 });

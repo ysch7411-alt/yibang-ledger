@@ -13,6 +13,12 @@ page {
   --brand-ink: #B93F14;      /* 橙字白底 5.4:1 ✓ */
   --brand-weak: #FFF4EE;
   --brand-line: #FFD9C6;
+  /* 品牌渐变（按钮底 / 图标底 / 身份卡底色）。
+     亮端必须够深：白字要 ≥4.5:1，所以亮端取 --brand-btn 的值 #C9451A（白字 4.75:1），
+     深端压一档做层次。2026-09-22 之前各页面各写一套 —— #E4551D→#C9451A 只有 3.74:1、
+     #FF8A50→#E4551D 只有 2.33:1，白字压上去都不达标。
+     现在全站收口到这一个令牌：改主题色只需改这里。 */
+  --brand-grad: linear-gradient(135deg, #C9451A 0%, #B03C10 100%);
 
   /* 账目语义色（全部 ≥4.4:1，深色底也能看清） */
   --income: #0B7A43;         /* 收入 / 回款 */
@@ -42,6 +48,16 @@ page {
   --sh-card: 0 1rpx 2rpx rgba(16, 24, 40, .04), 0 8rpx 24rpx -8rpx rgba(16, 24, 40, .08);
   --sh-float: 0 8rpx 32rpx -8rpx rgba(16, 24, 40, .16);
   --tabbar-h: 120rpx;
+  /* 弹层（.sheet）的"静止位置"—— 没有键盘时它停在离屏幕底部多高的地方。
+     默认值是**二级页**的情形（页面没有 tabBar，弹层贴底但要避开 Home 指示条）。
+     ⚠️ TabBar 页必须覆盖它（弹层停在 tabBar 之上，否则会被 tabBar 压住一截）：
+        page { --sheet-rest: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
+     🔴 2026-09-22 收口：原来这个值散在 6 个二级页各自的 .sheet 里（还配一句
+        `padding-bottom: env(safe-area-inset-bottom)`）—— 每个新二级页都要抄一遍，
+        而**全站曾经 6 个页面同时漏抄**（弹层底下漏出约 120rpx 的缝 / 键盘压住输入框）。
+        现在把安全区并进这个变量、弹层自身 padding 归零，位置与收口前**完全等价**，
+        二级页从此**一个覆盖都不用写**。 */
+  --sheet-rest: env(safe-area-inset-bottom, 0px);
 
   background: var(--bg);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
@@ -448,16 +464,18 @@ button::after {
   position: fixed;
   left: 0;
   right: 0;
-  /* 自定义 tabBar 由框架渲染在页面内容之上，弹层写 bottom:0 会被它压住底部一截。
-     当前所有用到 .sheet 的页面都是 TabBar 页，所以统一停在 tabBar 之上；
-     tabBar 自身已含安全区内边距，这里不再重复加 padding-bottom。
-     非 TabBar 页若要用，覆盖成 bottom: 0 即可。 */
-  bottom: var(--tabbar-h);
-  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
-  /* --kb-lift = 键盘高度（px），弹层里有输入框且键盘弹起时由页面写上来。
-     键盘弹起时 tabBar 已被键盘压住，不能再叠加它的高度（会悬空一条缝），
-     所以取更高者 —— 键盘收起时 kb-lift 为 0，行为跟原来完全一致。 */
-  bottom: max(calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)), var(--kb-lift, 0px));
+  /* 弹层停在 `--sheet-rest` 之上；键盘弹起时（--kb-lift > 0）整体抬到键盘上面。
+     ⚠️ 用 max() 取更高者，**不能相加**：键盘弹起时 tabBar 已被键盘压住，
+        再加它的高度会悬空一条缝（项目踩过这个坑）。
+     ⚠️ `--sheet-rest` 的默认值定义在 page{}（= **二级页**的情形）；
+        TabBar 页各自覆盖它，见那个变量的注释。
+     ⚠️ 离底距离已经含了安全区，所以下面的 padding-bottom 保持 0 ——
+        **别再补 padding，补了就多出一条 Home 指示条的空白**（这正是收口前的重复来源）。
+     🔴 2026-09-22 更正：这里原来写着"非 TabBar 页覆盖成 bottom: 0 即可"—— **那条是错的** ✗
+        写 bottom: 0 会把键盘抬升（--kb-lift）一起丢掉，弹层里有输入框的页面会被键盘压住。
+        这句错注释就是当初 6 个二级页一起踩坑的源头之一。 */
+  bottom: var(--sheet-rest, 0px);   /* 老内核兜底 */
+  bottom: max(var(--sheet-rest, env(safe-area-inset-bottom, 0px)), var(--kb-lift, 0px));
   z-index: 1001;
   background: var(--card);
   border-radius: 36rpx 36rpx 0 0;
@@ -703,6 +721,8 @@ button::after {
 .t-sm { font-size: 26rpx; }
 .t-xs { font-size: 24rpx; }
 .t-bold { font-weight: 600; }
+/* 页面底部留白：二级页/列表页末尾统一用它收尾（往来、往来详情、成员管理三页共用） */
+.bottom-space { height: 40rpx; }
 .divider {
   height: 1rpx;
   background: var(--line);
@@ -731,6 +751,24 @@ button::after {
   font-size: 27rpx;
 }
 
+/* 表单输入框（2026-09-22 收口）。之前 4 个页面各抄一份，还抄歪了两份：
+     记账页 height:96rpx / 我的页 height:88rpx  → 正常
+     往来页、成员管理 只写了 padding: 24rpx，**没写 height** → 文字被垂直裁掉
+   根因：微信 `<input>` 有约 64rpx 的**组件默认高度**，padding 上下各吃一份，
+   只剩十几 rpx 去装 28rpx 的字 —— 下半个字就没了。
+   用户看着像"字号不对"，其实是盒子太矮（调字号是治错了病）。
+   88rpx = 44px，同时满足全站"触控区 ≥88rpx"的规范。 */
+.f-input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 24rpx;
+  box-sizing: border-box;
+  border-radius: var(--r-md);
+  background: var(--fill);
+  font-size: 29rpx;
+  color: var(--t1);
+}
+
 /* ---------- 14. 区块头（列表/表格上方的小标题行） ---------- */
 .list-hd {
   display: flex;
@@ -753,8 +791,13 @@ button::after {
   margin-left: 14rpx;
   font-size: 28rpx;
   font-weight: 600;
-  color: #fff;
-  background: #FF6B35;
+  /* 2026-09-22 修对比度：原来是白字压 #FF6B35，只有 2.81:1 ——
+     而「#FF6B35 禁止承载文字」正是本项目自己写在 custom-tab-bar/index.wxss 注释里的规则，
+     这里等于破了自己的例（真机截图里"左滑可改可删""点这里展开"就是这个样子）。
+     改成浅橙底 + 品牌橙字：5.4:1 ✓，同时也和"分享"等次要按钮的浅橙语言统一。 */
+  color: var(--brand-ink);
+  background: var(--brand-weak);
+  border: 1rpx solid var(--brand-line);
   padding: 8rpx 20rpx;
   border-radius: 24rpx;
 }
@@ -787,7 +830,10 @@ button::after {
   height: 152rpx;
   margin: 0 auto 28rpx;
   border-radius: 44rpx;
-  background: linear-gradient(150deg, #FF8A5B 0%, #C9451A 100%);
+  /* 双声明做渐进增强：不支持 var() 时退回品牌实底色（白 logo 同样达标），
+     避免 var 解析失败变成透明底 → 白图标压白底彻底隐形。与项目里 env() 的写法一致。 */
+  background: #C9451A;
+  background: var(--brand-grad);
   box-shadow: 0 20rpx 40rpx -16rpx rgba(201, 69, 26, .55);
   display: flex;
   align-items: center;
@@ -857,6 +903,22 @@ button::after {
   font-size: 28rpx;
   color: var(--t3);
   margin-bottom: 12rpx;
+}
+/* 必填星号（往来页 / 成员管理页共用） */
+.f-required {
+  color: var(--expense);
+  font-size: 28rpx;
+}
+/* 区块小标题（往来详情 / 成员管理共用）。
+   ⚠️ 我的页里另有一份同名的 .section-title，**不要合并**：那一页是通栏卡片布局，
+   需要自带左右 36rpx 内边距；这两页的 .container 已经给了 28rpx，再补就会缩进过头。
+   同类情况见 `.me-avatar` 与 `.info-avatar`（同名不同上下文，别一刀切）。 */
+.section-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--t3);
+  padding: 32rpx 0 16rpx;
+  letter-spacing: 1rpx;
 }
 
 /* 采购单据里的品名与尾部留白（核对页 / 列表页共用） */
@@ -1088,4 +1150,158 @@ button::after {
 }
 .ibar-up-close:active {
   opacity: .6;
+}
+
+/* ══════════ AI 追问入口卡（全站公共组件）══════════
+   2026-09-22 从 pages/advisor 提到这里 —— 参谋入口现在有两处：
+     · 报表页结余卡下方 → navigateTo 进参谋页（看完成绩接着追问，语义最顺）
+     · 参谋页 hero 下方   → 就地开对话弹层
+   两处必须是同一张卡，所以"长什么样"住在公共层，页面只留差异。
+
+   2026-09-20 老板要求"做大、做醒目"：108rpx→152rpx 高、图标 64→88rpx、
+   标题 34rpx、箭头放大成 56rpx 实心圆。浅橙底 + 深橙圆那一套跟全站一致。
+   形态上刻意做成「一条」而不是「又一张卡」：卡片是"看"的，条是"点/说"的。 */
+.ask-entry {
+  display: flex;
+  align-items: center;
+  min-height: 152rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  background: linear-gradient(120deg, #FFEDE2 0%, #FFFBF8 100%);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-card);
+}
+.ask-entry:active {
+  background: #FFE0CC;
+}
+/* 深橙圆底 + 白图标：ic-sparkle.svg 原是灰描边（#98A2B3），
+   放这个底上等于隐形 → 用白色版 ic-sparkle-w.svg（项目里已栽过两次同类坑） */
+.ask-ico {
+  width: 88rpx;
+  height: 88rpx;
+  flex: none;
+  margin-right: 24rpx;
+  border-radius: 50%;
+  background: var(--brand-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 20rpx -8rpx rgba(201, 69, 26, .55);
+}
+.ask-ico-img {
+  width: 48rpx;
+  height: 48rpx;
+}
+.ask-main {
+  flex: 1;
+  min-width: 0;
+}
+.ask-t {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--brand-ink);
+}
+.ask-d {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+/* 实心圆箭头 —— 裸 › 太轻，会被当成装饰而不是按钮 */
+.ask-go {
+  position: relative;
+  width: 56rpx;
+  height: 56rpx;
+  flex: none;
+  margin-left: 20rpx;
+  border-radius: 50%;
+  background: var(--brand-btn);
+}
+.ask-go::after {
+  content: "";
+  position: absolute;
+  left: 21rpx;
+  top: 19rpx;
+  width: 15rpx;
+  height: 15rpx;
+  border-top: 4rpx solid #fff;
+  border-right: 4rpx solid #fff;
+  transform: rotate(45deg);
+}
+
+/* ══════════ 分享报表弹层（全站公共组件）══════════
+   2026-09-22 合并：原来 pages/record 与 pages/summary **各写了一份**共 10 个 .sh-* 规则。
+   合并前逐条比对，其中 6 个已经漂移 —— 一个用 var(--t3)、一个用 #667085；
+   一个有 line-height、一个没有；图标圆角一个 18rpx、一个 var(--r-md)。
+   这正是"同一个东西写两遍"的典型代价：改一处忘一处，两页慢慢长得不一样。
+   现在合并到公共层，取更规范的那一份（用令牌、带 line-height）。
+   判据沿用项目约定：一个类被 ≥2 个页面用到 → 就该住在 app.wxss。
+
+   注意：两页的**选项数量**仍然不同（记账页 2 项、报表页 3 项），
+   所以标记留在各自页面里 —— 这里只管"长什么样"，与 .ibar-* 的分工一致。 */
+.sh-note {
+  padding: 2rpx 0 18rpx;
+  font-size: 25rpx;
+  color: var(--t3);
+}
+.sh-opt {
+  display: flex;
+  align-items: center;
+  min-height: 108rpx;
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.sh-opt.is-busy {
+  opacity: .45;
+}
+/* 分享页面那一项是个原生 button（只有 open-type="share" 才能拉起微信转发面板），
+   所以要把它复位成普通一行的样子：button 自带的白底 / 边框 / 居中都要清掉。 */
+.sh-opt-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: transparent;
+  border-radius: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
+  text-align: left;
+}
+.sh-ico {
+  width: 72rpx;
+  height: 72rpx;
+  flex: none;
+  margin-right: 24rpx;
+  border-radius: var(--r-md);
+  background: var(--brand-weak);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 主路径的图标底用实心橙：ic-brand.svg 本身是纯白图标（设计给深底用的），
+   配浅底会白压浅、等于隐形。
+   写成**复合选择器**而不是单独的类 —— 同权重下靠源码顺序决定胜负太脆
+   （第一版就栽在这：.sh-ico-key 写在 .sh-ico 前面，橙底被浅底盖掉，图标直接看不见了）。
+   把意图写进选择器，谁前谁后都不受影响。 */
+.sh-ico.sh-ico-key {
+  background: var(--brand-btn);
+}
+.sh-ico-img {
+  width: 40rpx;
+  height: 40rpx;
+}
+.sh-main {
+  flex: 1;
+  min-width: 0;
+}
+.sh-t {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.sh-d {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--t3);
 }

@@ -79,6 +79,7 @@ async function initTables() {
       unit VARCHAR(16) NULL COMMENT '单位（斤/件/吨/趟）',
       unit_price DECIMAL(12,4) NULL COMMENT '单价',
       pay_method VARCHAR(16) NULL COMMENT '收付方式：现金/微信/支付宝/银行/转账/赊账。回答「现金收了多少」用',
+      category VARCHAR(32) NULL COMMENT '品类（2~5字）。回答「钱花在哪了」用',
       content VARCHAR(255),
       record_date DATE,
       status TINYINT DEFAULT 1 COMMENT '0待审核 1已入账 2驳回',
@@ -201,6 +202,7 @@ async function initTables() {
   console.log('  · 检查字段迁移…');
   await ensureColumn('users', 'phone', "phone VARCHAR(20) NULL COMMENT '注册手机号，微信手机号快速验证组件拿到' AFTER openid");
   await ensureColumn('users', 'phone_bound_at', "phone_bound_at DATETIME NULL COMMENT '绑定手机号的时间' AFTER phone");
+  await ensureColumn('users', 'business_day_end', "business_day_end VARCHAR(5) DEFAULT '00:00' COMMENT '营业日截止时间，如02:00表示凌晨2点前算前一天' AFTER phone_bound_at");
   // 多张单据汇总时，一张采购单会有多张来源照片，逗号分隔存下来供回溯
   await ensureColumn('purchase_orders', 'source_file_ids', "source_file_ids VARCHAR(500) NULL COMMENT '来源照片 id，逗号分隔（多张汇总时用）' AFTER source_file_id");
   // 行级维度：合并成一张记录之后，明细行仍要保留「来自哪个供应商 / 什么品类 / 哪张照片」，
@@ -216,6 +218,10 @@ async function initTables() {
   // 收付方式：老板说「今天收现金1265元」，只说方式不说事由。
   // 以前 contact 和 content 全空 → 列表显示「未填写事由」，等于把老板给的信息丢了。
   await ensureColumn('transactions', 'pay_method', "pay_method VARCHAR(16) NULL COMMENT '现金/微信/支付宝/银行/转账/赊账' AFTER unit_price");
+  // 品类（2026-09-22）：回答「钱花在哪了」。采购线早就有了（purchase_items.category），
+  // 但日常收支一直没有 —— 结果报表只能给总数，答不了"钱花在哪"。
+  // 与采购线共用 merchant_terms 的 kind='category' 词表，越用越收敛。
+  await ensureColumn('transactions', 'category', "category VARCHAR(32) NULL COMMENT '品类（2~5字），按品类统计用' AFTER pay_method");
   // 报表分享要按**区间**分享（今日/本月），data_date 只够表达"某一天"
   await ensureColumn('shares', 'from_date', "from_date DATE NULL COMMENT '报表区间起（含）' AFTER data_date");
   await ensureColumn('shares', 'to_date', "to_date DATE NULL COMMENT '报表区间止（含）' AFTER from_date");

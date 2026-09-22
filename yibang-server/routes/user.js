@@ -4,6 +4,8 @@ const pool = require('../db/config');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const { callWx } = require('../lib/wxtoken');
+const { ymd, stamp } = require('../lib/ledger');
+const log = require('../lib/log');
 
 /** 校验登录态 —— 手机号绑定必须知道绑给谁 */
 function auth(req, res, next) {
@@ -34,6 +36,7 @@ function publicUser(u) {
     role: u.role,
     plan_type: u.plan_type,
     phone: u.phone || '',
+    business_day_end: u.business_day_end || '00:00',
     needPhone
   };
 }
@@ -81,7 +84,7 @@ router.post('/login', async (req, res) => {
       data: { token: signToken(user), user: publicUser(user) }
     });
   } catch (err) {
-    console.error('登录错误:', err && err.message);
+    log.error('登录错误:', err && err.message);
     res.json({ code: 500, msg: '登录失败' });
   }
 });
@@ -107,7 +110,7 @@ router.post('/bind-phone', auth, async (req, res) => {
     const data = await callWx('/wxa/business/getuserphonenumber', { code });
 
     if (data.errcode) {
-      console.error('换取手机号失败:', data.errcode, data.errmsg);
+      log.error('换取手机号失败:', data.errcode, data.errmsg);
       const tips = {
         '-1': '微信服务繁忙，请稍后重试',
         '40001': '小程序的 AppSecret 配置有误，请联系管理员',
@@ -125,7 +128,7 @@ router.post('/bind-phone', auth, async (req, res) => {
     const info = data.phone_info || {};
     const phone = String(info.purePhoneNumber || info.phoneNumber || '').trim();
     if (!/^\d{6,20}$/.test(phone)) {
-      console.error('微信返回的手机号格式异常:', JSON.stringify(info).slice(0, 200));
+      log.error('微信返回的手机号格式异常:', JSON.stringify(info).slice(0, 200));
       return res.json({ code: 500, msg: '拿到的手机号格式不对，请重试' });
     }
 
@@ -142,7 +145,7 @@ router.post('/bind-phone', auth, async (req, res) => {
       data: { token: signToken(rows[0]), user: publicUser(rows[0]) }
     });
   } catch (err) {
-    console.error('绑定手机号异常:', (err && err.message) || err, err.response ? err.response.data : '');
+    log.error('绑定手机号异常:', (err && err.message) || err, err.response ? err.response.data : '');
     res.json({ code: 500, msg: '绑定失败，请稍后重试' });
   }
 });
@@ -192,11 +195,11 @@ router.post('/delete-account', auth, async (req, res) => {
     }
 
     await conn.commit();
-    console.log('账号已注销 userId=' + uid);
+    log.info('账号已注销 userId=' + uid);
     res.json({ code: 0, msg: '账号已注销，数据已删除' });
   } catch (err) {
     await conn.rollback();
-    console.error('注销账号失败:', err && err.message);
+    log.error('注销账号失败:', err && err.message);
     res.json({ code: 500, msg: '注销失败，请稍后重试' });
   } finally {
     conn.release();
@@ -213,7 +216,7 @@ router.post('/delete-account', auth, async (req, res) => {
  *  一个空头承诺，配上分享功能就变成真缺口了。）
  */
 router.post('/profile', auth, async (req, res) => {
-  const { nickname, shop_name } = req.body || {};
+  const { nickname, shop_name, business_day_end } = req.body || {};
   const fields = [];
   const params = [];
   const clean = (v) => String(v == null ? '' : v).trim().slice(0, 100);
@@ -226,6 +229,16 @@ router.post('/profile', auth, async (req, res) => {
     fields.push('shop_name = ?');
     params.push(clean(shop_name) || null);
   }
+  if (business_day_end !== undefined) {
+    const v = String(business_day_end).trim();
+    if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v)) {
+      const hour = parseInt(v.split(':')[0], 10);
+      if (hour >= 0 && hour <= 6) {
+        fields.push('business_day_end = ?');
+        params.push(v);
+      }
+    }
+  }
   if (!fields.length) return res.json({ code: 400, msg: '没有要改的内容' });
 
   try {
@@ -234,7 +247,7 @@ router.post('/profile', auth, async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.userId]);
     res.json({ code: 0, msg: '已保存', data: { user: publicUser(rows[0]) } });
   } catch (err) {
-    console.error('保存资料失败:', err.message);
+    log.error('保存资料失败:', err.message);
     res.json({ code: 500, msg: '没保存上，稍后再试' });
   }
 });
@@ -325,12 +338,12 @@ router.get('/export-excel', auth, async (req, res) => {
 
     for (const r of rows) {
       const row = sheet1.addRow({
-        date: r.record_date ? new Date(r.record_date).toISOString().slice(0, 10) : '',
+        date: r.record_date ? ymd(new Date(r.record_date)) : '',
         type: TYPE_TEXT[r.type] || '其他',
         amount: Number(r.amount).toFixed(2),
         contact: r.contact_name || '',
         content: r.content || '',
-        created: r.created_at ? new Date(r.created_at).toISOString().slice(0, 19).replace('T', ' ') : ''
+        created: r.created_at ? stamp(new Date(r.created_at)) : ''
       });
       row.eachCell((cell) => { cell.style = cellStyle; });
       row.height = 22;
@@ -362,7 +375,7 @@ router.get('/export-excel', auth, async (req, res) => {
         phone: c.phone || '',
         balance: Number(c.balance).toFixed(2),
         remark: c.remark || '',
-        created: c.created_at ? new Date(c.created_at).toISOString().slice(0, 19).replace('T', ' ') : ''
+        created: c.created_at ? stamp(new Date(c.created_at)) : ''
       });
       row.eachCell((cell) => { cell.style = cellStyle; });
       row.height = 22;
@@ -432,7 +445,7 @@ router.get('/export-excel', auth, async (req, res) => {
 
     // 生成Excel buffer
     const buffer = await workbook.xlsx.writeBuffer();
-    const fileName = '易帮账本_账目导出_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+    const fileName = '易帮账本_账目导出_' + ymd(new Date()) + '.xlsx';
     const objectName = 'exports/' + req.userId + '_' + Date.now() + '.xlsx';
 
     // 上传到 OSS
@@ -451,7 +464,7 @@ router.get('/export-excel', auth, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('导出Excel失败:', err.message);
+    log.error('导出Excel失败:', err.message);
     res.json({ code: 500, msg: '导出失败，稍后再试' });
   }
 });
@@ -473,15 +486,15 @@ router.get('/export-csv', auth, async (req, res) => {
       const amount = Number(r.amount).toFixed(2);
       const contact = (r.contact_name || '').replace(/,/g, '，');
       const content = (r.content || '').replace(/,/g, '，');
-      const date = r.record_date ? new Date(r.record_date).toISOString().slice(0, 10) : '';
-      const created = r.created_at ? new Date(r.created_at).toISOString().slice(0, 19).replace('T', ' ') : '';
+      const date = r.record_date ? ymd(new Date(r.record_date)) : '';
+      const created = r.created_at ? stamp(new Date(r.created_at)) : '';
 
       csv += date + ',' + typeText + ',' + amount + ',' + contact + ',' + content + ',' + created + '\n';
     }
 
     const bom = '\uFEFF';
     const buffer = Buffer.from(bom + csv, 'utf-8');
-    const fileName = '易帮账本_账目导出_' + new Date().toISOString().slice(0, 10) + '.csv';
+    const fileName = '易帮账本_账目导出_' + ymd(new Date()) + '.csv';
     const objectName = 'exports/' + req.userId + '_' + Date.now() + '.csv';
 
     const oss = require('../lib/oss');
@@ -497,7 +510,7 @@ router.get('/export-csv', auth, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('导出CSV失败:', err.message);
+    log.error('导出CSV失败:', err.message);
     res.json({ code: 500, msg: '导出失败，稍后再试' });
   }
 });
@@ -565,7 +578,7 @@ router.get('/backup', auth, async (req, res) => {
       );
       purchaseItems = piResult;
     } catch (e) {
-      console.warn('导出采购明细失败（跳过）:', e.message);
+      log.warn('导出采购明细失败（跳过）:', e.message);
     }
 
     // 组装备份数据
@@ -596,7 +609,7 @@ router.get('/backup', auth, async (req, res) => {
     // 生成JSON文件
     const jsonStr = JSON.stringify(backup, null, 2);
     const buffer = Buffer.from(jsonStr, 'utf-8');
-    const fileName = '易帮账本_数据备份_' + new Date().toISOString().slice(0, 10) + '.json';
+    const fileName = '易帮账本_数据备份_' + ymd(new Date()) + '.json';
     const objectName = 'backups/' + userId + '_' + Date.now() + '.json';
 
     // 上传到OSS
@@ -614,7 +627,7 @@ router.get('/backup', auth, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('导出备份失败:', err.message);
+    log.error('导出备份失败:', err.message);
     res.json({ code: 500, msg: '导出备份失败，稍后再试' });
   }
 });
@@ -730,7 +743,7 @@ router.post('/restore', auth, upload.single('file'), async (req, res) => {
   } catch (err) {
     // 回滚事务
     await conn.rollback();
-    console.error('恢复数据失败:', err.message);
+    log.error('恢复数据失败:', err.message);
     res.json({ code: 500, msg: '恢复失败，稍后再试' });
   } finally {
     conn.release();

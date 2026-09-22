@@ -7,6 +7,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const pool = require('./db/config');
+const log = require('./lib/log');
 
 // 创建上传目录
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
@@ -30,7 +31,7 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' }));
  */
 app.use((err, req, res, next) => {
   if (err && (err.type === 'entity.parse.failed' || err instanceof SyntaxError)) {
-    console.error('请求体解析失败:', req.method, req.originalUrl, '|', err.message);
+    log.error('请求体解析失败:', req.method, req.originalUrl, '|', err.message);
     return res.status(400).json({ code: 400, msg: '请求体不是合法 JSON' });
   }
   next(err);
@@ -97,10 +98,10 @@ app.use((req, res) => {
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
-  console.error('未捕获错误:', err && err.stack ? err.stack : err);
+  log.error('未捕获错误:', err && err.stack ? err.stack : err);
   res.status(500).json({ code: 500, msg: '服务器内部错误' });
 });
 
 app.listen(PORT, () => {
-  console.log('易帮账本后端服务启动成功，端口: ' + PORT);
+  log.info('易帮账本后端服务启动成功，端口: ' + PORT);
 });

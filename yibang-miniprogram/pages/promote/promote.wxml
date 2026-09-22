@@ -1,7 +1,9 @@
 <!--pages/promote/promote.wxml-->
 <view class="container container-page container-cta" style="{{_cv}}">
+  <!-- 页头（2026-09-23 统一）：标题改成**带数据的一行**（原来是写死的「推荐赚钱」，
+       和导航栏重复、信息量为零 ✗）。老板点进来最想知道"还差几个人"，直接给结论。 -->
   <view class="page-head">
-    <view class="page-title">推荐赚钱</view>
+    <view class="page-title">{{headTitle}}</view>
     <view class="page-sub">邀请 2 位好友，免费解锁终身版</view>
   </view>
 

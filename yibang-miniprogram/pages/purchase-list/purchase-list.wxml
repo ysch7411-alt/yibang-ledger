@@ -39,7 +39,7 @@
     <!-- 取不到和「这段时间真的没有」是两回事，不能糊成一句 -->
     <view wx:elif="{{statFailed}}" class="card">
       <view class="empty">
-        <image class="empty-ico" src="/images/ic-scan.svg" mode="aspectFit" />
+        <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
         <view class="empty-title">统计暂时取不到</view>
         <view class="empty-desc">网络或服务波动，下拉可以重试一次</view>
       </view>
@@ -78,7 +78,7 @@
       <!-- 空态：这段区间没采购，或者明细行还没带上维度 -->
       <view wx:else class="card">
         <view class="empty">
-          <image class="empty-ico" src="/images/ic-scan.svg" mode="aspectFit" />
+          <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
           <view class="empty-title">{{stat.rangeLabel}}还没有采购</view>
           <view class="empty-desc">换个时间段看看，或者去拍一张送货单</view>
           <view class="empty-action" bindtap="goRecord">去拍一张</view>
@@ -97,7 +97,7 @@
 
     <view wx:elif="{{list.length === 0}}" class="card">
       <view class="empty">
-        <image class="empty-ico" src="/images/ic-scan.svg" mode="aspectFit" />
+        <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
         <view class="empty-title">还没有采购单</view>
         <view class="empty-desc">在记账页点左下角的加号，拍一张送货单，AI 会把明细拆好</view>
         <view class="empty-action" bindtap="goRecord">去拍一张</view>

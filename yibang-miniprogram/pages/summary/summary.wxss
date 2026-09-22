@@ -1,4 +1,38 @@
 
+/* 本页是 **TabBar 页**：弹层要停在 tabBar 之上。
+   （公共 .sheet 的默认值 `--sheet-rest` 是二级页的情形 —— 页面没有 tabBar，贴底避让安全区。）
+   2026-09-22 收口：全站弹层位置统一由 --sheet-rest 控制，**页面不再各自覆盖 .sheet**。 */
+page {
+  --sheet-rest: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+}
+
+/* ---------- 申请解锁弹层的输入区 ----------
+   2026-09-22：这一块原来是 .unlock-form / .unlock-label / .unlock-textarea / .unlock-count
+   四个类，而它们**全项目都没有定义** —— 弹层真渲染出来是个没样式的裸块。
+   现在只保留这两个（textarea 和字数）自己独有的规格，其余复用 .sheet-bd / .f-block / .f-label。 */
+.unlock-textarea {
+  width: 100%;
+  min-height: 176rpx;
+  padding: 20rpx 24rpx;
+  border-radius: var(--r-md);
+  background: var(--fill);
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: var(--t1);
+  /* 宽度含内边距（唯一一处必须显式写的场景：textarea 默认不回传父级盒模型） */
+  box-sizing: border-box;
+}
+.unlock-count {
+  margin-top: 10rpx;
+  text-align: right;
+  font-size: 24rpx;
+  color: var(--t4);
+}
+/* 「解锁申请中」那一行：不可点，视觉上比可点的行轻一档 */
+.entry-row.is-pending {
+  opacity: .72;
+}
+
 /* 分享按钮占满宽度 */
 .action-btn-full {
   flex: none;
@@ -63,8 +97,10 @@
 .action-btn:active {
   opacity: 0.85;
 }
+/* 2026-09-22：原来是 #FF6B35 → #C9451A 的渐变，最亮那一端白字只有 2.81:1，
+   正好踩在项目自己写的"#FF6B35 禁止承载文字"上。改成按钮色实底（白字 4.75:1 ✓）。 */
 .action-primary {
-  background: linear-gradient(135deg, #FF6B35 0%, #C9451A 100%);
+  background: var(--brand-btn);
   color: #fff;
 }
 .action-secondary {
@@ -100,7 +136,9 @@
   width: 88rpx;
   height: 88rpx;
   border-radius: 22rpx;
-  background: linear-gradient(135deg, #FF6B35 0%, #C9451A 100%);
+  /* 原来 #FF6B35→#C9451A：亮端白图标只有 2.84:1（图标要 ≥3:1）。收口到品牌渐变 */
+  background: #C9451A;
+  background: var(--brand-grad);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -111,8 +149,11 @@
 .entry-ico-img {
   width: 48rpx;
   height: 48rpx;
-  filter: brightness(0) invert(1);
 }
+/* 2026-09-22 去掉了这里的 filter: brightness(0) invert(1)。
+   它是个 hack —— 把任意颜色的 svg 硬涂成白色；一旦某个图标忘了放进来就会露馅，
+   而且换主题色时这层白也帮不上忙。现在直接用白色版图标：
+   ic-clock-w / ic-search-w / ic-lock-open-w（命名沿用项目已有的 ic-mic-o / ic-sparkle-w 习惯）。 */
 .entry-main {
   flex: 1;
   min-width: 0;
@@ -157,7 +198,9 @@
   justify-content: center;
   padding: 16rpx 32rpx;
   border-radius: 32rpx;
-  background: linear-gradient(135deg, #E4551D 0%, #C9451A 100%);
+  /* 白字原压在 #E4551D→#C9451A 上只有 3.74:1（26rpx 属小字，需 4.5:1）→ 收口到品牌渐变 */
+  background: #C9451A;
+  background: var(--brand-grad);
   box-shadow: 0 8rpx 20rpx -8rpx rgba(201, 69, 26, .5);
 }
 .export-btn:active {
@@ -170,84 +213,127 @@
   color: #FFFFFF;
 }
 
-/* ---------- 生意参谋入口 ---------- */
-.advisor-entry {
+/* 2026-09-22 删除「生意参谋入口」整块（.advisor-entry / -left / -icon / -icon-img /
+   -info / -title / -desc / -arrow + ::before、:active，共 10 条规则）。
+   这是旧的参谋入口样式，对应 wxml 早已移除（改成结余卡下方的 .ask-entry 了），
+   全项目没有任何 wxml 再引用它 —— 留着只会让人以为还有第二个入口，
+   而且它的 .advisor-entry-icon 用的是 #FF8A50→#E4551D（白图标 2.33:1）。
+   删除前已 `grep -rn advisor-entry --include=*.wxml` 确认为 0 引用。 */
+
+/* ---------- 钱花在哪（品类分布）----------
+   2026-09-22 新增，配合 /record/stats 接口。
+
+   条形色用**账本的语义色**（支出红 / 收入绿），不用品牌橙：
+   老板在这套账本里已经建立"红=钱出去、绿=钱进来"的条件反射，
+   而这张卡说的正是这件事，用同一套颜色他才不用重新学一遍。
+   （品牌橙留给"入口/图标"那一层，不参与收支语义。） */
+.cat-hd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 28rpx 24rpx;
-  margin: 24rpx;
-  background: linear-gradient(135deg, rgba(228, 85, 29, .06) 0%, rgba(201, 69, 26, .03) 100%);
-  border: 2rpx solid rgba(228, 85, 29, .15);
-  border-radius: 20rpx;
-  position: relative;
-  overflow: hidden;
 }
-.advisor-entry:active {
-  transform: scale(0.98);
-  opacity: 0.9;
-}
-.advisor-entry::before {
-  content: "";
-  position: absolute;
-  top: -30rpx;
-  right: -30rpx;
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(228, 85, 29, .1) 0%, transparent 70%);
-  pointer-events: none;
-}
-.advisor-entry-left {
+/* 「花了 / 赚了」是 **seg**（同一批数据的两个视角）而不是 chip（筛掉数据），
+   所以用浅底 + 橙字，不用实心橙 —— 这是全站的既定分工。 */
+.cat-seg {
   display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
+  flex: none;
+  padding: 4rpx;
+  margin-left: 16rpx;
+  border-radius: var(--r-full);
+  background: var(--fill);
 }
-.advisor-entry-icon {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #FF8A50 0%, #E4551D 100%);
+.cat-seg-i {
+  /* 触控区 ≥ 88rpx 是宽度方向的规范，这里高度取 60rpx + 上下 4rpx 内边距，
+     命中区域对外感受等同于 68rpx；刻意小于主控件，因为它是本卡的次级开关 */
+  min-width: 88rpx;
+  height: 60rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 20rpx;
-  flex-shrink: 0;
-  box-shadow: 0 8rpx 20rpx -8rpx rgba(201, 69, 26, .5);
+  border-radius: var(--r-full);
+  font-size: 26rpx;
+  color: var(--t2);
 }
-.advisor-entry-icon-img {
-  width: 36rpx;
-  height: 36rpx;
-}
-.advisor-entry-info {
-  flex: 1;
-  min-width: 0;
-}
-.advisor-entry-title {
-  font-size: 30rpx;
+.cat-seg-i.is-on {
+  background: var(--card);
+  color: var(--brand-ink);
   font-weight: 600;
-  color: #101828;
-  margin-bottom: 6rpx;
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
+  box-shadow: 0 2rpx 8rpx -2rpx rgba(16, 24, 40, .12);
 }
-.advisor-entry-desc {
+.cat-sub {
+  margin-top: 8rpx;
   font-size: 24rpx;
-  color: #98A2B3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--t3);
 }
-.advisor-entry-arrow {
-  width: 12rpx;
-  height: 12rpx;
-  border-top: 3rpx solid #D0D5DD;
-  border-right: 3rpx solid #D0D5DD;
-  transform: rotate(45deg);
-  flex-shrink: 0;
+.cat-loading {
+  margin-top: 28rpx;
+}
+.cat-tip {
+  margin-top: 24rpx;
+  padding: 36rpx 0;
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+/* 「取不到」要有别于「真的没有」：给品牌色 + 可点的提示语 */
+.cat-tip.is-bad {
+  color: var(--brand-ink);
+}
+.cat-row {
+  margin-top: 26rpx;
+}
+.cat-top {
+  display: flex;
+  align-items: baseline;
+}
+.cat-name {
+  flex: 1;
+  /* 🔴 flex 子项配 text-overflow 必须同时写 min-width: 0，否则长品类名会把行撑破 */
+  min-width: 0;
+  font-size: 28rpx;
+  color: var(--t1);
+}
+.cat-share {
+  flex: none;
+  margin-left: 12rpx;
+  font-size: 24rpx;
+  color: var(--t3);
+}
+.cat-amt {
+  flex: none;
   margin-left: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.cat-track {
+  margin-top: 12rpx;
+  height: 16rpx;
+  border-radius: var(--r-full);
+  background: var(--fill);
+  overflow: hidden;
+}
+.cat-fill {
+  height: 100%;
+  border-radius: var(--r-full);
+  transition: width .3s ease;
+}
+.cat-card.is-out .cat-fill {
+  background: var(--expense);
+}
+.cat-card.is-in .cat-fill {
+  background: var(--income);
+}
+.cat-ft {
+  margin-top: 28rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid var(--line);
+  font-size: 26rpx;
+  color: var(--t3);
+}
+.cat-dot {
+  margin: 0 12rpx;
+  color: var(--line);
 }
 
 .sum-tail {
@@ -399,84 +485,6 @@
   left: -9999px;
   top: 0;
   z-index: -1;
-}
-
-/* ---------- 分享报表弹层 ---------- */
-.sh-note {
-  padding: 2rpx 0 18rpx;
-  font-size: 25rpx;
-  color: var(--t3);
-}
-.sh-opt {
-  display: flex;
-  align-items: center;
-  min-height: 108rpx;
-  padding: 22rpx 0;
-  border-bottom: 1rpx solid var(--line);
-}
-.sh-opt:last-child {
-  border-bottom: none;
-}
-.sh-opt:active {
-  opacity: .6;
-}
-.sh-opt.is-busy {
-  opacity: .45;
-}
-/* 分享页面那一项是个原生 button（只有 open-type="share" 才能拉起微信转发面板），
-   所以要把它复位成普通一行的样子。button 自带的白底/边框/居中都要清掉。 */
-.sh-opt-btn {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  background: transparent;
-  border-radius: 0;
-  font-size: inherit;
-  font-weight: inherit;
-  line-height: inherit;
-  color: inherit;
-  text-align: left;
-}
-.sh-opt-btn::after {
-  border: none;
-}
-/* 主路径的图标底用实心橙：ic-brand.svg 本身是**纯白**图标（设计给深底用的），
-   配下面那个浅底会白压浅、等于隐形。
-   写成复合选择器而不是单独的类 —— 同权重下靠源码顺序决定胜负太脆
-   （第一版就栽在这：.sh-ico-key 写在 .sh-ico 前面，橙底被浅底盖掉，图标直接看不见了）。
-   把意图写进选择器，谁前谁后都不受影响。 */
-.sh-ico.sh-ico-key {
-  background: var(--brand-btn);
-}
-.sh-ico {
-  width: 72rpx;
-  height: 72rpx;
-  flex: none;
-  margin-right: 24rpx;
-  border-radius: var(--r-md);
-  background: var(--brand-weak);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.sh-ico-img {
-  width: 40rpx;
-  height: 40rpx;
-}
-.sh-main {
-  flex: 1;
-  min-width: 0;
-}
-.sh-t {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: var(--t1);
-}
-.sh-d {
-  margin-top: 4rpx;
-  font-size: 24rpx;
-  line-height: 1.5;
-  color: var(--t3);
 }
 
 /* ---------- 报表日历 ---------- */
@@ -649,26 +657,32 @@
   font-weight: 700;
 }
 
+/* 2026-09-22：原来是 #FF8A3D → #FF6B35 的渐变 —— 这是全站最亮的一段橙，
+   白字对比度只有约 2.4:1（全站最低）。改成按钮色实底 + 图标换成白色版，
+   同时把高度提到 88rpx 满足触控下限（原来是 72rpx＝36px，不达标）。 */
 .cal-sel-share {
   margin-top: 20rpx;
-  height: 72rpx;
-  border-radius: 36rpx;
-  background: linear-gradient(135deg, #FF8A3D, #FF6B35);
+  height: 88rpx;
+  border-radius: var(--r-full);
+  background: var(--brand-btn);
   color: #fff;
   font-size: 28rpx;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 16rpx rgba(255, 107, 53, 0.3);
+  box-shadow: 0 4rpx 16rpx -6rpx rgba(201, 69, 26, .5);
 }
 .cal-sel-share:active {
-  opacity: 0.85;
+  background: var(--brand-btn-press);
   transform: scale(0.98);
 }
+/* 曾经这里是个 📤 emoji（全站第 20 处 emoji 当图标）—— 换成白色版分享图标 */
 .cal-sel-share-ico {
-  margin-right: 8rpx;
-  font-size: 32rpx;
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 12rpx;
+  flex: none;
 }
 .cal-sel-ft {
   margin-top: 8rpx;
@@ -743,7 +757,6 @@
 .tbl-tip.is-bad {
   color: var(--expense);
 }
-
 
 /* ---------- 每日汇总表：点某天展开当天明细 ---------- */
 /* 行被 .tbl-grp 包了一层，.tbl-r:last-child 落不到最后一行头上 ——

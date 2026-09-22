@@ -1,7 +1,7 @@
 /* pages/notifications/notifications.wxss */
 .page {
   min-height: 100vh;
-  background: #F5F7FA;
+  background: var(--bg);
   padding-bottom: 40rpx;
 }
 
@@ -11,7 +11,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 32rpx;
-  background: #FFFFFF;
+  background: var(--card);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -19,11 +19,11 @@
 .top-title {
   font-size: 34rpx;
   font-weight: 700;
-  color: #1A1D21;
+  color: var(--t1);
 }
 .top-action {
   font-size: 26rpx;
-  color: #E4551D;
+  color: var(--brand-ink);
   font-weight: 500;
   padding: 8rpx 20rpx;
   border-radius: 24rpx;
@@ -43,8 +43,8 @@
 .loading-spinner {
   width: 48rpx;
   height: 48rpx;
-  border: 4rpx solid #E4E8EC;
-  border-top-color: #E4551D;
+  border: 4rpx solid var(--line);
+  border-top-color: var(--brand-btn);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 20rpx;
@@ -54,31 +54,13 @@
 }
 .loading-text {
   font-size: 26rpx;
-  color: #8A94A6;
+  color: var(--t3);
 }
 
 /* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 160rpx 0;
-}
-.empty-ico {
-  font-size: 96rpx;
-  margin-bottom: 24rpx;
-  opacity: 0.5;
-}
-.empty-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #1A1D21;
-  margin-bottom: 12rpx;
-}
-.empty-desc {
-  font-size: 26rpx;
-  color: #8A94A6;
-}
+/* 2026-09-22 删除本页自写的空状态（.empty-state / .empty-ico / .empty-title / .empty-desc）。
+   已改用 app.wxss 的公共 .empty 体系 —— 见 contacts.wxss 里的同类说明。
+   原来那个 .empty-ico 的注释（"emoji 换图片后要给尺寸"）也随之作废：公共类里已有宽高。 */
 
 /* 通知列表 */
 .notify-list {
@@ -88,44 +70,39 @@
   display: flex;
   align-items: flex-start;
   padding: 28rpx 24rpx;
-  background: #FFFFFF;
+  background: var(--card);
   border-radius: 20rpx;
   margin-bottom: 16rpx;
   transition: all 0.15s ease;
 }
 .notify-item:active {
   transform: scale(0.98);
-  background: #F8F9FB;
+  background: var(--bg);
 }
 .notify-item.is-unread {
   background: linear-gradient(135deg, #FFF8F5 0%, #FFFFFF 100%);
-  border-left: 6rpx solid #E4551D;
+  border-left: 6rpx solid var(--brand-btn);
 }
 
-/* 通知图标 */
+/* 通知图标 —— 2026-09-22 统一：
+   原来每种类型一个不同底色（绿/琥珀/绿/红）再叠 emoji 自带的花色，
+   一条列表里最多同时出现 5 种颜色。现在统一「浅橙底 + 品牌橙描边图标」，
+   类型语义交给标题文字（本来就已经写清了）。
+   形状也从 50% 正圆改成 --r-md 圆角方，和报表页入口图标、app.wxss 的 .row-ico 对齐。 */
 .notify-ico {
   width: 72rpx;
   height: 72rpx;
-  border-radius: 50%;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36rpx;
   flex-shrink: 0;
   margin-right: 20rpx;
-  background: #F0F2F5;
+  background: var(--brand-weak);
 }
-.notify-ico.report_confirmed {
-  background: rgba(18, 183, 106, .1);
-}
-.notify-ico.unlock_requested {
-  background: rgba(247, 144, 9, .1);
-}
-.notify-ico.unlock_approved {
-  background: rgba(18, 183, 106, .1);
-}
-.notify-ico.unlock_rejected {
-  background: rgba(240, 68, 56, .1);
+.notify-ico-img {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 /* 通知内容 */
@@ -141,7 +118,7 @@
 .notify-title {
   font-size: 28rpx;
   font-weight: 600;
-  color: #1A1D21;
+  color: var(--t1);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -151,13 +128,13 @@
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
-  background: #F04438;
+  background: var(--expense);
   flex-shrink: 0;
   margin-left: 12rpx;
 }
 .notify-desc {
   font-size: 26rpx;
-  color: #5A6472;
+  color: var(--t2);
   line-height: 1.5;
   margin-bottom: 10rpx;
   display: -webkit-box;
@@ -167,5 +144,5 @@
 }
 .notify-time {
   font-size: 22rpx;
-  color: #A0A8B4;
+  color: var(--t4);
 }

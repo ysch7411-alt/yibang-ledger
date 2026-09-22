@@ -1,4 +1,5 @@
 const pool = require('../db/config');
+const log = require('./log');
 
 /**
  * 通知类型常量
@@ -60,7 +61,7 @@ async function send(userId, type, title, content, data) {
     );
     return true;
   } catch (err) {
-    console.error('发送通知失败:', err);
+    log.error('发送通知失败:', err);
     return false;
   }
 }
@@ -97,9 +98,21 @@ async function sendToBosses(shopOwnerId, type, title, content, data) {
 async function getList(userId, limit = 50, offset = 0) {
   await ensureTable();
   const [rows] = await pool.query(
-    `SELECT * FROM notifications 
-     WHERE user_id = ? 
-     ORDER BY created_at DESC 
+    /* created_at 必须用 DATE_FORMAT 取**字符串**（项目约定）。
+       原来这里是 SELECT *，mysql2 会把 DATETIME 转成 JS Date，JSON 序列化后是
+       UTC 的 ISO 串 "2026-09-21T12:14:00.000Z"；小程序端一旦做
+       `new Date(s.replace(/-/g,'/'))`（为兼容 iOS 解析空格写法而写）就会得到
+       Invalid Date —— 界面上真的显示过「NaN月NaN日」。
+       服务端给字符串，前端哪种写法都能解析，从源头把坑填掉。
+       同时不再用 SELECT *：列清单显式写，加字段时才知道要同步（老坑：
+       purchase 的 source_file_ids 就是加了 INSERT 忘了 SELECT，写进去读出来是 undefined）。
+       排序末尾补 id DESC —— created_at 只到秒，同秒并列时 MySQL 不保证顺序，
+       表现是"刚收到的通知没排最前"，也是分页正确的前提。 */
+    `SELECT id, user_id, type, title, content, data, is_read,
+            DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS created_at
+     FROM notifications
+     WHERE user_id = ?
+     ORDER BY created_at DESC, id DESC
      LIMIT ? OFFSET ?`,
     [userId, limit, offset]
   );
