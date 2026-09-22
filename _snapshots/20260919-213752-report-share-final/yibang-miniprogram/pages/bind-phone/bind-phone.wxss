@@ -1,0 +1,344 @@
+/* pages/register/register.wxss —— 注册页
+   设计口径：第一屏先立品牌和用户价值，再提要求。所以品牌区给足留白，
+   手机号只保留一个动作，其余全用文字说清。 */
+
+.reg {
+  min-height: 100vh;
+  padding: 0 40rpx;
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+}
+
+/* ---------- ① 品牌区 ---------- */
+.brand {
+  padding: 84rpx 0 52rpx;
+  text-align: center;
+}
+.brand-mark {
+  width: 152rpx;
+  height: 152rpx;
+  margin: 0 auto 28rpx;
+  border-radius: 44rpx;
+  background: linear-gradient(150deg, #FF8A5B 0%, #C9451A 100%);
+  box-shadow: 0 20rpx 40rpx -16rpx rgba(201, 69, 26, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.brand-mark-ico {
+  width: 86rpx;
+  height: 86rpx;
+}
+.brand-name {
+  font-size: 50rpx;
+  font-weight: 700;
+  letter-spacing: 2rpx;
+  color: var(--t1);
+  line-height: 1.25;
+}
+/* 核心主张：整页最重要的一句话，给品牌橙、给粗体、给独立的呼吸空间 */
+.brand-slogan {
+  margin-top: 18rpx;
+  font-size: 33rpx;
+  font-weight: 600;
+  letter-spacing: .6rpx;
+  color: var(--brand-ink);
+  line-height: 1.4;
+}
+.brand-sub {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+
+/* ---------- ② 痛点 → 解决 ---------- */
+.pain-card {
+  padding: 26rpx 32rpx 12rpx;
+}
+.pain {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.pain:last-child {
+  border-bottom: none;
+}
+.pain-ico {
+  width: 64rpx;
+  height: 64rpx;
+  flex: none;
+  margin-right: 20rpx;
+  border-radius: var(--r-md);
+  background: var(--brand-weak);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pain-ico-img {
+  width: 38rpx;
+  height: 38rpx;
+}
+.pain-line {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+}
+.pain-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--t1);
+}
+
+/* 唯一的标记：绿色对勾。放在行首，和第一行文字中线对齐。 */
+.mk {
+  width: 28rpx;
+  height: 28rpx;
+  flex: none;
+  margin: 8rpx 12rpx 0 0;
+  position: relative;
+  border-radius: 50%;
+  background: var(--income-weak);
+}
+.mk::after {
+  content: "";
+  position: absolute;
+  left: 7rpx;
+  top: 7rpx;
+  width: 11rpx;
+  height: 6rpx;
+  border-left: 3rpx solid var(--income);
+  border-bottom: 3rpx solid var(--income);
+  transform: rotate(-45deg);
+}
+
+/* ---------- ③ 手机号 ---------- */
+.reg-block {
+  margin-top: 48rpx;
+}
+.wx-linked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 22rpx;
+}
+.wx-linked-tick {
+  width: 32rpx;
+  height: 32rpx;
+  flex: none;
+  margin-right: 10rpx;
+  border-radius: 50%;
+  background: var(--income-weak);
+  position: relative;
+}
+.wx-linked-tick::after {
+  content: "";
+  position: absolute;
+  left: 9rpx;
+  top: 9rpx;
+  width: 13rpx;
+  height: 7rpx;
+  border-left: 3rpx solid var(--income);
+  border-bottom: 3rpx solid var(--income);
+  transform: rotate(-45deg);
+}
+.wx-linked-txt {
+  font-size: 26rpx;
+  color: var(--income);
+  font-weight: 600;
+}
+.reg-t {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--t1);
+  text-align: center;
+  line-height: 1.35;
+}
+.reg-d {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  line-height: 1.65;
+  color: var(--t3);
+  text-align: center;
+}
+
+/* 失败原因：如实显示后端/微信给的原话，不糊成「失败了」 */
+.err {
+  margin-top: 26rpx;
+  padding: 22rpx 24rpx;
+  border-radius: var(--r-md);
+  background: var(--warn-weak);
+  border: 1rpx solid #F5D9A8;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: var(--warn);
+}
+
+/* 原生 button 复位后再套 .btn 的视觉 */
+.reg-btn {
+  margin: 32rpx 0 0;
+  width: 100%;
+  padding: 0;
+  line-height: normal;
+  border: none;
+}
+button.reg-btn::after {
+  border: none;
+}
+/* 未勾选协议时给一个明确的"为什么点不动" */
+.reg-btn-off {
+  background: var(--fill);
+  color: var(--t3);
+}
+
+/* 协议勾选：整行可点，触控高度 ≥88rpx。放在按钮之前，勾完顺手就点按钮 */
+.agree {
+  display: flex;
+  align-items: flex-start;
+  min-height: 88rpx;
+  margin-top: 24rpx;
+  padding: 14rpx 4rpx;
+}
+.agree-box {
+  width: 40rpx;
+  height: 40rpx;
+  flex: none;
+  margin: 2rpx 16rpx 0 0;
+  border-radius: 10rpx;
+  border: 2rpx solid #D0D5DD;
+  background: #fff;
+  position: relative;
+  transition: background-color .14s ease, border-color .14s ease;
+}
+.agree-box.on {
+  background: var(--brand-btn);
+  border-color: var(--brand-btn);
+}
+.agree-box.on::after {
+  content: "";
+  position: absolute;
+  left: 11rpx;
+  top: 6rpx;
+  width: 14rpx;
+  height: 8rpx;
+  border-left: 4rpx solid #fff;
+  border-bottom: 4rpx solid #fff;
+  transform: rotate(-45deg);
+}
+.agree-txt {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: var(--t3);
+}
+.agree-link {
+  color: var(--brand-ink);
+}
+
+.foot {
+  margin-top: 44rpx;
+  font-size: 25rpx;
+  line-height: 1.75;
+  color: var(--t3);
+  text-align: center;
+}
+
+/* ---------- 协议弹层 ---------- */
+/* app.wxss 的 .sheet 默认停在 tabBar 之上（给 TabBar 页用的），
+   注册页没有 tabBar，必须把 bottom 收回来，否则下面会空出一条。 */
+.reg-sheet {
+  bottom: 0;
+}
+.reg-sheet .sheet-ft {
+  padding-bottom: calc(28rpx + env(safe-area-inset-bottom, 0px));
+}
+.term {
+  padding: 20rpx 0 4rpx;
+}
+.term-t {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.term-d {
+  margin-top: 8rpx;
+  font-size: 27rpx;
+  line-height: 1.7;
+  color: var(--t2);
+}
+.term-note {
+  margin-top: 24rpx;
+  padding: 20rpx 22rpx;
+  border-radius: var(--r-md);
+  background: var(--fill);
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: var(--t3);
+}
+.sheet-gap {
+  height: 28rpx;
+}
+
+/* ---------- 已绑定态 ---------- */
+.bp-done {
+  display: flex;
+  align-items: flex-start;
+  padding: 28rpx 32rpx;
+}
+.bp-done-tick {
+  width: 48rpx;
+  height: 48rpx;
+  flex: none;
+  margin-right: 20rpx;
+  border-radius: 50%;
+  background: var(--income-weak);
+  position: relative;
+}
+.bp-done-tick::after {
+  content: "";
+  position: absolute;
+  left: 14rpx;
+  top: 14rpx;
+  width: 18rpx;
+  height: 10rpx;
+  border-left: 4rpx solid var(--income);
+  border-bottom: 4rpx solid var(--income);
+  transform: rotate(-45deg);
+}
+.bp-done-main {
+  flex: 1;
+  min-width: 0;
+}
+.bp-done-t {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.bp-done-d {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: var(--t3);
+}
+
+/* ---------- 跳过（合规要求） ---------- */
+.bp-skip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  margin-top: 24rpx;
+  border-radius: var(--r-full);
+  background: var(--card);
+  color: var(--t2);
+  font-size: 28rpx;
+  box-shadow: var(--sh-card);
+}
+.bp-skip:active {
+  opacity: .7;
+}

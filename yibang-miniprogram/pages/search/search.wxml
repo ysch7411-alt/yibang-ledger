@@ -1,0 +1,131 @@
+<!--pages/search/search.wxml-->
+<view class="container" style="{{_cv}}">
+  <view class="page-head">
+    <view class="page-title">查询</view>
+    <view class="page-sub">任意查，随便核</view>
+  </view>
+
+  <!-- 采购单入口：拍过的送货单不在流水里，得有个地方能翻回来 -->
+  <view class="po-entry" bindtap="goPurchase" hover-class="tap-dim">
+    <view class="po-entry-ico">
+      <image class="po-entry-ico-img" src="/images/ic-scan.svg" mode="aspectFit" />
+    </view>
+    <view class="po-entry-main">
+      <view class="po-entry-t">采购单</view>
+      <view class="po-entry-d">拍过的送货单都在这儿，明细随时翻</view>
+    </view>
+    <view class="row-arrow"></view>
+  </view>
+
+  <!-- 搜索框：带图标 + 一键清空 -->
+  <view class="search-bar">
+    <image class="search-ico" src="/images/tab-search.svg" mode="aspectFit" />
+    <input
+      class="search-input"
+      value="{{keyword}}"
+      placeholder="搜人名、事由、金额"
+      placeholder-class="ph"
+      confirm-type="search"
+      bindinput="onInput"
+      bindconfirm="noop"
+    />
+    <view wx:if="{{keyword}}" class="search-clear" bindtap="clearKeyword"></view>
+  </view>
+
+  <!-- 收支口径 -->
+  <view class="seg">
+    <view class="seg-i {{typeFilter === 'all' ? 'is-on' : ''}}" data-t="all" bindtap="pickType">全部</view>
+    <view class="seg-i {{typeFilter === 'in' ? 'is-on' : ''}}" data-t="in" bindtap="pickType">只收入</view>
+    <view class="seg-i {{typeFilter === 'out' ? 'is-on' : ''}}" data-t="out" bindtap="pickType">只支出</view>
+  </view>
+
+  <!-- 时间范围。筛选全部走服务端，所以换任何一个条件都会重新查一遍 -->
+  <view class="chip-bar">
+    <view
+      wx:for="{{ranges}}"
+      wx:key="key"
+      class="chip {{range === item.key ? 'is-on' : ''}}"
+      data-r="{{item.key}}"
+      bindtap="pickRange"
+    >{{item.text}}</view>
+  </view>
+
+  <!-- 这里原来有一张「问问 AI 生意参谋」入口卡，2026-09-20 移到「参谋」页了。
+       理由：查询页的任务是「找出某一笔账」，AI 答的是「这个月怎么样」这类汇总问题 ——
+       是两种意图，放在一起两边都不顺（用户在这个页面想的是"那笔账在哪"）。
+       参谋页本就是看结论的地方，追问长在结论旁边更自然。 -->
+  <view class="list-hd">
+    <text class="list-hd-t">共 {{total}} 条</text>
+    <text wx:if="{{hasFilter}}" class="list-hd-reset" bindtap="resetFilter">清除筛选</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="card">
+    <view class="skeleton-line" style="width: 44%;"></view>
+    <view class="skeleton-line mt-24" style="width: 72%;"></view>
+    <view class="skeleton-line mt-16" style="width: 58%;"></view>
+  </view>
+
+  <!-- 请求没通 ≠ 没这笔账。这两个必须分开，不然用户会以为账丢了 -->
+  <view wx:elif="{{failed}}" class="card">
+    <view class="empty">
+      <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
+      <view class="empty-title">没能读到记录</view>
+      <view class="empty-desc">网络不太顺，点下面再试一次。</view>
+      <view class="empty-action" bindtap="retry">重新加载</view>
+    </view>
+  </view>
+
+  <view wx:elif="{{total === 0}}" class="card">
+    <view class="empty">
+      <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
+      <view class="empty-title">没有找到符合条件的记录</view>
+      <view class="empty-desc">{{emptyText}}</view>
+      <view wx:if="{{hasFilter}}" class="empty-action" bindtap="resetFilter">清除筛选</view>
+    </view>
+  </view>
+
+  <block wx:else>
+    <block wx:for="{{sections}}" wx:key="key">
+      <view class="day-hd">
+        <text class="day-label">{{item.label}}</text>
+        <text wx:if="{{item.hasSummary}}" class="day-sum">
+          <text class="c-income">收 ¥{{item.incomeText}}</text>
+          <text wx:if="{{item.hasExpense}}"> · <text class="c-expense">支 ¥{{item.expenseText}}</text></text>
+        </text>
+      </view>
+      <view class="card card-flush">
+        <view
+          wx:for="{{item.items}}"
+          wx:for-item="r"
+          wx:key="id"
+          class="row {{r.contact_id ? 'row-tap' : ''}}"
+          data-id="{{r.contact_id}}"
+          bindtap="goContact"
+        >
+          <view class="row-main">
+            <view class="rec-line">
+              <text class="tag {{r._tagCls}}">{{r._typeText}}</text>
+              <text class="rec-name ellipsis">
+                <text wx:for="{{r._titleNodes}}" wx:for-item="n" wx:key="index" class="{{n.hl ? 'hl' : ''}}">{{n.t}}</text>
+              </text>
+            </view>
+            <view class="row-sub">
+              <text wx:for="{{r._subNodes}}" wx:for-item="n" wx:key="index" class="{{n.hl ? 'hl' : ''}}">{{n.t}}</text>
+            </view>
+          </view>
+          <view class="row-val num {{r._cls}}">{{r._amount}}</view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 还有更多就提示上拉，到底了就说清楚一共多少条 ——
+         不能让用户以为"就这么多"，也不能让他一直往下拽却没有新内容 -->
+    <view wx:if="{{loadingMore}}" class="sm-more">正在加载更早的记录…</view>
+    <view wx:elif="{{hasMore}}" class="sm-more">上拉看更早的记录</view>
+    <view wx:else class="sm-more">共 {{total}} 条，到底了</view>
+  </block>
+
+  <view class="search-tail"></view>
+</view>
+
+<!-- AI 问答弹层已随入口一起移到 pages/advisor（那儿既有入口也有对话） -->

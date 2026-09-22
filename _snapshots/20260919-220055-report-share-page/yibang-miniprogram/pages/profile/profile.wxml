@@ -1,0 +1,161 @@
+<!--pages/profile/profile.wxml-->
+<view class="container">
+
+  <!-- 身份卡：全站唯一使用满品牌色的区域，承担「我是谁 + 我的规模」 -->
+  <view class="me-card">
+    <view class="me-top">
+      <view class="me-avatar">{{initial}}</view>
+      <view class="me-info" bindtap="openProfile">
+        <view class="me-name">{{userInfo.nickname || '易帮用户'}}</view>
+        <view class="me-shop-row">
+          <text class="me-shop">{{userInfo.shop_name || '点这里填店名'}}</text>
+          <image class="me-edit" src="/images/ic-pencil-w.svg" mode="aspectFit" />
+        </view>
+      </view>
+      <view class="me-plan {{isPro ? 'pro' : 'free'}}" bindtap="goToPlan">
+        {{isPro ? '终身会员' : '免费版'}}
+      </view>
+    </view>
+
+    <view class="me-stats">
+      <view class="me-stat">
+        <view class="me-stat-v num">{{stat.records}}</view>
+        <view class="me-stat-k">累计记账</view>
+      </view>
+      <view class="me-sep"></view>
+      <view class="me-stat">
+        <view class="me-stat-v num">{{stat.contacts}}</view>
+        <view class="me-stat-k">往来对象</view>
+      </view>
+      <view class="me-sep"></view>
+      <view class="me-stat">
+        <view class="me-stat-v num">{{stat.days}}</view>
+        <view class="me-stat-k">记账天数</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 越用越懂：后台一直在默默学，但老板看不见 —— 招牌卖点必须摊开给他看 -->
+  <view class="card memo-card">
+    <view class="memo-hd">
+      <text class="memo-t">它已经学会了</text>
+      <text class="tag tag-brand">越用越懂</text>
+    </view>
+
+    <view wx:if="{{memo.termCount}}" class="memo-hero">
+      <text class="memo-num num">{{memo.termCount}}</text>
+      <text class="memo-unit">个你常用的说法</text>
+    </view>
+
+    <!-- 叫法对应：老板亲自纠正出来的，最值得展示 -->
+    <block wx:if="{{memo.nameMap.length}}">
+      <view class="memo-sub">你教它认过的叫法</view>
+      <view class="memo-map" wx:for="{{memo.nameMap}}" wx:key="from">
+        <text class="memo-from">{{item.from}}</text>
+        <text class="memo-arrow">→</text>
+        <text class="memo-to">{{item.to}}</text>
+        <text wx:if="{{item.byUser}}" class="memo-by">你教的</text>
+      </view>
+    </block>
+
+    <block wx:if="{{memo.reasons.length}}">
+      <view class="memo-sub">你常记的事由</view>
+      <view class="memo-chips">
+        <view class="memo-chip" wx:for="{{memo.reasons}}" wx:key="text">{{item.text}}</view>
+      </view>
+    </block>
+
+    <view wx:if="{{!memo.termCount}}" class="memo-empty">
+      还没有学到新说法。你每次点「改一下」，它都会记住 —— 越用越少出错。
+    </view>
+    <view wx:else class="memo-tip">
+      {{memo.learnedFromUser ? '其中 ' + memo.learnedFromUser + ' 条是你亲自教它的，下次不会再认错。' : '你每纠正一次，它都会记住，下次不会再认错。'}}
+    </view>
+  </view>
+
+  <view class="card card-flush">
+    <view class="row row-tap" bindtap="goToStaff">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-people.svg" mode="aspectFit" /></view>
+      <view class="row-main"><view class="row-title">店员管理</view></view>
+      <view wx:if="{{pendingCount > 0}}" class="tag tag-warn">{{pendingCount}} 条待审</view>
+      <view class="row-arrow"></view>
+    </view>
+    <view class="row row-tap" bindtap="goToPlan">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-card.svg" mode="aspectFit" /></view>
+      <view class="row-main"><view class="row-title">我的套餐</view></view>
+      <view class="row-arrow"></view>
+    </view>
+    <view class="row row-tap" bindtap="goToPromote">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-megaphone.svg" mode="aspectFit" /></view>
+      <view class="row-main"><view class="row-title">推广赚钱</view></view>
+      <view class="tag tag-brand">推荐奖励</view>
+      <view class="row-arrow"></view>
+    </view>
+  </view>
+
+  <view class="card card-flush">
+    <view class="row row-tap" bindtap="goToAccount">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-gear.svg" mode="aspectFit" /></view>
+      <view class="row-main">
+        <view class="row-title">账号与安全</view>
+        <view class="row-sub">{{phone ? '手机号 ' + phone : '绑定手机号 · 退出 · 注销'}}</view>
+      </view>
+      <view class="row-arrow"></view>
+    </view>
+    <view class="row row-tap" bindtap="showAbout">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-info.svg" mode="aspectFit" /></view>
+      <view class="row-main"><view class="row-title">关于易帮账本</view></view>
+      <view class="row-arrow"></view>
+    </view>
+  </view>
+
+  <view class="me-footer">
+    <view class="me-footer-l1">重庆大头针人工智能有限责任公司</view>
+    <view class="me-footer-l2">v1.0.0</view>
+  </view>
+</view>
+
+<!-- ============ 改昵称 / 店名 ============
+     店名不是装饰：报表分享出去时，对方靠它认出"这是谁家的账"。
+     原来这行写着「点这里完善店名」却点不动，是个空头承诺。 -->
+<view class="sheet-mask" wx:if="{{showProfile}}" bindtap="closeProfile" />
+<view class="sheet" wx:if="{{showProfile}}">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">你的店名</text>
+    <view class="sheet-close" bindtap="closeProfile"></view>
+  </view>
+
+  <view class="sheet-bd">
+    <view class="pf-note">填了店名，分享报表给别人看时，对方一眼就知道这是谁家的账。</view>
+
+    <view class="f-block">
+      <view class="f-label">店名</view>
+      <input
+        class="f-input"
+        value="{{form.shop_name}}"
+        maxlength="30"
+        placeholder="如：老易五金店"
+        placeholder-class="ph"
+        bindinput="onFormShop"
+      />
+    </view>
+
+    <view class="f-block">
+      <view class="f-label">你的称呼</view>
+      <input
+        class="f-input"
+        value="{{form.nickname}}"
+        maxlength="20"
+        placeholder="如：老易"
+        placeholder-class="ph"
+        bindinput="onFormNick"
+      />
+    </view>
+  </view>
+
+  <view class="sheet-ft">
+    <view class="btn btn-ghost" bindtap="closeProfile">取消</view>
+    <view class="btn btn-primary {{savingProfile ? 'is-disabled' : ''}}" bindtap="saveProfile">保存</view>
+  </view>
+</view>

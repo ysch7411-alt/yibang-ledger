@@ -1,0 +1,85 @@
+<!--pages/advisor/advisor.wxml-->
+<view class="container">
+  <view class="page-head">
+    <view class="page-title">生意参谋</view>
+    <view class="page-sub">根据你的账目自动分析</view>
+  </view>
+
+  <!-- 洞察卡：全站唯一的深色卡，专门承载「结论」，与操作型白卡拉开层级 -->
+  <view class="hero">
+    <view class="hero-cap">本月结余</view>
+    <view class="hero-v num {{stat.isPositive ? 'hero-up' : 'hero-down'}}">
+      {{stat.isPositive ? '+' : '-'}}¥{{stat.netText}}
+    </view>
+    <view class="hero-verdict">{{verdict}}</view>
+    <view class="hero-grid">
+      <view class="hero-col">
+        <view class="hero-k">本月收入</view>
+        <view class="hero-n num">¥{{stat.incomeText}}</view>
+      </view>
+      <view class="hero-sep"></view>
+      <view class="hero-col">
+        <view class="hero-k">本月支出</view>
+        <view class="hero-n num">¥{{stat.expenseText}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 重点欠款客户 -->
+  <view class="card">
+    <view class="card-hd">
+      <text class="card-title">欠得最多的客户</text>
+      <text class="card-more" bindtap="goSummary">全部 ›</text>
+    </view>
+
+    <view wx:if="{{loading}}">
+      <view class="skeleton-line" style="width: 52%;"></view>
+      <view class="skeleton-line mt-24" style="width: 74%;"></view>
+    </view>
+
+    <view wx:elif="{{topCustomers.length === 0}}" class="empty">
+      <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
+      <view class="empty-title">暂时没有客户欠款</view>
+      <view class="empty-desc">账目清爽是好事，继续保持</view>
+    </view>
+
+    <block wx:else>
+      <view
+        wx:for="{{topCustomers}}"
+        wx:key="id"
+        class="rank"
+        data-id="{{item.id}}"
+        bindtap="goDetail"
+      >
+        <view class="rank-no rank-no{{index + 1}}">{{index + 1}}</view>
+        <view class="rank-main">
+          <view class="rank-top">
+            <text class="rank-name ellipsis">{{item.name}}</text>
+            <text class="rank-amt num">¥{{item.amountText}}</text>
+          </view>
+          <view class="rank-bar">
+            <view class="rank-fill" style="width: {{item.percent}}%"></view>
+          </view>
+          <view class="rank-foot">占应收总额 {{item.share}}%</view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 经营提示：由本地规则生成，如实标注来源，不冒充大模型 -->
+  <view class="card tips-card">
+    <view class="card-hd">
+      <text class="card-title">经营提示</text>
+      <text class="card-more">据近 30 天账目</text>
+    </view>
+    <view wx:for="{{tips}}" wx:key="index" class="tip">
+      <view class="tip-dot"></view>
+      <view class="tip-main">
+        <view class="tip-t">{{item.title}}</view>
+        <view class="tip-d">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="adv-tail"></view>
+</view>

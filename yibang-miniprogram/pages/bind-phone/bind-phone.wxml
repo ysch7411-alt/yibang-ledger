@@ -1,0 +1,98 @@
+<!--pages/bind-phone/bind-phone.wxml-->
+<!-- 两种身份共用这一页：
+       · 欢迎模式（mode=welcome）—— 新用户第一次进来看到的"注册页"
+       · 绑定模式（默认）—— 老用户从「我的 → 账号与安全」主动来绑
+     ⚠️ 底部「先进入看看 / 先不绑」是合规命门，任何模式下都不能去掉：
+        微信点名的两条违规是"一进门就要求授权手机号"和"拒绝授权就不给用"，
+        留了这条退路就不算违规。 -->
+<view class="brand-page" style="{{_cv}}">
+
+  <view class="brand">
+    <view class="brand-mark">
+      <image class="brand-mark-ico" src="/images/ic-brand.svg" mode="aspectFit" />
+    </view>
+    <view class="brand-name">{{t.title}}</view>
+    <view class="brand-slogan">{{t.slogan}}</view>
+    <view class="brand-sub">{{welcome ? t.sub : (bound || t.sub)}}</view>
+  </view>
+
+  <!-- 已绑定：只显示状态，不再要求操作 -->
+  <view wx:if="{{bound && !welcome}}" class="card bp-done">
+    <view class="bp-done-tick"></view>
+    <view class="bp-done-main">
+      <view class="bp-done-t">这个微信号已经绑定手机号</view>
+      <view class="bp-done-d">换手机时用微信登录，账本会自动找回来</view>
+    </view>
+  </view>
+
+  <block wx:else>
+    <view class="card pain-card">
+      <view class="card-hd">
+        <text class="card-title">{{t.cardTitle}}</text>
+      </view>
+      <block wx:for="{{values}}" wx:key="text" wx:for-item="p">
+        <view class="pain">
+          <view class="pain-ico">
+            <image class="pain-ico-img" src="{{p.icon}}" mode="aspectFit" />
+          </view>
+          <view class="pain-line">
+            <view class="mk"></view>
+            <text class="pain-t">{{p.text}}</text>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="reg-block">
+      <view class="err" wx:if="{{errorTip}}">{{errorTip}}</view>
+
+      <!-- 协议放在按钮之前：先勾选 → 按钮亮起 → 顺手点 -->
+      <view class="agree" bindtap="toggleAgree">
+        <view class="agree-box {{agreed ? 'on' : ''}}"></view>
+        <view class="agree-txt">
+          我已阅读并同意
+          <text class="agree-link" catchtap="openTerms">《服务说明与隐私告知》</text>
+        </view>
+      </view>
+
+      <button
+        wx:if="{{agreed}}"
+        class="btn btn-primary reg-btn"
+        open-type="getPhoneNumber"
+        disabled="{{busy}}"
+        bindgetphonenumber="onGetPhone"
+      >{{busy ? t.btnBusy : t.btn}}</button>
+      <view wx:else class="btn reg-btn reg-btn-off" bindtap="needAgree">{{t.btn}}</view>
+    </view>
+  </block>
+
+  <!-- 合规要求：必须留一条「不绑也能用」的退路。欢迎模式下它是「先进入看看」 -->
+  <view class="bp-skip" bindtap="skip">{{t.skip}}</view>
+
+  <view class="foot">
+    <view>不读取通讯录，不读取相册，不发送营销短信</view>
+    <view>照片与录音只在你主动使用时上传，用于当次识别</view>
+  </view>
+</view>
+
+<view class="sheet-mask" wx:if="{{showTerms}}" bindtap="closeTerms"></view>
+<view class="sheet reg-sheet" wx:if="{{showTerms}}">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">服务说明与隐私告知</text>
+    <view class="sheet-close" bindtap="closeTerms"></view>
+  </view>
+  <scroll-view class="sheet-bd" scroll-y>
+    <block wx:for="{{terms}}" wx:key="t" wx:for-item="it">
+      <view class="term">
+        <view class="term-t">{{it.t}}</view>
+        <view class="term-d">{{it.d}}</view>
+      </view>
+    </block>
+    <view class="term-note">完整条款以小程序的《用户隐私保护指引》为准，可在微信「小程序详情页 → 更多资料」查看。首次授权时微信也会弹出官方隐私授权窗口。</view>
+    <view class="sheet-gap"></view>
+  </scroll-view>
+  <view class="sheet-ft">
+    <view class="btn btn-primary" catchtap="agreeAndClose">同意并继续</view>
+  </view>
+</view>

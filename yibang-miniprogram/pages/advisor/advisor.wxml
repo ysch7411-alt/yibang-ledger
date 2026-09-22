@@ -1,0 +1,185 @@
+<!--pages/advisor/advisor.wxml-->
+<view class="container" style="{{_cv}}">
+  <view class="page-head">
+    <view class="page-title">生意参谋</view>
+    <view class="page-sub">根据你的账目自动分析</view>
+  </view>
+
+  <!-- 洞察卡：全站唯一的深色卡，专门承载「结论」，与操作型白卡拉开层级 -->
+  <view class="hero">
+    <view class="hero-cap">本月结余</view>
+    <view class="hero-v num {{stat.isPositive ? 'hero-up' : 'hero-down'}}">
+      {{stat.isPositive ? '+' : '-'}}¥{{stat.netText}}
+    </view>
+    <view class="hero-verdict">{{verdict}}</view>
+    <view class="hero-grid">
+      <view class="hero-col">
+        <view class="hero-k">本月收入</view>
+        <view class="hero-n num">¥{{stat.incomeText}}</view>
+      </view>
+      <view class="hero-sep"></view>
+      <view class="hero-col">
+        <view class="hero-k">本月支出</view>
+        <view class="hero-n num">¥{{stat.expenseText}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- AI 追问入口。
+       位置在「结论」正下方 —— 参谋页的阅读顺序是「结论 → 我的疑问 → 明细」，
+       用户看完 hero 里的数字，下一个念头就是"那 XX 呢"，这里是接住它的地方。
+       （也不放页面顶部：那会把 hero 这个真正的重点挤下去。）
+
+       文案有意避开了「这个月赚了多少」「谁欠我最多」——
+       这两句 hero 和下面那张卡已经答过了，再问一遍等于让用户重看一遍数字。
+       这里放的是 hero 答不了的那类：支出结构、环比。 -->
+  <view class="ask-entry" bindtap="openAi">
+    <view class="ask-ico">
+      <image class="ask-ico-img" src="/images/ic-sparkle-w.svg" mode="aspectFit" />
+    </view>
+    <view class="ask-main">
+      <view class="ask-t">拿不准的，问我</view>
+      <view class="ask-d">我盯着你的账呢</view>
+    </view>
+    <view class="ask-go"></view>
+  </view>
+
+
+  <!-- 经营提示：由本地规则生成，如实标注来源，不冒充大模型 -->
+  <view class="card tips-card">
+    <view class="card-hd">
+      <text class="card-title">经营提示</text>
+      <text class="card-more">据近 30 天账目</text>
+    </view>
+    <view wx:for="{{tips}}" wx:key="index" class="tip">
+      <view class="tip-dot"></view>
+      <view class="tip-main">
+        <view class="tip-t">{{item.title}}</view>
+        <view class="tip-d">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="adv-tail"></view>
+</view>
+
+<!-- ============ AI 问答（从查询页整块搬过来的） ============
+     为什么该在这儿而不是查询页：查询页的任务是「找出某一笔账」，
+     而 AI 答的是「这个月怎么样」这类汇总问题 —— 它跟「查询」是两种意图。
+     参谋页本来就是看结论的地方，追问就长在结论旁边。
+     标题保留「AI」二字：本页的「经营提示」是本地规则算的（已如实标注），
+     这里是大模型答的，两者必须能分清。 -->
+<view class="sheet-mask" wx:if="{{showAi}}" bindtap="closeAi" />
+<!-- 输入条在弹层底部，键盘弹起时必须整层上挪（--kb-lift 见 utils/keyboard.js） -->
+<view class="sheet chat-sheet" wx:if="{{showAi}}" style="--kb-lift: {{kbLift}}px;">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">AI 生意参谋</text>
+    <view class="sheet-close" bindtap="closeAi"></view>
+  </view>
+
+  <scroll-view scroll-y class="chat-body" scroll-into-view="{{scrollTo}}" scroll-with-animation>
+    <view wx:if="{{aiHistory.length === 0}}" class="chat-hello">
+      <image class="empty-ico" src="/images/ic-sparkle.svg" mode="aspectFit" />
+      <view class="empty-title">可以这样问我</view>
+      <view class="chat-asks">
+        <view wx:for="{{quickAsks}}" wx:key="*this" class="chat-ask" data-q="{{item}}" bindtap="askQuick">{{item}}</view>
+      </view>
+    </view>
+
+    <!-- 一条消息。有 card 走卡片，没有就按段落渲染纯文本；
+         用户拍图的那条额外带缩略图，让人知道 AI 看的是哪张 -->
+    <view wx:for="{{aiHistory}}" wx:key="index" id="m{{index}}" class="chat-item {{item.role}}">
+      <!-- 底色靠 .chat-item.ai / .chat-item.user 区分，不在气泡上加冗余类 -->
+      <view class="chat-bubble">
+
+        <image wx:if="{{item.image}}" class="cc-thumb" src="{{item.image}}" mode="aspectFill" />
+
+        <block wx:if="{{item.card}}">
+          <view class="cc-sum">{{item.card.summary}}</view>
+          <view wx:if="{{item.card.numbers.length}}" class="cc-figs">
+            <view class="cc-fig" wx:for="{{item.card.numbers}}" wx:for-item="n" wx:key="label">
+              <text class="cc-fig-k">{{n.label}}</text>
+              <text class="cc-fig-v">{{n.value}}</text>
+            </view>
+          </view>
+          <view wx:if="{{item.card.points.length}}" class="cc-pts">
+            <view class="cc-pt" wx:for="{{item.card.points}}" wx:for-item="p" wx:key="*this">
+              <view class="cc-dot"></view>
+              <text class="cc-pt-t">{{p}}</text>
+            </view>
+          </view>
+        </block>
+
+        <block wx:else>
+          <view class="cc-line" wx:for="{{item.lines}}" wx:for-item="ln" wx:key="*this">{{ln}}</view>
+        </block>
+      </view>
+    </view>
+    <view wx:if="{{aiThinking}}" class="chat-item ai" id="thinking">
+      <view class="chat-bubble chat-bubble-thinking">正在算…</view>
+    </view>
+    <view class="chat-pad" id="chatBottom"></view>
+  </scroll-view>
+
+  <!-- ═══════ 输入条（2026-09-20 重构）═══════
+       按老板要求调整成：[+] [🎤 输入框……] [发送]
+       · 输入条整体加高（84rpx → 96rpx），输入区因去掉两个图标而更宽
+       · 左侧只留一个「+」：拍照 / 相册 / 传文件（沿用记账页那套图标宫格，
+         老板明确要图标不要文字列表）
+       · 话筒挪进输入框内，并且**按住输入条就能说话、松手结束**；
+         单击仍是聚焦打字（用"按住超过 250ms"区分两种意图）
+       · 上传失败 / 没权限都会给可操作的提示，不静默失败 -->
+  <view class="ibar">
+    <view class="ibar-plus" bindtap="openPlus" hover-class="ibar-plus-hover" hover-stay-time="60">
+      <view class="ibar-plus-ico"></view>
+    </view>
+
+    <view
+      class="ibar-field {{recording ? 'is-rec' : ''}}"
+      bindtouchstart="onFieldStart"
+      bindtouchend="onFieldEnd"
+      bindtouchcancel="onFieldCancel"
+      bindtap="onFieldTap"
+    >
+      <image class="ibar-field-ico" src="/images/ic-mic-o.svg" mode="aspectFit" />
+      <input
+        class="ibar-input"
+        value="{{aiInput}}"
+        placeholder="{{aiThinking ? '正在算…' : (working ? workingText : (recording ? '正在听，松开就发…' : (_t.placeholder || '问一句，或拍一张')))}}"
+        placeholder-class="ph"
+        confirm-type="send"
+        adjust-position="{{false}}"
+        bindinput="onAiInput"
+        bindconfirm="sendAi"
+        bindfocus="onKbFocus"
+        bindblur="onKbBlur"
+        bindkeyboardheightchange="onKbHeight"
+        disabled="{{working}}"
+      />
+    </view>
+
+    <view class="ibar-send {{(aiInput && !aiThinking && !working) ? '' : 'is-disabled'}}" bindtap="sendAi">
+      {{aiThinking ? '正在算…' : (working ? '处理中' : '发送')}}
+    </view>
+
+    <!-- 上传面板：必须放在 .ibar **内部**，
+         这样 bottom:calc(100%+16rpx) 的 100% 才是输入条的高度；
+         放在弹层根部的话 100% 是整个弹层，浮层会跑到屏幕外去。 -->
+    <view class="ibar-upload" wx:if="{{showUpload}}">
+      <view class="ibar-up-cell" wx:if="{{_f && _f.photoEntry}}" bindtap="pickCamera" hover-class="ibar-up-hover" hover-stay-time="60">
+        <view class="ibar-up-ico"><image class="ibar-up-img" src="/images/ic-camera-d.svg" mode="aspectFit" /></view>
+        <text class="ibar-up-t">拍照</text>
+      </view>
+      <view class="ibar-up-cell" wx:if="{{_f && _f.photoEntry}}" bindtap="pickAlbum" hover-class="ibar-up-hover" hover-stay-time="60">
+        <view class="ibar-up-ico"><image class="ibar-up-img" src="/images/ic-image-d.svg" mode="aspectFit" /></view>
+        <text class="ibar-up-t">相册</text>
+      </view>
+      <view class="ibar-up-cell" wx:if="{{_f && _f.photoEntry}}" bindtap="pickFile" hover-class="ibar-up-hover" hover-stay-time="60">
+        <view class="ibar-up-ico"><image class="ibar-up-img" src="/images/ic-folder-d.svg" mode="aspectFit" /></view>
+        <text class="ibar-up-t">传文件</text>
+      </view>
+      <view class="ibar-up-close" bindtap="closePlus">取消</view>
+    </view>
+  </view>
+</view>

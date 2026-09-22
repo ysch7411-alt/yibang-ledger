@@ -1,0 +1,390 @@
+<!--pages/record/record.wxml-->
+<view class="container rec {{shots.length ? 'has-shots' : ''}}" style="{{_cv}}">
+  <!-- 自定义公告条：后台「自定义参数」里加了 notice 才显示（见 utils/config.js 的 getCustom） -->
+  <view wx:if="{{_notice}}" class="notice-bar">{{_notice}}</view>
+
+  <view class="page-head">
+    <view class="page-head-left">
+      <view class="page-title">记账</view>
+      <view class="page-sub">{{todayLabel}} · 今天已记 {{daily.count}} 笔</view>
+    </view>
+    <view class="page-head-right">
+      <view class="search-box" bindtap="goSearch">
+        <image class="search-box-icon" src="/images/tab-search-on.svg" mode="aspectFit" />
+        <text class="search-box-placeholder">搜索账目</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 今日收支：从原来藏在弹窗里提到首屏，打开就知道今天收了多少钱 -->
+  <view class="card today-card" bindtap="openDaily" hover-class="card-hover" hover-stay-time="60">
+    <view class="today-hd">
+      <text class="today-cap">今日收入</text>
+      <text class="card-more">看明细 ›</text>
+    </view>
+    <view class="today-hero num c-income">+¥{{daily.incomeText}}</view>
+    <view class="today-ft">
+      <text>支出 ¥{{daily.expenseText}}</text>
+      <text class="dot">·</text>
+      <text>{{daily.count}} 笔</text>
+      <text class="dot">·</text>
+      <text>结余 ¥{{daily.netText}}</text>
+    </view>
+  </view>
+
+  <!-- 欠款概况：一行摘要，主战场在「报表」 -->
+  <view class="card debt-card">
+    <view class="debt-col" bindtap="goSummary">
+      <view class="debt-k">别人欠我</view>
+      <view class="debt-v num c-income">¥{{receivable}}</view>
+      <view class="debt-s">{{receivableCount}} 位往来 ›</view>
+    </view>
+    <view class="debt-line"></view>
+    <view class="debt-col" bindtap="goSummary">
+      <view class="debt-k">我欠别人</view>
+      <view class="debt-v num c-expense">¥{{payable}}</view>
+      <view class="debt-s">{{payableCount}} 位往来 ›</view>
+    </view>
+  </view>
+
+  <!-- 最近记录 -->
+  <view class="list-hd">
+    <view class="list-hd-l">
+      <text class="list-hd-t">最近记录</text>
+      <text class="list-hd-hint">左滑可改可删</text>
+    </view>
+    <text class="list-hd-reset" bindtap="goSearch">全部流水 ›</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="card">
+    <view class="skeleton-line" style="width: 46%;"></view>
+    <view class="skeleton-line mt-24" style="width: 72%;"></view>
+    <view class="skeleton-line mt-16" style="width: 58%;"></view>
+  </view>
+
+  <view wx:elif="{{sections.length === 0}}" class="card first-card">
+    <view class="first-name">{{_t.emptyText || '会思考，越用越懂你的账本'}}</view>
+    <view class="first-sub">说一句话就记账 · 拍一张单子就入库</view>
+    <block wx:for="{{firstTips}}" wx:key="text" wx:for-item="t">
+      <view class="first-row">
+        <view class="first-ico">
+          <image class="first-ico-img" src="{{t.icon}}" mode="aspectFit" />
+        </view>
+        <view class="first-line">
+          <view class="mk"></view>
+          <text class="first-t">{{t.text}}</text>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <block wx:else>
+    <block wx:for="{{sections}}" wx:key="key">
+      <view class="day-hd">
+        <text class="day-label">{{item.label}}</text>
+        <text wx:if="{{item.hasSummary}}" class="day-sum">
+          <text class="c-income">收 ¥{{item.incomeText}}</text>
+          <text wx:if="{{item.hasExpense}}"> · <text class="c-expense">支 ¥{{item.expenseText}}</text></text>
+        </text>
+      </view>
+      <view class="card card-flush">
+        <!-- 左滑露出「修改 / 删除」。位移量 _x 由 swipeMove/swipeEnd 按 id 写回
+             （不传下标：手势期间列表可能被刷新，下标会指到别的记录上）。 -->
+        <view
+          wx:for="{{item.items}}"
+          wx:for-item="r"
+          wx:key="id"
+          class="swipe {{dragId === r.id ? 'is-drag' : ''}}"
+          data-id="{{r.id}}"
+          bindtouchstart="swipeStart"
+          bindtouchmove="swipeMove"
+          bindtouchend="swipeEnd"
+          bindtouchcancel="swipeEnd"
+        >
+          <view class="swipe-acts">
+            <view class="swipe-act swipe-fix" data-id="{{r.id}}" catchtap="fixRecord">修改</view>
+            <view class="swipe-act swipe-del" data-id="{{r.id}}" catchtap="confirmDel">删除</view>
+          </view>
+
+          <view
+            class="row swipe-body"
+            style="transform: translateX({{r._x}}px);"
+            data-cid="{{r.contact_id}}"
+            catchtap="tapRow"
+          >
+            <view class="row-main">
+              <view class="rec-line">
+                <text class="tag {{r._tagCls}}">{{r._typeText}}</text>
+                <text class="rec-name ellipsis">{{r._title}}</text>
+              </view>
+              <view class="row-sub">{{r._subText}}</view>
+            </view>
+            <view class="row-val num {{r._cls}}">{{r._amount}}</view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </block>
+
+  <view class="rec-tail"></view>
+</view>
+
+<!-- ============ 待识别照片暂存条 ============
+     拍照一次只能一张，要支持"连续拍多张"就必须先攒着。
+     点缩略图可移除（拍糊了重拍），攒够了点「识别这几张」再逐张认、统一汇总。 -->
+<view class="shots" wx:if="{{shots.length}}">
+  <view class="shots-hd">
+    <text class="shots-t">已拍 {{shots.length}} 张</text>
+    <text class="shots-clear" bindtap="clearShots">清空</text>
+  </view>
+  <scroll-view class="shots-list" scroll-x>
+    <block wx:for="{{shots}}" wx:key="path" wx:for-item="s" wx:for-index="si">
+      <view class="shot" data-i="{{si}}" bindtap="removeShot">
+        <image class="shot-img" src="{{s.path}}" mode="aspectFill" />
+        <view class="shot-del"></view>
+      </view>
+    </block>
+  </scroll-view>
+  <view class="shots-acts">
+    <view class="shots-more" bindtap="shootMore">＋ 再拍一张</view>
+    <view class="shots-go" bindtap="startRecognize">识别这 {{shots.length}} 张</view>
+  </view>
+</view>
+
+<!-- ============ 录入结果条：成功即自动消失，缺信息才留在屏幕上 ============ -->
+<view class="receipt is-{{receipt.tone}}" wx:if="{{receipt}}" style="--kb-lift: {{kbLift}}px;">
+  <view class="receipt-ico"></view>
+  <view class="receipt-main">
+    <view class="receipt-t">{{receipt.title}}</view>
+    <view class="receipt-d ellipsis">{{receipt.detail}}</view>
+
+    <view class="receipt-amount" wx:if="{{receipt.needAmount}}">
+      <text class="receipt-yen">¥</text>
+      <input
+        class="receipt-input num"
+        type="digit"
+        focus="{{true}}"
+        value="{{askAmount}}"
+        placeholder="0.00"
+        placeholder-class="ph"
+        confirm-type="done"
+        adjust-position="{{false}}"
+        bindinput="onAskAmount"
+        bindconfirm="submitAsk"
+        bindfocus="onKbFocus"
+        bindblur="onKbBlur"
+        bindkeyboardheightchange="onKbHeight"
+      />
+      <view class="receipt-save" bindtap="submitAsk">存上</view>
+    </view>
+  </view>
+
+  <view class="receipt-acts" wx:if="{{receipt.tone === 'ok'}}">
+    <view class="receipt-act" bindtap="openFix">改一下</view>
+    <view class="receipt-act receipt-act-danger" bindtap="undoRecord">撤销</view>
+  </view>
+  <view class="receipt-x" wx:else bindtap="dismissReceipt"></view>
+</view>
+
+<!-- AI 处理中：就地一条，不遮挡页面 -->
+<view class="dock-tip" wx:if="{{working}}" style="--kb-lift: {{kbLift}}px;">
+  <view class="dock-spin"></view>
+  <text>{{workingText}}</text>
+</view>
+
+<!-- ═══════ 底部录入条 ══════
+     2026-09-20 换成和「参谋」页同一套公共输入条（app.wxss 的 .ibar-*）。
+     视觉统一：[+] [🎤 输入框] [发送]；交互保持记账页自己的规矩 ——
+     **按住输入框说话、松手即入账**（不是填进输入框，那是参谋页的做法）。 -->
+<view class="ibar" style="--kb-lift: {{kbLift}}px;">
+  <view class="ibar-plus" wx:if="{{_f && (_f.purchase || _f.photoEntry)}}" bindtap="openPlus" hover-class="ibar-plus-hover" hover-stay-time="60">
+    <view class="ibar-plus-ico"></view>
+  </view>
+
+  <view
+    class="ibar-field {{recording ? 'is-rec' : ''}}"
+    bindtouchstart="onFieldStart"
+    bindtouchend="onFieldEnd"
+    bindtouchcancel="onFieldCancel"
+    bindtap="onFieldTap"
+  >
+    <image wx:if="{{_f && _f.voiceEntry}}" class="ibar-field-ico" src="/images/ic-mic-o.svg" mode="aspectFit" />
+    <input
+      class="ibar-input"
+      value="{{draft}}"
+      placeholder="{{recording ? '正在听，松开就记…' : (working ? workingText : (_t.placeholder || '说一句，自动记账'))}}"
+      placeholder-class="ph"
+      confirm-type="send"
+      focus="{{focusDraft}}"
+      adjust-position="{{false}}"
+      bindinput="onDraft"
+      bindconfirm="submitDraft"
+      bindblur="onDraftBlur"
+      bindfocus="onKbFocus"
+      bindkeyboardheightchange="onKbHeight"
+      disabled="{{working}}"
+    />
+  </view>
+
+  <view class="ibar-send {{(draft && !working) ? '' : 'is-disabled'}}" bindtap="submitDraft">
+    {{working ? workingText : '记上'}}
+  </view>
+
+  <!-- 上传面板：拍照 / 相册 / 传文件（和参谋页同一套）；显隐由后台功能开关控制 -->
+  <view class="ibar-upload" wx:if="{{showUpload}}">
+    <view class="ibar-up-cell" wx:if="{{_f && _f.purchase}}" bindtap="takePhoto" hover-class="ibar-up-hover" hover-stay-time="60">
+      <view class="ibar-up-ico"><image class="ibar-up-img" src="/images/ic-camera-d.svg" mode="aspectFit" /></view>
+      <text class="ibar-up-t">{{(_t.plus && _t.plus.camera) || '拍照'}}</text>
+    </view>
+    <view class="ibar-up-cell" wx:if="{{_f && _f.photoEntry}}" bindtap="chooseImage" hover-class="ibar-up-hover" hover-stay-time="60">
+      <view class="ibar-up-ico"><image class="ibar-up-img" src="/images/ic-image-d.svg" mode="aspectFit" /></view>
+      <text class="ibar-up-t">{{(_t.plus && _t.plus.album) || '相册'}}</text>
+    </view>
+    <view class="ibar-up-cell" wx:if="{{_f && _f.photoEntry}}" bindtap="chooseFile" hover-class="ibar-up-hover" hover-stay-time="60">
+      <view class="ibar-up-ico"><image class="ibar-up-img" src="/images/ic-folder-d.svg" mode="aspectFit" /></view>
+      <text class="ibar-up-t">{{(_t.plus && _t.plus.file) || '传文件'}}</text>
+    </view>
+    <view class="ibar-up-close" bindtap="closeUpload">取消</view>
+  </view>
+</view>
+
+<!-- ============ 纠错面板：只在点「改一下」时出现，不参与主路径 ============ -->
+<view class="sheet-mask" wx:if="{{showFix}}" bindtap="closeFix" />
+<!-- 这个面板里有 3 个输入框，键盘弹起时整层要挪到键盘上方，
+     否则下半截（事由 / 收付方式）会被键盘盖住，改都改不了 -->
+<view class="sheet" wx:if="{{showFix}}" style="--kb-lift: {{kbLift}}px;">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">改一下这笔</text>
+    <view class="sheet-close" bindtap="closeFix"></view>
+  </view>
+
+  <view class="sheet-bd">
+    <view class="f-block">
+      <view class="f-label">金额</view>
+      <view class="f-amount">
+        <text class="f-yen">¥</text>
+        <input class="f-amount-input num" type="digit" value="{{fix.amount}}" bindinput="onFixAmount" placeholder="0.00" placeholder-class="ph" adjust-position="{{false}}" bindfocus="onKbFocus" bindblur="onKbBlur" bindkeyboardheightchange="onKbHeight" />
+      </view>
+      <!-- 告诉老板这个金额是怎么来的，也提前说明改了就清掉算式，不然他会奇怪算式怎么没了 -->
+      <view wx:if="{{fix.calc}}" class="f-hint">来自 {{fix.calc}}（改金额后这个算式会被清掉）</view>
+    </view>
+
+    <view class="f-block">
+      <view class="f-label">类型</view>
+      <view class="chip-bar">
+        <view class="chip {{fix.type === 1 ? 'is-on' : ''}}" data-code="1" bindtap="pickFixType">收入</view>
+        <view class="chip {{fix.type === 2 ? 'is-on' : ''}}" data-code="2" bindtap="pickFixType">支出</view>
+        <view class="chip {{fix.type === 3 ? 'is-on' : ''}}" data-code="3" bindtap="pickFixType">应收</view>
+        <view class="chip {{fix.type === 4 ? 'is-on' : ''}}" data-code="4" bindtap="pickFixType">应付</view>
+        <view class="chip {{fix.type === 5 ? 'is-on' : ''}}" data-code="5" bindtap="pickFixType">回款</view>
+        <view class="chip {{fix.type === 6 ? 'is-on' : ''}}" data-code="6" bindtap="pickFixType">付款</view>
+      </view>
+    </view>
+
+    <view class="f-block">
+      <view class="f-label">往来对象</view>
+      <input class="f-input" value="{{fix.contactName}}" placeholder="如：张老板" placeholder-class="ph" bindinput="onFixContact" adjust-position="{{false}}" bindfocus="onKbFocus" bindblur="onKbBlur" bindkeyboardheightchange="onKbHeight" />
+    </view>
+
+    <view class="f-block">
+      <view class="f-label">事由</view>
+      <input class="f-input" value="{{fix.content}}" placeholder="如：货款" placeholder-class="ph" bindinput="onFixContent" adjust-position="{{false}}" bindfocus="onKbFocus" bindblur="onKbBlur" bindkeyboardheightchange="onKbHeight" />
+    </view>
+
+    <!-- 收付方式：AI 没归对（或压根没提）时，这是唯一的修正口 -->
+    <view class="f-block">
+      <view class="f-label">收付方式</view>
+      <view class="chip-bar">
+        <block wx:for="{{methodOptions}}" wx:key="*this" wx:for-item="m">
+          <view class="chip {{fix.payMethod === m ? 'is-on' : ''}}" data-v="{{m}}" bindtap="pickFixMethod">{{m}}</view>
+        </block>
+        <view class="chip {{!fix.payMethod ? 'is-on' : ''}}" data-v="" bindtap="pickFixMethod">不填</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="sheet-ft">
+    <view class="btn btn-ghost" bindtap="closeFix">取消</view>
+    <view class="btn btn-primary" bindtap="saveFix">保存修改</view>
+  </view>
+</view>
+
+<!-- ============ 删除确认 ============ -->
+<!-- 用底部弹层而不是 showModal：弹层拇指够得着，也跟全站一致；
+     顺手把这一条的摘要摆出来，老板能确认自己删的是哪一笔。 -->
+<view class="sheet-mask" wx:if="{{delTarget}}" bindtap="closeDel" />
+<view class="sheet" wx:if="{{delTarget}}">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">删掉这一笔？</text>
+    <view class="sheet-close" bindtap="closeDel"></view>
+  </view>
+  <view class="sheet-bd">
+    <view class="del-preview">
+      <view class="del-row">
+        <text class="tag tag-gray">{{delTarget.typeText}}</text>
+        <text class="del-name ellipsis">{{delTarget.title}}</text>
+        <text class="del-amt num">{{delTarget.amount}}</text>
+      </view>
+      <view class="del-date">{{delTarget.dateLabel}}</view>
+    </view>
+    <view class="del-warn">删掉就找不回来了，账本和日报里的数字会一起变。</view>
+  </view>
+  <view class="sheet-ft">
+    <view class="btn btn-ghost" bindtap="closeDel">先留着</view>
+    <view class="btn btn-danger" bindtap="doDel">删掉</view>
+  </view>
+</view>
+
+<!-- ============ 今日汇总 ============ -->
+<view class="sheet-mask" wx:if="{{showDaily}}" bindtap="closeDaily" />
+<view class="sheet" wx:if="{{showDaily}}">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">今日收支汇总</text>
+    <view class="sheet-close" bindtap="closeDaily"></view>
+  </view>
+  <view class="sheet-bd">
+    <view class="sum-hero">
+      <text class="sum-hero-k">今日结余</text>
+      <text class="sum-hero-v num {{daily.isPositive ? 'c-income' : 'c-expense'}}">
+        {{daily.isPositive ? '+' : '-'}}¥{{daily.netText}}
+      </text>
+    </view>
+    <view class="stat-grid mt-24">
+      <view class="stat-col">
+        <view class="stat-k">收入</view>
+        <view class="stat-v num c-income">¥{{daily.incomeText}}</view>
+      </view>
+      <view class="stat-line"></view>
+      <view class="stat-col">
+        <view class="stat-k">支出</view>
+        <view class="stat-v num c-expense">¥{{daily.expenseText}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{daily.details.length > 0}}">
+      <view class="divider"></view>
+      <view class="detail-hd">共 {{daily.count}} 笔</view>
+      <view wx:for="{{daily.details}}" wx:key="id" class="detail-row">
+        <view class="detail-main">
+          <text class="detail-name ellipsis">{{item._title}}</text>
+          <text wx:if="{{item._calc}}" class="detail-calc num">{{item._calc}}</text>
+        </view>
+        <text class="detail-amt num {{item.type === 1 || item.type === 5 || item.type === 3 ? 'c-income' : 'c-expense'}}">
+          {{item.type === 1 || item.type === 5 || item.type === 3 ? '+' : '-'}}¥{{item._amount}}
+        </text>
+      </view>
+    </view>
+    <view wx:else class="empty">
+      <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
+      <view class="empty-title">今天还没有记录</view>
+      <view class="empty-desc">点下面输入条，说句话就能记一笔</view>
+    </view>
+  </view>
+  <view class="sheet-ft">
+    <view class="btn btn-ghost" bindtap="closeDaily">关闭</view>
+    <view class="btn btn-primary" bindtap="shareDaily">分享给客户</view>
+  </view>
+</view>

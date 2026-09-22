@@ -1,0 +1,19 @@
+<!--custom-tab-bar/index.wxml-->
+<!-- _cv 是远程主题的 CSS 变量串（见 utils/config.js），列表/显隐也来自后台配置 -->
+<view class="tabbar" style="{{_cv}}">
+  <view class="tabbar-inner">
+    <view
+      wx:for="{{list}}"
+      wx:key="pagePath"
+      class="tab {{selected === index ? 'on' : ''}}"
+      data-path="{{item.pagePath}}"
+      data-index="{{index}}"
+      bindtap="onTap"
+      hover-class="tab-hover"
+      hover-stay-time="80"
+    >
+      <image class="tab-ico" src="{{selected === index ? item.iconOn : item.icon}}" mode="aspectFit" />
+      <view class="tab-txt">{{item.text}}</view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,257 @@
+/* pages/purchase-list/purchase-list.wxss —— 采购单历史 */
+
+.line1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 20rpx 4rpx 12rpx;
+}
+.list-hd-t {
+  font-size: 28rpx;
+  color: var(--t3);
+}
+
+.po-list {
+  padding: 4rpx 32rpx;
+}
+
+.po-item {
+  border-bottom: 1rpx solid var(--line);
+}
+.po-item:last-child {
+  border-bottom: none;
+}
+
+/* 行头：整行可点，高度够拇指 */
+.po-hd {
+  display: flex;
+  align-items: center;
+  min-height: 108rpx;
+  padding: 22rpx 0;
+}
+.po-item.is-open .po-hd {
+  padding-bottom: 12rpx;
+}
+.po-hd-main {
+  flex: 1;
+  min-width: 0;
+}
+.po-name {
+  font-size: 31rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.po-sub {
+  margin-top: 6rpx;
+  font-size: 25rpx;
+  color: var(--t3);
+}
+.po-sub .dot {
+  margin: 0 8rpx;
+  color: var(--line);
+}
+.po-hd-val {
+  flex: none;
+  margin-left: 20rpx;
+  display: flex;
+  align-items: center;
+}
+.po-money {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--t1);
+}
+/* 展开指示：小三角，展开时翻上去 */
+.po-caret {
+  width: 14rpx;
+  height: 14rpx;
+  margin-left: 16rpx;
+  border-right: 3rpx solid var(--t4);
+  border-bottom: 3rpx solid var(--t4);
+  transform: rotate(45deg) translate(-3rpx, -3rpx);
+  transition: transform .18s ease;
+}
+.po-caret.up {
+  transform: rotate(-135deg) translate(-3rpx, -3rpx);
+}
+
+/* 明细 */
+.po-detail {
+  padding: 6rpx 0 22rpx;
+  border-top: 1rpx dashed var(--line);
+  animation: po-open .2s ease;
+}
+@keyframes po-open {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.po-dtip {
+  padding: 16rpx 0;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+.po-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 18rpx 0;
+}
+.po-no {
+  width: 36rpx;
+  height: 36rpx;
+  flex: none;
+  margin: 2rpx 16rpx 0 0;
+  border-radius: 50%;
+  background: var(--brand-weak);
+  color: var(--brand-ink);
+  font-size: 23rpx;
+  font-weight: 700;
+  text-align: center;
+  line-height: 36rpx;
+}
+.po-row-main {
+  flex: 1;
+  min-width: 0;
+}
+.po-row-name {
+  font-size: 29rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.po-row-spec {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: var(--t3);
+}
+.po-row-calc {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: var(--t2);
+}
+.po-row-amt {
+  flex: none;
+  margin-left: 18rpx;
+  font-size: 29rpx;
+  font-weight: 700;
+  color: var(--t1);
+  text-align: right;
+}
+
+.po-tail {
+  height: 24rpx;
+}
+
+/* ---------- 明细行的品类 / 供应商标签 ---------- */
+/* 明细行上这两条是「为什么统计能拆开」的证据，放在规格下面一行，不抢品名和金额的位置 */
+.po-row-tags {
+  display: flex;
+  align-items: center;
+  margin-top: 6rpx;
+}
+.po-row-cat {
+  flex: none;
+  height: 38rpx;
+  padding: 0 14rpx;
+  margin-right: 12rpx;
+  border-radius: var(--r-full);
+  background: var(--fill);
+  color: var(--t2);
+  font-size: 22rpx;
+  line-height: 38rpx;
+}
+.po-row-sup {
+  flex: 1;
+  min-width: 0;
+  font-size: 22rpx;
+  color: var(--t3);
+}
+
+/* ---------- 统计：合计卡 ---------- */
+.st-top {
+  padding: 30rpx 32rpx 28rpx;
+}
+.st-top-k {
+  font-size: 25rpx;
+  color: var(--t3);
+}
+/* 钱出去用语义红：这里通篇是采购支出，跟全站「支出=红」的口径保持一致 */
+.st-top-v {
+  margin-top: 6rpx;
+  font-size: 56rpx;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--expense);
+}
+.st-top-sub {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: var(--t3);
+}
+
+/* ---------- 统计：排行 ---------- */
+.st-list {
+  padding: 8rpx 32rpx;
+}
+.rk {
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.rk:last-child {
+  border-bottom: none;
+}
+.rk-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.rk-name {
+  flex: 1;
+  min-width: 0;
+  margin-right: 20rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.rk-amt {
+  flex: none;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--t1);
+}
+/* 条形只做「谁大谁小」的相对表达，所以用品牌橙的图形填充，
+   最小 6% 保证尾巴上的小项也看得见（比例由 JS 算好，模板不写复杂表达式） */
+.rk-track {
+  height: 12rpx;
+  margin-top: 14rpx;
+  border-radius: var(--r-full);
+  background: var(--fill);
+  overflow: hidden;
+}
+.rk-bar {
+  height: 100%;
+  border-radius: var(--r-full);
+  background: var(--brand);
+  transition: width .3s ease;
+}
+.rk-sub {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: var(--t3);
+}
+.rk-dot {
+  margin: 0 8rpx;
+  color: var(--line);
+}
+
+.st-tail {
+  padding: 4rpx 8rpx 0;
+  font-size: 23rpx;
+  line-height: 1.6;
+  color: var(--t3);
+  text-align: center;
+}

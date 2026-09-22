@@ -1,0 +1,73 @@
+/* custom-tab-bar/index.wxss —— 固定高度 108rpx，便于页面底部元素精确贴靠 */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  background: #FFFFFF;
+  border-top: 1rpx solid #EDF0F3;
+  padding-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 -8rpx 24rpx -16rpx rgba(16, 24, 40, .28);
+}
+
+.tabbar-inner {
+  display: flex;
+  height: 108rpx;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform .16s ease;
+}
+
+.tab-hover {
+  transform: scale(.92);
+}
+
+.tab-ico {
+  width: 44rpx;
+  height: 44rpx;
+  transition: transform .18s ease;
+}
+
+.tab.on .tab-ico {
+  transform: translateY(-2rpx) scale(1.06);
+}
+
+.tab-txt {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  line-height: 1.2;
+  color: #667085;
+  transition: color .18s ease;
+}
+
+/* 选中态：图标换橙 + 文字加深加粗。
+   不用橙色文字是刻意的 —— #FF6B35 在白底上的对比度只有 2.8:1，小字读不清。 */
+.tab.on .tab-txt {
+  color: #C9451A;
+  font-weight: 700;
+}
+
+/* 选中指示条：给 5 联 Tab 一个额外的定位锚点 */
+.tab::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 5rpx;
+  border-radius: 0 0 4rpx 4rpx;
+  background: #C9451A;
+  transition: width .2s ease;
+}
+
+.tab.on::after {
+  width: 44rpx;
+}

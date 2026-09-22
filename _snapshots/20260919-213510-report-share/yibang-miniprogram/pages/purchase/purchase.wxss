@@ -1,0 +1,472 @@
+/* pages/purchase/purchase.wxss —— 采购单核对页 */
+/* 口径：AI 在后端把单据拆成结构化明细，这一页只负责「看一眼 + 确认入库」。
+   默认不出现任何输入框；只有老板主动点「识别有误？改一下」才进编辑态。 */
+
+.line1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 单据头 ---------- */
+.po-head {
+  padding: 30rpx 32rpx 26rpx;
+}
+.po-head-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.po-supplier {
+  flex: 1;
+  min-width: 0;
+  margin-right: 20rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--t1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.po-total {
+  flex: none;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: var(--expense);
+  letter-spacing: -.5rpx;
+}
+/* 单号 · 日期 · 共 N 项。是一行文字，不是容器 ——
+   别把布局类的东西往里塞，WXML 那边给它单开了一行 .po-catline */
+.po-meta {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: var(--t3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 只读明细行 ---------- */
+.po-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 26rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.po-row:last-child {
+  border-bottom: none;
+}
+.po-no {
+  width: 40rpx;
+  height: 40rpx;
+  flex: none;
+  margin: 2rpx 18rpx 0 0;
+  border-radius: 50%;
+  background: var(--brand-weak);
+  color: var(--brand-ink);
+  font-size: 23rpx;
+  font-weight: 700;
+  text-align: center;
+  line-height: 40rpx;
+}
+.po-main {
+  flex: 1;
+  min-width: 0;
+}
+.po-name {
+  font-size: 31rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.po-spec {
+  margin-top: 6rpx;
+  font-size: 25rpx;
+  color: var(--t3);
+}
+.po-calc {
+  margin-top: 8rpx;
+  font-size: 25rpx;
+  color: var(--t2);
+}
+
+/* 品类标签 + 数量单价同一行。
+   品类可点（改归类），所以给它一套「像按钮」的外观：浅底 + 描边 + 足够的触摸高度。
+   刻意用中性灰而不是品牌橙：这里不是主操作，跟金额抢视线会让老板误以为必须点它。 */
+.po-catline {
+  display: flex;
+  align-items: center;
+  margin-top: 8rpx;
+}
+.po-cat {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 48rpx;
+  padding: 0 18rpx;
+  margin-right: 16rpx;
+  border-radius: var(--r-full);
+  background: var(--fill);
+  border: 1rpx solid var(--line);
+  color: var(--t2);
+  font-size: 24rpx;
+  line-height: 1;
+}
+.po-cat:active {
+  background: var(--brand-weak);
+  border-color: var(--brand-line);
+  color: var(--brand-ink);
+}
+.po-catline .po-calc {
+  margin-top: 0;
+  min-width: 0;
+}
+.po-amt {
+  flex: none;
+  margin-left: 20rpx;
+  padding-top: 2rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--t1);
+  text-align: right;
+}
+
+/* ---------- 编辑态（只有点「改一下」才出现） ---------- */
+.po-edit {
+  padding: 26rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.po-edit:last-child {
+  border-bottom: none;
+}
+.pe-hd {
+  display: flex;
+  align-items: center;
+}
+.pe-hd .po-no {
+  margin-top: 0;
+}
+.pe-name {
+  flex: 1;
+  min-width: 0;
+  height: 76rpx;
+  padding: 0 18rpx;
+  border-radius: var(--r-sm);
+  background: var(--fill);
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.pe-del {
+  width: 60rpx;
+  height: 76rpx;
+  flex: none;
+  margin-left: 8rpx;
+  position: relative;
+}
+.pe-del::before,
+.pe-del::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 26rpx;
+  height: 3rpx;
+  background: var(--t4);
+  border-radius: 2rpx;
+}
+.pe-del::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.pe-del::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+.pe-spec {
+  margin: 14rpx 0 0 58rpx;
+  height: 72rpx;
+  padding: 0 18rpx;
+  border-radius: var(--r-sm);
+  background: var(--fill);
+  font-size: 26rpx;
+  color: var(--t2);
+}
+.pe-row {
+  display: flex;
+  align-items: center;
+  margin: 14rpx 0 0 58rpx;
+}
+.pe-in {
+  flex: 1;
+  min-width: 0;
+  height: 78rpx;
+  padding: 0 12rpx;
+  border-radius: var(--r-sm);
+  background: var(--fill);
+  font-size: 28rpx;
+  color: var(--t1);
+  text-align: center;
+}
+.pe-unit {
+  flex: 0 0 104rpx;
+  margin-left: 10rpx;
+}
+.pe-x {
+  margin: 0 12rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+/* 编辑态也要能改品类，跟只读态同一个入口，不另做一套交互 */
+.pe-foot {
+  display: flex;
+  align-items: center;
+  margin: 14rpx 0 0 58rpx;
+}
+.pe-amt {
+  flex: none;
+  margin-left: 14rpx;
+  min-width: 132rpx;
+  font-size: 29rpx;
+  font-weight: 700;
+  color: var(--t1);
+  text-align: right;
+}
+
+/* 补一行 */
+.po-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92rpx;
+  margin: 4rpx 0 8rpx;
+  border-radius: var(--r-md);
+  border: 2rpx dashed var(--brand-line);
+  background: var(--brand-weak);
+  color: var(--brand-ink);
+  font-size: 28rpx;
+  font-weight: 600;
+}
+.po-add:active {
+  opacity: .75;
+}
+
+/* ---------- 区块头 ---------- */
+.list-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 20rpx 4rpx 12rpx;
+}
+.list-hd-t {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+/* 「点品类可改」：不点也能正常用，所以压低存在感，只在需要时才被看见 */
+.list-hd-hint {
+  margin-left: 14rpx;
+  font-size: 23rpx;
+  font-weight: 400;
+  color: var(--t3);
+}
+.list-hd-reset {
+  font-size: 26rpx;
+  color: var(--brand-ink);
+  padding: 8rpx 0 8rpx 24rpx;
+}
+.list-hd-reset:active {
+  opacity: .6;
+}
+
+/* ---------- 底部合计条 ---------- */
+.cta-bar {
+  display: flex;
+  align-items: center;
+}
+.cta-sum {
+  flex: 1;
+  min-width: 0;
+}
+.cta-k {
+  display: block;
+  font-size: 24rpx;
+  color: var(--t3);
+}
+.cta-v {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: -.5rpx;
+}
+/* 加一级选择器压过 app.wxss 里的 `.bottom-bar .btn { flex: 1 }`，
+   否则按钮会和左侧合计平分宽度，看起来像个次要元素 */
+.cta-bar .cta-btn {
+  flex: 0 0 300rpx;
+  margin-left: 20rpx;
+}
+.cta-btn.is-busy {
+  opacity: .6;
+}
+
+/* 底部安全留白（.container-cta 已留 190rpx，这里再加一段避免最后一行贴条） */
+.po-tail {
+  height: 24rpx;
+}
+
+/* ---------- 多张单据汇总 ---------- */
+.po-multi {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 14rpx;
+}
+.po-multi-tag {
+  height: 44rpx;
+  padding: 0 18rpx;
+  margin-right: 14rpx;
+  border-radius: 8rpx;
+  background: var(--brand-weak);
+  color: var(--brand-ink);
+  font-size: 23rpx;
+  font-weight: 600;
+  line-height: 44rpx;
+}
+.po-multi-warn {
+  height: 44rpx;
+  padding: 0 18rpx;
+  border-radius: 8rpx;
+  background: var(--warn-weak);
+  color: var(--warn);
+  font-size: 23rpx;
+  font-weight: 600;
+  line-height: 44rpx;
+}
+
+/* 没进汇总的那几张：如实标出来 */
+.po-issues {
+  margin-bottom: 24rpx;
+  padding: 22rpx 26rpx;
+  border-radius: var(--r-lg);
+  background: var(--warn-weak);
+  border: 1rpx solid #F5D9A8;
+}
+.po-issues-t {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: var(--warn);
+}
+.po-issues-d {
+  margin-top: 8rpx;
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: var(--warn);
+}
+
+/* 按来源分组的小标题 */
+.po-group-hd {
+  display: flex;
+  align-items: center;
+  padding: 22rpx 0 14rpx;
+  border-bottom: 1rpx solid var(--line);
+}
+.po-group-no {
+  flex: none;
+  height: 44rpx;
+  padding: 0 18rpx;
+  border-radius: 8rpx;
+  background: var(--fill);
+  color: var(--t2);
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 44rpx;
+}
+.po-group-sup {
+  flex: 1;
+  min-width: 0;
+  margin-left: 16rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+.po-group-sum {
+  flex: none;
+  margin-left: 16rpx;
+  font-size: 27rpx;
+  font-weight: 700;
+  color: var(--t2);
+}
+
+/* ---------- 品类选择弹层 ---------- */
+/* app.wxss 里的 .sheet 默认停在 tabBar 上方；核对页是 navigateTo 的二级页、没有 tabBar，
+   必须覆盖成 bottom: 0，否则弹层会悬在半空。 */
+.cat-sheet {
+  bottom: 0;
+  bottom: env(safe-area-inset-bottom, 0px);
+}
+.cat-tip {
+  padding: 4rpx 0 20rpx;
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: var(--t3);
+}
+.cat-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -8rpx;
+}
+.cat-chip {
+  height: 76rpx;
+  padding: 0 30rpx;
+  margin: 0 8rpx 16rpx;
+  border-radius: var(--r-full);
+  background: var(--fill);
+  border: 1rpx solid var(--line);
+  color: var(--t1);
+  font-size: 28rpx;
+  line-height: 74rpx;
+}
+.cat-chip:active {
+  background: var(--brand-weak);
+  border-color: var(--brand-line);
+  color: var(--brand-ink);
+}
+/* 「未分类」是一个合法选择（宁可空着也别乱归），但视觉上不该跟有意义的品类一样重 */
+.cat-chip-none {
+  color: var(--t3);
+  background: transparent;
+  border-style: dashed;
+}
+.cat-custom {
+  display: flex;
+  align-items: center;
+  margin-top: 12rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid var(--line);
+}
+.cat-input {
+  flex: 1;
+  min-width: 0;
+  height: 80rpx;
+  padding: 0 24rpx;
+  margin-right: 16rpx;
+  border-radius: var(--r-sm);
+  background: var(--fill);
+  font-size: 28rpx;
+  color: var(--t1);
+}
+/* 当前选中的品类：浅底 + 橙字 + 描边，跟 .cat-chip:active 同一套视觉，
+   区别是持续亮着 —— 老板要先看见「现在算哪一类」，再决定改不改 */
+.cat-chip.is-on {
+  background: var(--brand-weak);
+  border-color: var(--brand-line);
+  color: var(--brand-ink);
+  font-weight: 600;
+}
+
+/* 「用它」：输入框是同一种灰底，按钮再用灰底就糊在一起了，所以用描边款区分 */
+.cat-use {
+  flex: none;
+  padding: 0 28rpx;
+}
+
+.cat-sheet .sheet-ft {
+  padding-top: 12rpx;
+}

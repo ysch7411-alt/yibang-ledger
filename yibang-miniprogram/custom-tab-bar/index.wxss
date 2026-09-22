@@ -1,0 +1,82 @@
+/* custom-tab-bar/index.wxss —— 固定高度 108rpx，便于页面底部元素精确贴靠 */
+/* 颜色全部走 CSS 变量（值由后台配置经 utils/config.js 注入），var 第二参数是配置没拉到时的兜底 */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  background: var(--card, #FFFFFF);
+  border-top: 1rpx solid var(--line, #EDF0F3);
+  padding-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 -8rpx 24rpx -16rpx rgba(16, 24, 40, .28);
+}
+
+.tabbar-inner {
+  display: flex;
+  height: 120rpx;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform .16s ease;
+}
+
+.tab-hover {
+  transform: scale(.92);
+}
+
+.tab-ico {
+  width: 52rpx;
+  height: 52rpx;
+  transition: transform .18s ease;
+}
+
+.tab.on .tab-ico {
+  transform: translateY(-2rpx) scale(1.06);
+}
+
+.tab-txt {
+  margin-top: 8rpx;
+  /* 24→28rpx：12px 的 tab 字在真机上偏小，老板反馈"看不清哪个是当前页" */
+  font-size: 32rpx;
+  line-height: 1.2;
+  color: var(--t3, #667085);
+  transition: color .18s ease;
+}
+
+/* 选中态三件套：整列浅橙底 + 图标放大 + 文字加粗变品牌色。
+   只换文字颜色在 28rpx 以下真机上还是不够显眼，加一块浅色底让"当前在哪"一眼可见；
+   底色用品牌浅底（配置可控），不用高饱和色，避免和选中图标抢注意力。 */
+.tab.on {
+  background: var(--brand-weak, #FFF4EE);
+}
+
+/* 选中态：图标换橙 + 文字加深加粗。
+   不用橙色文字是刻意的 —— #FF6B35 在白底上的对比度只有 2.8:1，小字读不清。 */
+.tab.on .tab-txt {
+  color: var(--brand-btn, #C9451A);
+  font-weight: 700;
+}
+
+/* 选中指示条：给 5 联 Tab 一个额外的定位锚点 */
+.tab::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 5rpx;
+  border-radius: 0 0 4rpx 4rpx;
+  background: var(--brand-btn, #C9451A);
+  transition: width .2s ease;
+}
+
+.tab.on::after {
+  width: 52rpx;
+}

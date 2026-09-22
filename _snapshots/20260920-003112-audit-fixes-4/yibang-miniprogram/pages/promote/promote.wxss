@@ -1,0 +1,99 @@
+/* pages/promote/promote.wxss —— 推广赚钱 */
+
+/* 进度卡：把「还差几个人」放大放亮，其余信息压到次要层级 */
+.pg-card {
+  background: linear-gradient(160deg, #FFFFFF 0%, #FFF8F4 100%);
+}
+.pg-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+.pg-num {
+  display: flex;
+  align-items: baseline;
+}
+.pg-cur {
+  font-size: 72rpx;
+  font-weight: 700;
+  color: var(--brand-ink);
+  line-height: 1;
+}
+.pg-total {
+  margin-left: 10rpx;
+  font-size: 28rpx;
+  color: var(--t3);
+}
+.pg-badge {
+  height: 56rpx;
+  padding: 0 26rpx;
+  border-radius: var(--r-full);
+  background: var(--warn-weak);
+  color: var(--warn);
+  font-size: 25rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+.pg-badge.done {
+  background: var(--income-weak);
+  color: var(--income);
+}
+.pg-bar {
+  height: 20rpx;
+  border-radius: 10rpx;
+  background: var(--fill);
+  overflow: hidden;
+}
+.pg-fill {
+  height: 100%;
+  border-radius: 10rpx;
+  background: linear-gradient(90deg, #E4551D, #C9451A);
+  transition: width .4s cubic-bezier(.32, .72, 0, 1);
+}
+.pg-tip {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: var(--t3);
+}
+
+/* 规则 */
+.rule {
+  display: flex;
+  align-items: flex-start;
+  padding: 16rpx 0;
+}
+.rule-no {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: var(--brand-weak);
+  color: var(--brand-ink);
+  font-size: 24rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+.rule-t {
+  flex: 1;
+  font-size: 28rpx;
+  color: var(--t2);
+  line-height: 1.6;
+  padding-top: 6rpx;
+}
+
+/* 原生 button 复位后再套 .btn 的视觉（.bottom-bar .btn 已给 flex:1） */
+.btn-share {
+  margin: 0;
+  padding: 0;
+  line-height: normal;
+  border: none;
+  font-weight: 600;
+}
+button.btn-share::after {
+  border: none;
+}

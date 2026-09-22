@@ -1,0 +1,114 @@
+<!--pages/report-view/report-view.wxml-->
+<view class="container container-page" style="{{_cv}}">
+  <!-- ===== 没带 token：链接被截断了 ===== -->
+  <view wx:if="{{state === 'no-token'}}" class="card">
+    <view class="empty">
+      <image class="empty-ico" src="/images/ic-info.svg" mode="aspectFit" />
+      <view class="empty-title">这个链接不完整</view>
+      <view class="empty-desc">可能是转发时被截断了。让分享的人重新发一次就好。</view>
+    </view>
+  </view>
+
+  <!-- ===== 链接失效：过期 / 被关掉 ===== -->
+  <view wx:elif="{{state === 'not-found'}}" class="card">
+    <view class="empty">
+      <image class="empty-ico" src="/images/ic-clock.svg" mode="aspectFit" />
+      <view class="empty-title">这份报表已经过期了</view>
+      <view class="empty-desc">分享出来的报表有有效期。让分享的人重新发一份就能看到。</view>
+    </view>
+  </view>
+
+  <!-- ===== 网络没通：跟上面两件事完全不同，要能重试 ===== -->
+  <view wx:elif="{{state === 'failed'}}" class="card">
+    <view class="empty">
+      <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
+      <view class="empty-title">没能读到这份报表</view>
+      <view class="empty-desc">网络不太顺，点下面再试一次。</view>
+      <view class="empty-action" bindtap="retry">重新加载</view>
+    </view>
+  </view>
+
+  <!-- ===== 加载中 ===== -->
+  <view wx:elif="{{loading}}" class="card">
+    <view class="skeleton-line" style="width: 48%;"></view>
+    <view class="skeleton-line mt-24" style="width: 72%;"></view>
+    <view class="skeleton-line mt-16" style="width: 60%;"></view>
+    <view class="skeleton-line mt-16" style="width: 66%;"></view>
+  </view>
+
+  <!-- ===== 正常：这就是给对方看的那份表 ===== -->
+  <block wx:else>
+    <view class="rv-head">
+      <view class="rv-shop">{{shop || '易帮账本'}}</view>
+      <view class="rv-label">{{label}}</view>
+      <view class="rv-range">{{rangeText}}</view>
+    </view>
+
+    <!-- 汇总 -->
+    <view class="card rv-sum">
+      <view class="rv-sum-k">结余</view>
+      <view class="rv-sum-v num {{isPositive ? 'c-income' : 'c-expense'}}">
+        {{isPositive ? '+' : '-'}}¥{{netText}}
+      </view>
+      <view class="stat-grid rv-grid">
+        <view class="stat-col">
+          <view class="stat-k">收入</view>
+          <view class="stat-v num c-income">¥{{incomeText}}</view>
+        </view>
+        <view class="stat-line"></view>
+        <view class="stat-col">
+          <view class="stat-k">支出</view>
+          <view class="stat-v num c-expense">¥{{expenseText}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 明细 -->
+    <view class="rv-hd">
+      <text class="rv-hd-t">明细</text>
+      <text class="rv-hd-n">共 {{count}} 笔</text>
+    </view>
+
+    <view wx:if="{{rows.length === 0}}" class="card">
+      <view class="empty">
+        <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
+        <view class="empty-title">这段时间还没有记账</view>
+        <view class="empty-desc">账本里还没有这个区间的记录。</view>
+      </view>
+    </view>
+
+    <view wx:else class="card card-flush">
+      <view class="rv-row" wx:for="{{rows}}" wx:key="id">
+        <view class="rv-row-main">
+          <view class="rv-row-t line1">{{item.title}}</view>
+          <view class="rv-row-s">
+            <text wx:if="{{item.date}}">{{item.date}} </text>
+            <text>{{item.time}}</text>
+            <text wx:if="{{item.calc}}"> · {{item.calc}}</text>
+          </view>
+        </view>
+        <view class="rv-row-v num {{item.cls}}">{{item.amount}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{truncated}}" class="rv-trunc">
+      这一期共 {{count}} 笔，上面列出了前 {{rows.length}} 笔
+    </view>
+
+    <!-- 只读说明：让对方明确知道自己看到的是什么、能不能改 -->
+    <view class="rv-note">
+      <text>这是一份只读的报表，只能查看，不能修改。</text>
+      <text wx:if="{{expireDay}}">链接有效到 {{expireDay}} 为止。</text>
+    </view>
+
+    <view class="rv-cta card">
+      <view class="rv-cta-t">说一句话就能记账的本子</view>
+      <view class="rv-cta-d">不用打字、不用选分类，拍一张单子也会自动拆成明细</view>
+      <view class="rv-cta-btn" bindtap="goTry">我也用一下</view>
+    </view>
+
+    <view class="rv-by">由 易帮账本 生成 · 已被查看 {{viewCount}} 次</view>
+  </block>
+
+  <view class="rv-tail"></view>
+</view>

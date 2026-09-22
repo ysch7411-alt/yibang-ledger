@@ -1,0 +1,47 @@
+<!--pages/plan/plan.wxml-->
+<view class="container container-page container-cta" style="{{_cv}}">
+  <view class="page-head">
+    <view class="page-title">我的套餐</view>
+    <view class="page-sub">一次付费，终身使用，不再续费</view>
+  </view>
+
+  <!-- 主推套餐 -->
+  <view class="card plan-card pro">
+    <view class="plan-badge">最受欢迎</view>
+    <view class="plan-name">终身版</view>
+    <view class="plan-price">
+      <text class="plan-sym num">¥</text>
+      <text class="plan-num num">19.9</text>
+      <text class="plan-unit">/ 一次性 · 终身</text>
+    </view>
+    <view class="plan-alt">相当于一杯奶茶钱，用一辈子</view>
+
+    <view class="plan-feats">
+      <view wx:for="{{proFeatures}}" wx:key="*this" class="feat">
+        <view class="feat-ck"></view>
+        <text class="feat-t">{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 免费版 -->
+  <view class="card plan-card">
+    <view class="plan-name">免费版</view>
+    <view class="plan-price">
+      <text class="plan-sym num none">¥</text>
+      <text class="plan-num num free">0</text>
+    </view>
+    <view class="plan-feats">
+      <view wx:for="{{freeFeatures}}" wx:key="*this" class="feat">
+        <view class="feat-ck {{item.ok ? '' : 'off'}}"></view>
+        <text class="feat-t {{item.ok ? '' : 'off'}}">{{item.text}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="plan-note">购买即表示同意《用户协议》与《隐私政策》。终身版一经开通不支持退款。</view>
+</view>
+
+<view class="bottom-bar">
+  <view class="btn btn-primary" bindtap="buyLifetime">¥19.9 开通终身版</view>
+</view>

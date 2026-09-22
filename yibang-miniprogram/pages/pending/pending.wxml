@@ -1,0 +1,56 @@
+<!--pages/pending/pending.wxml-->
+<view class="container container-page" style="{{_cv}}">
+  <view class="page-head">
+    <view class="page-title">待审核</view>
+    <view class="page-sub">通过后才会计入报表</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="card">
+    <view class="skeleton-line" style="width: 46%;"></view>
+    <view class="skeleton-line mt-24" style="width: 72%;"></view>
+  </view>
+
+  <view wx:elif="{{pendingList.length === 0}}" class="card">
+    <view class="empty">
+      <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
+      <view class="empty-title">都处理完了</view>
+      <view class="empty-desc">目前没有待审核的记录</view>
+    </view>
+  </view>
+
+  <block wx:else>
+    <view wx:for="{{pendingList}}" wx:key="id" class="card pd-card">
+      <view class="pd-hd">
+        <view class="pd-who">
+          <view class="av">{{item._staffInitial}}</view>
+          <view>
+            <view class="pd-name">{{item._staffName}} 录入</view>
+            <view class="pd-time">{{item._dateText}}</view>
+          </view>
+        </view>
+        <view class="tag {{item._tagCls}}">{{item._typeText}}</view>
+      </view>
+
+      <view class="pd-amount">
+        <text class="pd-amount-sym">¥</text>
+        <text class="num pd-amount-v">{{item._amount}}</text>
+      </view>
+
+      <view class="kv">
+        <view class="kv-row">
+          <text class="kv-k">往来对象</text>
+          <text class="kv-v">{{item.contact_name || '未填写'}}</text>
+        </view>
+        <view class="kv-row">
+          <text class="kv-k">事由</text>
+          <text class="kv-v">{{item.content || '未填写'}}</text>
+        </view>
+      </view>
+
+      <view class="pd-actions">
+        <view class="btn btn-ghost btn-sm" data-id="{{item.id}}" bindtap="rejectRecord">驳回</view>
+        <view class="btn btn-primary btn-sm" data-id="{{item.id}}" bindtap="approveRecord">通过并入账</view>
+      </view>
+    </view>
+  </block>
+</view>

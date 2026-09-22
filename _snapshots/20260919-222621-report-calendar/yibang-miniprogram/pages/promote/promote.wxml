@@ -1,0 +1,70 @@
+<!--pages/promote/promote.wxml-->
+<view class="container container-page container-cta">
+  <view class="page-head">
+    <view class="page-title">推广赚钱</view>
+    <view class="page-sub">邀请 2 位好友，免费解锁终身版</view>
+  </view>
+
+  <!-- 进度：把「还差几个人」放在最上面，这是用户唯一关心的事 -->
+  <view class="card pg-card">
+    <view class="pg-top">
+      <view class="pg-num">
+        <text class="num pg-cur">{{inviteCount}}</text>
+        <text class="pg-total">/ 2 人</text>
+      </view>
+      <view class="pg-badge {{inviteCount >= 2 ? 'done' : ''}}">
+        {{inviteCount >= 2 ? '已达成' : '还差 ' + (2 - inviteCount) + ' 人'}}
+      </view>
+    </view>
+    <view class="pg-bar">
+      <view class="pg-fill" style="width: {{progressPercent}}%"></view>
+    </view>
+    <view class="pg-tip">{{inviteCount >= 2 ? '已解锁终身版，无需再邀请' : '好友购买终身版后，你自动解锁'}}</view>
+  </view>
+
+  <!-- 规则 -->
+  <view class="card">
+    <view class="card-hd"><text class="card-title">怎么算</text></view>
+    <view wx:for="{{rules}}" wx:key="index" class="rule">
+      <view class="rule-no">{{index + 1}}</view>
+      <view class="rule-t">{{item}}</view>
+    </view>
+  </view>
+
+  <!-- 邀请记录 -->
+  <view class="card">
+    <view class="card-hd">
+      <text class="card-title">我的邀请</text>
+      <text class="card-more">{{inviteList.length}} 人</text>
+    </view>
+
+    <view wx:if="{{loading}}">
+      <view class="skeleton-line" style="width: 48%;"></view>
+      <view class="skeleton-line mt-24" style="width: 66%;"></view>
+    </view>
+
+    <view wx:elif="{{inviteList.length === 0}}" class="empty">
+      <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
+      <view class="empty-title">还没有邀请记录</view>
+      <view class="empty-desc">把链接发给同行朋友，两人都能省</view>
+    </view>
+
+    <block wx:else>
+      <view wx:for="{{inviteList}}" wx:key="id" class="row row-tap">
+        <view class="row-ico">{{item._initial}}</view>
+        <view class="row-main"><view class="row-title">{{item.name || '微信好友'}}</view></view>
+        <view class="tag {{item.status === 'paid' ? 'tag-income' : 'tag-warn'}}">
+          {{item.status === 'paid' ? '已购买' : '待购买'}}
+        </view>
+      </view>
+    </block>
+  </view>
+</view>
+
+<view class="bottom-bar">
+  <!-- 用原生 open-type="share" 直接唤起微信转发面板。
+       之前这里绑的是「复制 h5 邀请链接」，但 h5.dtzai.cn/invite 并没有真正上线，
+       复制出去的是个死链；小程序也没有「以程序方式直接唤起转发」的 API，
+       必须由用户点原生分享按钮，所以只能做成 open-type="share"。 -->
+  <button class="btn btn-primary btn-share" open-type="share">转发给微信好友</button>
+</view>

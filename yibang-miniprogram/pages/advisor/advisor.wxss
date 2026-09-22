@@ -1,0 +1,366 @@
+/* pages/advisor/advisor.wxss */
+
+.adv-tail {
+  height: 40rpx;
+}
+
+/* ---------- 洞察卡 ----------
+   它和下面那张「追问条」是**一块**：上圆下圆，中间无缝拼成整体。
+   为什么这么做：追问是结论的延续（看完数字下一个念头就是"那 XX 呢"），
+   拼在一起才读得出这层关系；拆成两张卡就变成"两个不相干的模块"了。
+   代价是 hero 单独看是上圆下平，所以两者必须始终同时存在。 */
+.hero {
+  position: relative;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: 36rpx 32rpx 28rpx;
+  margin-bottom: 0;
+  background: linear-gradient(140deg, #1F2937 0%, #111827 100%);
+  /* 外阴影交给下面的 .ask-entry 提供 —— 两块各自投影会在拼缝处叠出一条脏边 */
+  box-shadow: none;
+  overflow: hidden;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  right: -80rpx;
+  top: -80rpx;
+  width: 260rpx;
+  height: 260rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 107, 53, .22) 0%, rgba(255, 107, 53, 0) 70%);
+}
+.hero-cap {
+  font-size: 25rpx;
+  color: rgba(255, 255, 255, .62);
+}
+.hero-v {
+  margin: 10rpx 0 6rpx;
+  font-size: 72rpx;
+  font-weight: 700;
+  line-height: 1.1;
+}
+/* 深底上的收支色单独取更亮的版本，保证可读 */
+.hero-up { color: #4ADE80; }
+.hero-down { color: #FCA5A5; }
+.hero-verdict {
+  font-size: 25rpx;
+  color: rgba(255, 255, 255, .78);
+}
+.hero-grid {
+  display: flex;
+  align-items: stretch;
+  margin-top: 28rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid rgba(255, 255, 255, .12);
+}
+.hero-col {
+  flex: 1;
+  min-width: 0;
+}
+.hero-k {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, .55);
+}
+.hero-n {
+  margin-top: 6rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #fff;
+}
+.hero-sep {
+  width: 2rpx;
+  background: rgba(255, 255, 255, .12);
+  margin: 0 24rpx;
+}
+
+/* ---------- 排行 ---------- */
+/* 前三名用颜色区分，扫一眼就知道轻重 */
+
+
+/* ---------- 经营提示 ---------- */
+.tips-card {
+  border-left: none;
+}
+.tip {
+  display: flex;
+  align-items: flex-start;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.tip:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.tip-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: var(--brand);
+  margin: 16rpx 20rpx 0 2rpx;
+  flex-shrink: 0;
+}
+.tip-main {
+  flex: 1;
+  min-width: 0;
+}
+.tip-t {
+  font-size: 29rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.tip-d {
+  margin-top: 6rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+  line-height: 1.65;
+}
+
+/* ---------- AI 追问条 ----------
+   样式上刻意做成「一行的输入条」而不是「又一张卡片」：
+   卡片是"看"的，条是"点/说"的。老板看到浅橙底 + 深橙圆图标 + 圆箭头，
+   不用读文字也知道这里能问。
+   它是 .hero 的下半截（上圆下圆拼合），所以圆角只做下面两个角。 */
+/* ══════ AI 追问入口（2026-09-20 老板要求"做大、做醒目"）══════
+   原来 108rpx 高、图标 64rpx，混在 hero 下面不显眼。
+   现在：整卡 152rpx 高、图标 88rpx、标题 34rpx，箭头也放大成 56rpx 实心圆。
+   配色仍是"浅橙卡 + 深橙圆"那一套，跟全站一致，只是把存在感提上来。 */
+.ask-entry {
+  display: flex;
+  align-items: center;
+  min-height: 152rpx;
+  padding: 32rpx 32rpx;
+  margin-bottom: 24rpx;
+  background: linear-gradient(120deg, #FFEDE2 0%, #FFFBF8 100%);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  /* 整块（hero + 这条）的外阴影，由这里统一提供 */
+  box-shadow: 0 16rpx 40rpx -20rpx rgba(16, 24, 40, .6);
+}
+.ask-entry:active {
+  background: #FFE0CC;
+}
+/* 深橙圆底 + 白图标：sparkle 原图是灰描边（#98A2B3），
+   放在这个底上等于隐形，所以用了白色版 ic-sparkle-w.svg */
+.ask-ico {
+  width: 88rpx;
+  height: 88rpx;
+  flex: none;
+  margin-right: 24rpx;
+  border-radius: 50%;
+  background: var(--brand-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 一圈同色外发光，让小圆点在浅橙底上更跳 */
+  box-shadow: 0 8rpx 20rpx -8rpx rgba(201, 69, 26, .55);
+}
+.ask-ico-img {
+  width: 48rpx;
+  height: 48rpx;
+}
+.ask-main {
+  flex: 1;
+  min-width: 0;
+}
+.ask-t {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--brand-ink);
+}
+.ask-d {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+/* 实心圆箭头 —— 裸 › 太轻，容易被当成装饰而不是按钮 */
+.ask-go {
+  position: relative;
+  width: 56rpx;
+  height: 56rpx;
+  flex: none;
+  margin-left: 20rpx;
+  border-radius: 50%;
+  background: var(--brand-btn);
+}
+.ask-go::after {
+  content: "";
+  position: absolute;
+  left: 21rpx;
+  top: 19rpx;
+  width: 15rpx;
+  height: 15rpx;
+  border-top: 4rpx solid #fff;
+  border-right: 4rpx solid #fff;
+  transform: rotate(45deg);
+}
+
+/* ---------- AI 对话弹层 ----------
+   2026-09-20 从 pages/search 整块搬来（含样式），只改了入口位置与快捷问题。
+   本页在 tabBar.list 里，所以 .sheet 默认停在 tabBar 之上是对的。 */
+.chat-sheet {
+  height: 80vh;
+  /* 键盘弹起时整层上挪（.sheet 的 bottom 会跟着 --kb-lift 走），
+     高度也得同步让出来，否则输入条仍被顶出可视区 */
+  height: calc(80vh - var(--kb-lift, 0px));
+}
+.chat-body {
+  flex: 1;
+  min-height: 0;
+  width: 100%;              /* scroll-view 兜底：不给宽度，内容一宽就把滚动区本身撑破 */
+  padding: 8rpx 32rpx;
+  box-sizing: border-box;   /* 宽度含内边距，否则右边又被顶出 64rpx */
+}
+.chat-hello {
+  padding: 40rpx 0 20rpx;
+  text-align: center;
+}
+.chat-asks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 24rpx;
+}
+.chat-ask {
+  width: 100%;
+  padding: 24rpx 28rpx;
+  margin-bottom: 16rpx;
+  border-radius: var(--r-md);
+  background: var(--fill);
+  font-size: 27rpx;
+  color: var(--t2);
+  text-align: left;
+}
+.chat-ask:active {
+  background: #E7EBF0;
+}
+.chat-item {
+  margin-bottom: 24rpx;
+  display: flex;
+  min-width: 0;   /* flex 容器的子项默认 min-width:auto，会被长内容顶宽 */
+}
+.chat-item.user {
+  justify-content: flex-end;
+}
+/* AI 气泡显式声明左对齐，避免依赖默认值 */
+.chat-item.ai {
+  justify-content: flex-start;
+}
+.chat-bubble {
+  max-width: 78%;
+  /* min-width:0 + overflow-wrap:anywhere 是两个一起用的：
+     flex 子项默认 min-width:auto（= 内容最小宽度），遇到
+     「5000+2000+1500」这种断不开的串，min-content 比 max-width:78% 还大，
+     浏览器就按 min-width 走 —— max-width 形同虚设，气泡直接冲出屏幕。
+     overflow-wrap:anywhere 把 min-content 打到 0，max-width 才真正说了算。
+     （项目里 .rec-name 用的是同一条规律，只是那边靠 .ellipsis 的 overflow:hidden 顺带解决。） */
+  min-width: 0;
+  padding: 22rpx 28rpx;
+  border-radius: 22rpx;
+  font-size: 28rpx;
+  line-height: 1.6;
+  background: var(--fill);
+  color: var(--t1);
+  border-bottom-left-radius: 6rpx;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.chat-item.user .chat-bubble {
+  background: var(--brand-btn);
+  color: #fff;
+  border-bottom-left-radius: 22rpx;
+  border-bottom-right-radius: 6rpx;
+}
+
+/* ---------- 卡片化排版（2026-09-20）----------
+   原来不管 AI 回什么，都是一整段灰底文字七八行挤在一起，老板找不到数字在哪。
+   现在分成「结论 / 关键数字 / 要点」三层，数字用大号等宽，一眼扫到钱。 */
+
+/* 结论句：整条回答最重要的一句话 */
+.cc-sum {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+  line-height: 1.5;
+}
+
+/* 关键数字：两列排，数字等宽才对得齐 */
+.cc-figs {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 14rpx;
+  padding: 14rpx 0 4rpx;
+  border-top: 1rpx solid #E7EBF0;
+}
+.cc-fig {
+  width: 50%;
+  min-width: 0;
+  padding: 6rpx 0 12rpx;
+}
+.cc-fig-k {
+  display: block;
+  font-size: 22rpx;
+  color: var(--t3);
+}
+.cc-fig-v {
+  display: block;
+  margin-top: 2rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--brand-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 要点：小圆点 + 一行一条 */
+.cc-pts {
+  margin-top: 8rpx;
+  padding-top: 14rpx;
+  border-top: 1rpx solid #E7EBF0;
+}
+.cc-pt {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10rpx;
+}
+.cc-pt:last-child {
+  margin-bottom: 0;
+}
+.cc-dot {
+  width: 10rpx;
+  height: 10rpx;
+  flex: none;
+  margin: 14rpx 12rpx 0 2rpx;
+  border-radius: 50%;
+  background: var(--brand);
+}
+.cc-pt-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  color: var(--t2);
+  line-height: 1.6;
+}
+
+/* 没结构时的纯文本：逐段渲染，段与段之间有呼吸 */
+.cc-line {
+  font-size: 28rpx;
+  line-height: 1.65;
+  color: var(--t1);
+}
+.cc-line + .cc-line {
+  margin-top: 12rpx;
+}
+
+/* 拍图提问时，气泡顶部显示刚拍的那张缩略图 —— 看着才知道 AI 看的是哪张 */
+.cc-thumb {
+  display: block;
+  width: 180rpx;
+  height: 180rpx;
+  margin: -6rpx 0 14rpx;
+  border-radius: var(--r-md);
+  background: #E7EBF0;
+}
+.chat-bubble-thinking {
+  color: var(--t3);
+}
+.chat-pad {
+  height: 20rpx;
+}

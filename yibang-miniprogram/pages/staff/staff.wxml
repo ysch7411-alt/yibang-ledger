@@ -1,0 +1,66 @@
+<!--pages/staff/staff.wxml-->
+<view class="container container-page" style="{{_cv}}">
+  <view class="page-head">
+    <view class="page-title">员工管理</view>
+    <view class="page-sub">员工录单，你审核后才入账</view>
+  </view>
+
+  <!-- 当前身份 -->
+  <view class="card">
+    <view class="me-row">
+      <view class="av av-boss">{{initial}}</view>
+      <view class="me-main">
+        <view class="me-name">{{userInfo.nickname || '我是老板'}}</view>
+        <view class="me-sub">{{userInfo.shop_name || '未设置店名'}}</view>
+      </view>
+      <view class="tag tag-brand">老板</view>
+    </view>
+  </view>
+
+  <!-- 待审核 -->
+  <view wx:if="{{pendingCount > 0}}" class="card audit-card" bindtap="goToPending">
+    <image class="audit-ico" src="/images/ic-clock.svg" mode="aspectFit" />
+    <view class="audit-main">
+      <view class="audit-t">{{pendingCount}} 条记录等你审核</view>
+      <view class="audit-d">员工录入的账还没入账，点这里处理</view>
+    </view>
+    <view class="row-arrow"></view>
+  </view>
+
+  <!-- 员工列表 -->
+  <view class="card">
+    <view class="card-hd">
+      <text class="card-title">我的员工</text>
+      <text class="card-more">{{staffList.length}} 人</text>
+    </view>
+
+    <view wx:if="{{loading}}">
+      <view class="skeleton-line" style="width: 50%;"></view>
+      <view class="skeleton-line mt-24" style="width: 68%;"></view>
+    </view>
+
+    <view wx:elif="{{staffList.length === 0}}" class="empty">
+      <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
+      <view class="empty-title">还没有员工</view>
+      <view class="empty-desc">邀请员工后，他们录的账要经你审核才生效</view>
+      <view class="empty-action" bindtap="inviteStaff">邀请员工</view>
+    </view>
+
+    <block wx:else>
+      <view wx:for="{{staffList}}" wx:key="id" class="me-row me-row-line">
+        <view class="av">{{item._initial}}</view>
+        <view class="me-main">
+          <view class="me-name">{{item._title}}</view>
+          <view class="me-sub">{{item._roleText}}</view>
+        </view>
+        <view class="tag {{item._active ? 'tag-income' : 'tag-gray'}}">{{item._active ? '在职' : '已停用'}}</view>
+      </view>
+    </block>
+  </view>
+
+  <view class="staff-tip">员工的每一笔记录都会先进入待审核，通过后才计入报表 —— 账目由你把关。</view>
+</view>
+
+<view class="bottom-bar">
+  <view class="btn btn-primary" bindtap="inviteStaff">邀请员工加入</view>
+</view>

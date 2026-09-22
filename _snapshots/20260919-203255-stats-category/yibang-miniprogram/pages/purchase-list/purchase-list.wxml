@@ -1,0 +1,158 @@
+<!--pages/purchase-list/purchase-list.wxml-->
+<view class="container container-page">
+  <view class="page-head">
+    <view class="page-title">采购单</view>
+    <view class="page-sub">{{tab === 'list' ? '拍过的单子都在这儿，点一下看明细' : '合并成一张入库，也能按维度拆开看'}}</view>
+  </view>
+
+  <!-- 两种看法：单据 / 按供应商 / 按品类 -->
+  <view class="seg">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="k"
+      wx:for-item="t"
+      class="seg-i {{tab === t.k ? 'is-on' : ''}}"
+      data-v="{{t.k}}"
+      bindtap="switchTab"
+    >{{t.t}}</view>
+  </view>
+
+  <!-- ================= 统计态 ================= -->
+  <block wx:if="{{tab !== 'list'}}">
+    <view class="chip-bar">
+      <view
+        wx:for="{{ranges}}"
+        wx:key="k"
+        wx:for-item="r"
+        class="chip {{statRange === r.k ? 'is-on' : ''}}"
+        data-v="{{r.k}}"
+        bindtap="pickRange"
+      >{{r.t}}</view>
+    </view>
+
+    <view wx:if="{{statLoading}}" class="card">
+      <view class="skeleton-line" style="width: 44%;"></view>
+      <view class="skeleton-line mt-24" style="width: 70%;"></view>
+      <view class="skeleton-line mt-16" style="width: 56%;"></view>
+    </view>
+
+    <!-- 取不到和「这段时间真的没有」是两回事，不能糊成一句 -->
+    <view wx:elif="{{statFailed}}" class="card">
+      <view class="empty">
+        <image class="empty-ico" src="/images/ic-scan.svg" mode="aspectFit" />
+        <view class="empty-title">统计暂时取不到</view>
+        <view class="empty-desc">网络或服务波动，下拉可以重试一次</view>
+      </view>
+    </view>
+
+    <block wx:elif="{{stat}}">
+      <block wx:if="{{stat.list.length}}">
+        <view class="card st-top">
+          <view class="st-top-k">{{stat.noun}} · 合计支出</view>
+          <view class="st-top-v num">¥{{stat.totalText}}</view>
+          <view class="st-top-sub">{{stat.rangeLabel}} · {{stat.from}} 至 {{stat.to}} · {{stat.count}} 个{{stat.noun}}</view>
+        </view>
+
+        <view class="card card-flush st-list">
+          <view class="rk" wx:for="{{stat.list}}" wx:key="key" wx:for-item="r">
+            <view class="rk-hd">
+              <text class="rk-name line1">{{r.key}}</text>
+              <text class="rk-amt num">¥{{r.amountText}}</text>
+            </view>
+            <view class="rk-track">
+              <view class="rk-bar" style="width: {{r.pct}}%;"></view>
+            </view>
+            <view class="rk-sub">
+              <text>{{r.count}} 项</text>
+              <text class="rk-dot">·</text>
+              <text>涉及 {{r.orders}} 张单</text>
+              <text class="rk-dot">·</text>
+              <text>占 {{r.share}}%</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="st-tail">统计走的是明细行：一张单子里有几家的货，就分到几家头上</view>
+      </block>
+
+      <!-- 空态：这段区间没采购，或者明细行还没带上维度 -->
+      <view wx:else class="card">
+        <view class="empty">
+          <image class="empty-ico" src="/images/ic-scan.svg" mode="aspectFit" />
+          <view class="empty-title">{{stat.rangeLabel}}还没有采购</view>
+          <view class="empty-desc">换个时间段看看，或者去拍一张送货单</view>
+          <view class="empty-action" bindtap="goRecord">去拍一张</view>
+        </view>
+      </view>
+    </block>
+  </block>
+
+  <!-- ================= 单据态 ================= -->
+  <block wx:else>
+    <view wx:if="{{loading}}" class="card">
+      <view class="skeleton-line" style="width: 52%;"></view>
+      <view class="skeleton-line mt-24" style="width: 74%;"></view>
+      <view class="skeleton-line mt-16" style="width: 40%;"></view>
+    </view>
+
+    <view wx:elif="{{list.length === 0}}" class="card">
+      <view class="empty">
+        <image class="empty-ico" src="/images/ic-scan.svg" mode="aspectFit" />
+        <view class="empty-title">还没有采购单</view>
+        <view class="empty-desc">在记账页点左下角的加号，拍一张送货单，AI 会把明细拆好</view>
+        <view class="empty-action" bindtap="goRecord">去拍一张</view>
+      </view>
+    </view>
+
+    <block wx:else>
+      <view class="list-hd">
+        <text class="list-hd-t">共 {{totalCount}} 张</text>
+      </view>
+
+      <view class="card po-list">
+        <block wx:for="{{list}}" wx:key="id" wx:for-item="po" wx:for-index="idx">
+          <view class="po-item {{expandedId === po.id ? 'is-open' : ''}}" data-id="{{po.id}}" bindtap="toggleRow">
+            <view class="po-hd">
+              <view class="po-hd-main">
+                <view class="po-name line1">{{po._supplier}}</view>
+                <view class="po-sub line1">
+                  <text>{{po._date}}</text>
+                  <text class="dot">·</text>
+                  <text>{{po._count}} 项</text>
+                  <text wx:if="{{po._orderNo}}"> · {{po._orderNo}}</text>
+                </view>
+              </view>
+              <view class="po-hd-val">
+                <view class="po-money num">¥{{po._money}}</view>
+                <view class="po-caret {{expandedId === po.id ? 'up' : ''}}"></view>
+              </view>
+            </view>
+
+            <!-- 明细：就地展开，不跳页 -->
+            <view class="po-detail" wx:if="{{expandedId === po.id}}">
+              <view wx:if="{{detailLoading === po.id}}" class="po-dtip">正在读明细…</view>
+              <block wx:elif="{{detailMap[po.id] && detailMap[po.id].length}}">
+                <view class="po-row" wx:for="{{detailMap[po.id]}}" wx:key="_seq" wx:for-item="it">
+                  <view class="po-no">{{it._seq}}</view>
+                  <view class="po-row-main">
+                    <view class="po-row-name line1">{{it._name}}</view>
+                    <view class="po-row-spec line1">{{it._spec || '无规格'}}{{it._unit ? ' · ' + it._unit : ''}}</view>
+                    <view class="po-row-tags">
+                      <text wx:if="{{it._cat}}" class="po-row-cat">{{it._cat}}</text>
+                      <text wx:if="{{it._sup}}" class="po-row-sup line1">{{it._sup}}</text>
+                    </view>
+                    <view class="po-row-calc num">{{it._qty}} × {{it._price}}</view>
+                  </view>
+                  <view class="po-row-amt num">¥{{it._amount}}</view>
+                </view>
+              </block>
+              <view wx:else class="po-dtip">这张单子没有明细行</view>
+            </view>
+          </view>
+        </block>
+      </view>
+    </block>
+  </block>
+
+  <view class="po-tail"></view>
+</view>

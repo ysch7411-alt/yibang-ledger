@@ -1,0 +1,20 @@
+/* pages/login/login.wxss
+   品牌区 / 容器 / CTA / 退路链都在 app.wxss（跟注册页共用同一套），
+   这里只放本页独有的。 */
+
+/* 重试也失败时才出现。用警示色但做成一句话，不是弹窗 ——
+   用户已经在一次失败里了，再糊他一脸红只会更慌。 */
+.lg-err {
+  border-left: 6rpx solid var(--expense);
+}
+.lg-err-t {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--expense);
+}
+.lg-err-d {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: var(--t2);
+  line-height: 1.6;
+}

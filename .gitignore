@@ -1,0 +1,40 @@
+# 依赖
+node_modules/
+package-lock.json
+
+# 日志
+logs/
+*.log
+npm-debug.log*
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 临时文件
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# 测试脚本
+test-*.js
+fix_*.sql
+*.conf
+
+# 文档
+*.html
+*.xml
+
+# 微信开发者工具
+.project
+.privateKey
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 备份
+*.bak
+*.backup

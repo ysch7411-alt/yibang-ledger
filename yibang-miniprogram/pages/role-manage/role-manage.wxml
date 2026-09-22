@@ -1,0 +1,147 @@
+<!--pages/role-manage/role-manage.wxml-->
+<view class="container">
+
+  <!-- 顶部说明 -->
+  <view class="tip-card">
+    <view class="tip-title">成员与角色</view>
+    <view class="tip-desc">店主可添加合伙人、经理、员工，不同角色拥有不同权限</view>
+  </view>
+
+  <!-- 角色说明 -->
+  <view class="role-legend">
+    <view class="legend-item">
+      <view class="legend-dot dot-owner"></view>
+      <text class="legend-text">店主：全部权限</text>
+    </view>
+    <view class="legend-item">
+      <view class="legend-dot dot-boss"></view>
+      <text class="legend-text">合伙人：查看报表/导出</text>
+    </view>
+    <view class="legend-item">
+      <view class="legend-dot dot-manager"></view>
+      <text class="legend-text">经理：记账/管员工/确认报表</text>
+    </view>
+    <view class="legend-item">
+      <view class="legend-dot dot-staff"></view>
+      <text class="legend-text">员工：仅记账，需审核</text>
+    </view>
+  </view>
+
+  <!-- 成员列表 -->
+  <view class="section-title">成员列表（{{members.length}}人）</view>
+
+  <view wx:if="{{loading}}" class="card">
+    <view class="skeleton-line" style="width: 60%;"></view>
+    <view class="skeleton-line mt-24" style="width: 80%;"></view>
+  </view>
+
+  <view wx:else class="card card-flush">
+    <view class="member-item" wx:for="{{members}}" wx:key="id">
+      <view class="member-avatar">{{item.nickname ? item.nickname.charAt(0) : '?'}}</view>
+      <view class="member-info">
+        <view class="member-name">
+          {{item.nickname || '易帮用户'}}
+          <text wx:if="{{item.id === myId}}" class="tag tag-brand">我</text>
+        </view>
+        <view class="member-role">
+          <text class="role-tag role-{{item.role}}">{{item.role_name}}</text>
+          <text wx:if="{{item.phone}}" class="member-phone">{{item.phone}}</text>
+        </view>
+      </view>
+      <!-- 只有店主能操作其他成员 -->
+      <view wx:if="{{isOwner && item.id !== myId}}" class="member-actions">
+        <view class="action-btn" bindtap="changeRole" data-id="{{item.id}}" data-role="{{item.role}}" data-name="{{item.nickname}}">改角色</view>
+        <view class="action-btn action-danger" bindtap="removeMember" data-id="{{item.id}}" data-name="{{item.nickname}}">移除</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 添加成员按钮（只有店主可见） -->
+  <view wx:if="{{isOwner}}" class="add-section">
+    <view class="add-btn" bindtap="openAdd">
+      <text class="add-icon">+</text>
+      <text class="add-text">添加成员</text>
+    </view>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>
+
+<!-- ============ 添加成员弹层 ============ -->
+<view class="sheet-mask" wx:if="{{showAdd}}" bindtap="closeAdd" />
+<view class="sheet" wx:if="{{showAdd}}" style="--kb-lift: {{kbLift}}px;">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">添加成员</text>
+    <view class="sheet-close" bindtap="closeAdd"></view>
+  </view>
+
+  <view class="sheet-bd">
+    <view class="f-block">
+      <view class="f-label">对方手机号 <text class="f-required">*</text></view>
+      <input
+        class="f-input"
+        value="{{addForm.phone}}"
+        maxlength="11"
+        type="text"
+        placeholder="请输入对方注册时的手机号"
+        placeholder-class="ph"
+        bindinput="onAddPhone"
+      />
+    </view>
+
+    <view class="f-block">
+      <view class="f-label">选择角色</view>
+      <view class="role-picker">
+        <view class="role-option {{addForm.role === 2 ? 'is-on' : ''}}" bindtap="setAddRole" data-role="2">
+          <view class="role-option-name">合伙人</view>
+          <view class="role-option-desc">查看报表、导出数据</view>
+        </view>
+        <view class="role-option {{addForm.role === 3 ? 'is-on' : ''}}" bindtap="setAddRole" data-role="3">
+          <view class="role-option-name">经理</view>
+          <view class="role-option-desc">记账、管理员工、确认报表</view>
+        </view>
+        <view class="role-option {{addForm.role === 4 ? 'is-on' : ''}}" bindtap="setAddRole" data-role="4">
+          <view class="role-option-name">员工</view>
+          <view class="role-option-desc">仅记账，记录需审核</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="add-note">
+      注意：对方需先注册易帮账本，添加后对方登录即可看到本店账目。
+    </view>
+  </view>
+
+  <view class="sheet-ft">
+    <view class="btn btn-ghost" bindtap="closeAdd">取消</view>
+    <view class="btn btn-primary {{adding ? 'is-disabled' : ''}}" bindtap="saveAdd">添加</view>
+  </view>
+</view>
+
+<!-- ============ 修改角色弹层 ============ -->
+<view class="sheet-mask" wx:if="{{showChangeRole}}" bindtap="closeChangeRole" />
+<view class="sheet" wx:if="{{showChangeRole}}">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">修改角色 - {{changeTarget.name}}</text>
+    <view class="sheet-close" bindtap="closeChangeRole"></view>
+  </view>
+
+  <view class="sheet-bd">
+    <view class="role-picker">
+      <view class="role-option {{changeTarget.role === 2 ? 'is-on' : ''}}" bindtap="confirmChangeRole" data-role="2">
+        <view class="role-option-name">合伙人</view>
+        <view class="role-option-desc">查看报表、导出数据</view>
+      </view>
+      <view class="role-option {{changeTarget.role === 3 ? 'is-on' : ''}}" bindtap="confirmChangeRole" data-role="3">
+        <view class="role-option-name">经理</view>
+        <view class="role-option-desc">记账、管理员工、确认报表</view>
+      </view>
+      <view class="role-option {{changeTarget.role === 4 ? 'is-on' : ''}}" bindtap="confirmChangeRole" data-role="4">
+        <view class="role-option-name">员工</view>
+        <view class="role-option-desc">仅记账，记录需审核</view>
+      </view>
+    </view>
+  </view>
+</view>

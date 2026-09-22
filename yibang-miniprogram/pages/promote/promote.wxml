@@ -1,0 +1,112 @@
+<!--pages/promote/promote.wxml-->
+<view class="container container-page container-cta" style="{{_cv}}">
+  <view class="page-head">
+    <view class="page-title">推广赚钱</view>
+    <view class="page-sub">邀请 2 位好友，免费解锁终身版</view>
+  </view>
+
+  <!-- 进度：把「还差几个人」放在最上面，这是用户唯一关心的事 -->
+  <view class="card pg-card">
+    <view class="pg-top">
+      <view class="pg-num">
+        <text class="num pg-cur">{{inviteCount}}</text>
+        <text class="pg-total">/ 2 人</text>
+      </view>
+      <view class="pg-badge {{inviteCount >= 2 ? 'done' : ''}}">
+        {{inviteCount >= 2 ? '已达成' : '还差 ' + (2 - inviteCount) + ' 人'}}
+      </view>
+    </view>
+    <view class="pg-bar">
+      <view class="pg-fill" style="width: {{progressPercent}}%"></view>
+    </view>
+    <view class="pg-tip">{{inviteCount >= 2 ? '已解锁终身版，无需再邀请' : '好友购买终身版后，你自动解锁'}}</view>
+  </view>
+
+  <!-- 规则 -->
+  <view class="card">
+    <view class="card-hd"><text class="card-title">怎么算</text></view>
+    <view wx:for="{{rules}}" wx:key="index" class="rule">
+      <view class="rule-no">{{index + 1}}</view>
+      <view class="rule-t">{{item}}</view>
+    </view>
+  </view>
+
+  <!-- 邀请记录 -->
+  <view class="card">
+    <view class="card-hd">
+      <text class="card-title">我的邀请</text>
+      <text class="card-more">{{inviteList.length}} 人</text>
+    </view>
+
+    <view wx:if="{{loading}}">
+      <view class="skeleton-line" style="width: 48%;"></view>
+      <view class="skeleton-line mt-24" style="width: 66%;"></view>
+    </view>
+
+    <view wx:elif="{{inviteList.length === 0}}" class="empty">
+      <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
+      <view class="empty-title">还没有邀请记录</view>
+      <view class="empty-desc">把海报发给同行朋友，两人都能省</view>
+    </view>
+
+    <block wx:else>
+      <view wx:for="{{inviteList}}" wx:key="id" class="row row-tap">
+        <view class="row-ico">{{item._initial}}</view>
+        <view class="row-main"><view class="row-title">{{item.name || '微信好友'}}</view></view>
+        <view class="tag {{item.status === 'paid' ? 'tag-income' : 'tag-warn'}}">
+          {{item.status === 'paid' ? '已购买' : '待购买'}}
+        </view>
+      </view>
+    </block>
+  </view>
+</view>
+
+<!-- ============ 离屏画布 ============
+     海报在这里画好再导出。必须"真实存在于页面上"——
+     2d canvas 用 display:none 就拿不到 node，画不出来。所以挪到屏幕外而不是藏起来。 -->
+<canvas
+  type="2d"
+  id="posterCanvas"
+  class="ps-canvas"
+  style="width: {{posterW}}px; height: {{posterH}}px;"
+></canvas>
+
+<!-- ============ 海报预览 ============
+     生成完先给用户看，再决定发还是存 —— 直接弹系统分享面板的话，
+     用户连自己发出去的是什么都不知道。 -->
+<view wx:if="{{posterOpen}}" class="sheet-mask" bindtap="closePoster"></view>
+<view wx:if="{{posterOpen}}" class="sheet ps-sheet">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">你的专属海报</text>
+    <view class="sheet-close" bindtap="closePoster"></view>
+  </view>
+  <scroll-view class="sheet-bd ps-bd" scroll-y>
+    <image class="ps-img" src="{{posterPath}}" mode="widthFix" show-menu-by-longpress="{{true}}" />
+    <!-- 长按识别是微信聊天里的能力，小程序页面里没有——提示要写真话：
+         海报发出去之后，朋友在微信对话里长按这张图就能识别进入 -->
+    <view class="ps-hint">海报发到微信后，朋友在对话里长按这张图就能识别进入</view>
+    <!-- 小程序里想自己验证这张码，只能用 wx.scanCode（相机对着海报，或从相册选刚存的图） -->
+    <view class="ps-scan" bindtap="scanPosterCode" hover-class="ps-scan-hover">
+      <image class="ps-scan-ico" src="/images/ic-scan.svg" mode="aspectFit" />
+      <view class="ps-scan-main">
+        <text class="ps-scan-t">扫一扫试扫</text>
+        <text class="ps-scan-sub">相机对着海报，或从相册选刚保存的图</text>
+      </view>
+      <view class="ps-scan-arrow"></view>
+    </view>
+  </scroll-view>
+  <view class="sheet-ft">
+    <button class="btn btn-ghost" bindtap="savePoster">保存到相册</button>
+    <button class="btn btn-primary" bindtap="sharePoster">发给微信好友</button>
+  </view>
+</view>
+
+<view class="bottom-bar">
+  <!-- 两个入口各有各的用处，不是重复：
+       海报 = 一张排好的图（有品牌、有卖点、有码），适合发群、贴店里、发给不在微信里的人；
+       转发 = 微信标准卡片，适合直接发给某个好友。
+       小程序没有「以程序方式唤起转发」的 API，所以转发只能挂原生 open-type="share"。 -->
+  <button class="btn btn-ghost" bindtap="makePoster" loading="{{posterBusy}}">生成分销海报</button>
+  <button class="btn btn-primary" open-type="share">转发给好友</button>
+</view>

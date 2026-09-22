@@ -1,0 +1,231 @@
+/* pages/role-manage/role-manage.wxss */
+
+.tip-card {
+  margin: 24rpx;
+  padding: 28rpx;
+  background: linear-gradient(135deg, rgba(228, 85, 29, .08) 0%, rgba(201, 69, 26, .04) 100%);
+  border-radius: 20rpx;
+  border: 2rpx solid rgba(228, 85, 29, .15);
+}
+.tip-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #101828;
+  margin-bottom: 8rpx;
+}
+.tip-desc {
+  font-size: 24rpx;
+  color: #667085;
+  line-height: 1.5;
+}
+
+/* 角色说明 */
+.role-legend {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0 36rpx 16rpx;
+  gap: 16rpx 24rpx;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+}
+.legend-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  margin-right: 8rpx;
+}
+.dot-owner { background: #E4551D; }
+.dot-boss { background: #F79009; }
+.dot-manager { background: #12B76A; }
+.dot-staff { background: #667085; }
+.legend-text {
+  font-size: 22rpx;
+  color: #667085;
+}
+
+.section-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #98A2B3;
+  padding: 16rpx 36rpx;
+}
+
+/* 成员列表 */
+.member-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  border-bottom: 1rpx solid #F2F4F7;
+}
+.member-item:last-child {
+  border-bottom: none;
+}
+.member-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF8A50 0%, #E4551D 100%);
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+.member-info {
+  flex: 1;
+  min-width: 0;
+}
+.member-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #101828;
+  margin-bottom: 8rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.member-role {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.role-tag {
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  font-weight: 500;
+}
+.role-1 { background: rgba(228, 85, 29, .1); color: #E4551D; }
+.role-2 { background: rgba(247, 144, 9, .1); color: #F79009; }
+.role-3 { background: rgba(18, 183, 106, .1); color: #12B76A; }
+.role-4 { background: rgba(102, 112, 133, .1); color: #667085; }
+.member-phone {
+  font-size: 22rpx;
+  color: #98A2B3;
+}
+.member-actions {
+  display: flex;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+.action-btn {
+  padding: 10rpx 20rpx;
+  border-radius: 12rpx;
+  background: #F2F4F7;
+  font-size: 22rpx;
+  color: #475467;
+}
+.action-btn:active {
+  opacity: 0.7;
+}
+.action-danger {
+  background: rgba(240, 68, 56, .1);
+  color: #F04438;
+}
+
+/* 添加成员 */
+.add-section {
+  padding: 24rpx 36rpx;
+}
+.add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  border: 2rpx dashed rgba(228, 85, 29, .4);
+  background: rgba(228, 85, 29, .04);
+}
+.add-btn:active {
+  opacity: 0.7;
+}
+.add-icon {
+  font-size: 32rpx;
+  color: #E4551D;
+  margin-right: 8rpx;
+  font-weight: 300;
+}
+.add-text {
+  font-size: 28rpx;
+  color: #E4551D;
+  font-weight: 500;
+}
+
+/* 表单 */
+.f-block {
+  margin-bottom: 28rpx;
+}
+.f-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #344054;
+  margin-bottom: 12rpx;
+}
+.f-required {
+  color: #E4551D;
+}
+.f-input {
+  width: 100%;
+  padding: 24rpx 28rpx;
+  background: #F9FAFB;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  color: #101828;
+  box-sizing: border-box;
+}
+.ph {
+  color: #98A2B3;
+}
+
+/* 角色选择 */
+.role-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.role-option {
+  padding: 24rpx;
+  border-radius: 16rpx;
+  background: #F9FAFB;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+}
+.role-option.is-on {
+  background: rgba(228, 85, 29, .06);
+  border-color: #E4551D;
+}
+.role-option:active {
+  transform: scale(0.98);
+}
+.role-option-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #101828;
+  margin-bottom: 6rpx;
+}
+.role-option.is-on .role-option-name {
+  color: #E4551D;
+}
+.role-option-desc {
+  font-size: 24rpx;
+  color: #98A2B3;
+}
+
+.add-note {
+  margin-top: 20rpx;
+  padding: 20rpx;
+  background: #FFFBEB;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+  color: #B54708;
+  line-height: 1.5;
+}
+
+.bottom-space {
+  height: 60rpx;
+}

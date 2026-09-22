@@ -1,0 +1,133 @@
+<!--pages/contacts/contacts.wxml-->
+<view class="container" style="{{_cv}}">
+
+  <!-- 顶部标题栏 -->
+  <view class="page-head">
+    <view class="page-head-left">
+      <view class="page-title">往来</view>
+      <view class="page-sub">谁欠我钱，我欠谁钱，一眼看清</view>
+    </view>
+    <view class="page-head-right">
+      <view class="add-btn" bindtap="openAdd">
+        <text class="add-btn-text">+ 添加</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 应收应付汇总 -->
+  <view class="card sum-card">
+    <view class="sum-col" bindtap="filterType" data-type="receivable">
+      <view class="sum-k">别人欠我</view>
+      <view class="sum-v num c-income">¥{{summary.receivableText}}</view>
+      <view class="sum-s">{{receivableCount}} 位 ›</view>
+    </view>
+    <view class="sum-line"></view>
+    <view class="sum-col" bindtap="filterType" data-type="payable">
+      <view class="sum-k">我欠别人</view>
+      <view class="sum-v num c-expense">¥{{summary.payableText}}</view>
+      <view class="sum-s">{{payableCount}} 位 ›</view>
+    </view>
+  </view>
+
+  <!-- 筛选标签 -->
+  <view class="filter-bar">
+    <view class="filter-item {{filterType === 'all' ? 'is-on' : ''}}" bindtap="setFilter" data-type="all">全部</view>
+    <view class="filter-item {{filterType === 'receivable' ? 'is-on' : ''}}" bindtap="setFilter" data-type="receivable">应收</view>
+    <view class="filter-item {{filterType === 'payable' ? 'is-on' : ''}}" bindtap="setFilter" data-type="payable">应付</view>
+  </view>
+
+  <!-- 往来对象列表 -->
+  <view wx:if="{{filteredList.length}}" class="contact-list">
+    <view class="contact-item" wx:for="{{filteredList}}" wx:key="id" bindtap="goDetail" data-id="{{item.id}}">
+      <view class="contact-avatar">{{item.name.charAt(0)}}</view>
+      <view class="contact-info">
+        <view class="contact-name">{{item.name}}</view>
+        <view class="contact-remark">{{item.remark || (item.type === 1 ? '客户' : '供应商')}}</view>
+      </view>
+      <view class="contact-balance">
+        <view class="balance-v num {{item.balance > 0 ? 'c-income' : (item.balance < 0 ? 'c-expense' : '')}}">
+          {{item.balance > 0 ? '+' : (item.balance < 0 ? '-' : '')}}¥{{item.balanceText}}
+        </view>
+        <view class="balance-label">{{item.balance > 0 ? '应收' : (item.balance < 0 ? '应付' : '已结清')}}</view>
+      </view>
+      <view class="contact-arrow"></view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:else class="empty-state">
+    <image class="empty-icon" src="/images/ic-empty.svg" mode="aspectFit" />
+    <view class="empty-title">还没有往来对象</view>
+    <view class="empty-desc">添加客户或供应商，自动记录欠款</view>
+    <view class="empty-btn" bindtap="openAdd">+ 添加往来对象</view>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>
+
+<!-- ============ 添加往来对象弹层 ============ -->
+<view class="sheet-mask" wx:if="{{showAdd}}" bindtap="closeAdd" />
+<view class="sheet" wx:if="{{showAdd}}" style="--kb-lift: {{kbLift}}px;">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">添加往来对象</text>
+    <view class="sheet-close" bindtap="closeAdd"></view>
+  </view>
+
+  <view class="sheet-bd">
+    <view class="f-block">
+      <view class="f-label">名称 <text class="f-required">*</text></view>
+      <input
+        class="f-input"
+        value="{{addForm.name}}"
+        maxlength="30"
+        placeholder="如：张老板、李四"
+        placeholder-class="ph"
+        adjust-position="{{false}}"
+        bindinput="onAddName"
+        bindfocus="onKbFocus"
+        bindblur="onKbBlur"
+        bindkeyboardheightchange="onKbHeight"
+      />
+    </view>
+
+    <view class="f-block">
+      <view class="f-label">类型</view>
+      <view class="type-picker">
+        <view class="type-item {{addForm.type === 1 ? 'is-on' : ''}}" bindtap="setAddType" data-type="1">客户</view>
+        <view class="type-item {{addForm.type === 2 ? 'is-on' : ''}}" bindtap="setAddType" data-type="2">供应商</view>
+      </view>
+    </view>
+
+    <view class="f-block">
+      <view class="f-label">电话（选填）</view>
+      <input
+        class="f-input"
+        value="{{addForm.phone}}"
+        maxlength="20"
+        placeholder="方便联系时拨打"
+        placeholder-class="ph"
+        adjust-position="{{false}}"
+        bindinput="onAddPhone"
+      />
+    </view>
+
+    <view class="f-block">
+      <view class="f-label">备注（选填）</view>
+      <input
+        class="f-input"
+        value="{{addForm.remark}}"
+        maxlength="50"
+        placeholder="如：蔬菜供应商、月结"
+        placeholder-class="ph"
+        adjust-position="{{false}}"
+        bindinput="onAddRemark"
+      />
+    </view>
+  </view>
+
+  <view class="sheet-ft">
+    <view class="btn btn-ghost" bindtap="closeAdd">取消</view>
+    <view class="btn btn-primary {{saving ? 'is-disabled' : ''}}" bindtap="saveAdd">保存</view>
+  </view>
+</view>

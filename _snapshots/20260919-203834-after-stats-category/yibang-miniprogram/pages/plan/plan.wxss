@@ -1,0 +1,130 @@
+/* pages/plan/plan.wxss */
+
+.plan-card {
+  position: relative;
+  padding: 36rpx 32rpx 28rpx;
+  overflow: hidden;
+}
+.plan-card.pro {
+  border: 3rpx solid var(--brand-line);
+  background: linear-gradient(170deg, #FFF9F5 0%, #FFFFFF 42%);
+  box-shadow: 0 20rpx 44rpx -26rpx rgba(201, 69, 26, .55);
+}
+
+.plan-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 48rpx;
+  padding: 0 24rpx;
+  border-radius: 0 0 0 20rpx;
+  background: var(--brand-btn);
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.plan-name {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--t1);
+}
+.plan-price {
+  display: flex;
+  align-items: baseline;
+  margin-top: 18rpx;
+}
+.plan-sym {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--brand-ink);
+  margin-right: 4rpx;
+}
+.plan-sym.none {
+  color: var(--t3);
+}
+.plan-num {
+  font-size: 76rpx;
+  font-weight: 700;
+  color: var(--brand-ink);
+  line-height: 1;
+}
+.plan-num.free {
+  color: var(--t1);
+}
+.plan-unit {
+  margin-left: 12rpx;
+  font-size: 25rpx;
+  color: var(--t3);
+}
+.plan-alt {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: var(--brand-ink);
+  background: var(--brand-weak);
+  align-self: flex-start;
+  display: inline-block;
+  padding: 8rpx 20rpx;
+  border-radius: var(--r-full);
+}
+
+.plan-feats {
+  margin-top: 28rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid var(--line);
+}
+.feat {
+  display: flex;
+  align-items: center;
+  padding: 14rpx 0;
+}
+/* 用 CSS 画对勾，避免 emoji ✅❌ 在不同机型上字形不一 */
+.feat-ck {
+  position: relative;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  background: var(--income-weak);
+  margin-right: 18rpx;
+  flex-shrink: 0;
+}
+.feat-ck::after {
+  content: "";
+  position: absolute;
+  left: 11rpx;
+  top: 9rpx;
+  width: 9rpx;
+  height: 16rpx;
+  border-right: 3rpx solid var(--income);
+  border-bottom: 3rpx solid var(--income);
+  transform: rotate(42deg);
+}
+.feat-ck.off {
+  background: var(--fill);
+}
+.feat-ck.off::after {
+  border-color: var(--t4);
+  left: 8rpx;
+  top: 14rpx;
+  width: 18rpx;
+  height: 0;
+  border-right: none;
+  border-bottom: 3rpx solid var(--t4);
+  transform: none;
+}
+.feat-t {
+  font-size: 28rpx;
+  color: var(--t2);
+}
+.feat-t.off {
+  color: var(--t4);
+}
+
+.plan-note {
+  padding: 8rpx 12rpx;
+  font-size: 24rpx;
+  color: var(--t4);
+  line-height: 1.7;
+}

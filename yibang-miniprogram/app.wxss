@@ -1,0 +1,1088 @@
+/* ============================================================
+   app.wxss —— 易帮账本 设计系统 v2
+   目标用户：中小门店老板（40-60 岁、非财务专业、店内光线复杂）
+   设计原则：字大、点大、对比足、层级浅、语音优先
+   ============================================================ */
+
+/* ---------- 1. 设计令牌（Design Tokens） ---------- */
+page {
+  /* 品牌 —— 亮橙仅用于图形/填充/图标；文字与按钮使用可读性达标的深橙 */
+  --brand: #FF6B35;
+  --brand-btn: #C9451A;      /* 白字对比度 4.75:1 ✓ WCAG AA */
+  --brand-btn-press: #B03C10;
+  --brand-ink: #B93F14;      /* 橙字白底 5.4:1 ✓ */
+  --brand-weak: #FFF4EE;
+  --brand-line: #FFD9C6;
+
+  /* 账目语义色（全部 ≥4.4:1，深色底也能看清） */
+  --income: #0B7A43;         /* 收入 / 回款 */
+  --income-weak: #E8F5EC;
+  --expense: #D92D20;        /* 支出 / 付款 */
+  --expense-weak: #FDECEA;
+  --warn: #B54708;           /* 应收 / 待办 */
+  --warn-weak: #FFF6E5;
+  --info: #175CD3;           /* 应付 / 中性提示 */
+  --info-weak: #EDF3FF;
+
+  /* 中性色阶（统一一套灰，替换原先散落的 #999/#bbb/#ccc/#666） */
+  --t1: #101828;             /* 主文字 15.9:1 */
+  --t2: #344054;             /* 次文字 10.4:1 */
+  --t3: #667085;             /* 辅助文字 5.0:1（正文灰的下限） */
+  --t4: #98A2B3;             /* 仅占位符/装饰，不承载信息 */
+  --line: #EDF0F3;
+  --fill: #F2F4F7;
+  --bg: #F6F7F9;
+  --card: #FFFFFF;
+
+  /* 圆角 / 阴影 / 尺寸 */
+  --r-sm: 12rpx;
+  --r-md: 20rpx;
+  --r-lg: 32rpx;
+  --r-full: 999rpx;
+  --sh-card: 0 1rpx 2rpx rgba(16, 24, 40, .04), 0 8rpx 24rpx -8rpx rgba(16, 24, 40, .08);
+  --sh-float: 0 8rpx 32rpx -8rpx rgba(16, 24, 40, .16);
+  --tabbar-h: 120rpx;
+
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+  line-height: 1.55;
+  color: var(--t1);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 2. 布局骨架 ---------- */
+.container {
+  padding: 0 28rpx;
+  /* 双声明做渐进增强：不支持 env() 的旧 WebView 用上一行，支持的用下一行 */
+  padding-bottom: calc(var(--tabbar-h) + 60rpx);
+  padding-bottom: calc(var(--tabbar-h) + 60rpx + env(safe-area-inset-bottom, 0px));
+}
+/* 二级页（navigateTo 打开的页面）没有 TabBar，不需要预留它的高度 */
+.container-page {
+  padding-bottom: 72rpx;
+  padding-bottom: calc(72rpx + env(safe-area-inset-bottom, 0px));
+}
+/* 底部有固定操作条时再额外留出空间 */
+.container-cta {
+  padding-bottom: 190rpx;
+  padding-bottom: calc(190rpx + env(safe-area-inset-bottom, 0px));
+}
+/* 固定在底部的操作条 */
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 这里**故意**不跟键盘抬：键盘弹起时底部操作条被遮住是正常的，
+     抬上来反而会挡住用户正在填的那几行（采购页明细）。收键盘就看见了。
+     跟键盘抬的只有「自己里面有输入框」的容器（.dock / 带输入的 .sheet）。 */
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  padding: 20rpx 28rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom, 0px));
+  background: rgba(255, 255, 255, .97);
+  border-top: 1rpx solid var(--line);
+  box-shadow: 0 -8rpx 24rpx -18rpx rgba(16, 24, 40, .35);
+}
+.bottom-bar .btn {
+  flex: 1;
+}
+
+/* 页面头：左对齐，替代原先“居中大标题”（居中标题 + 原生导航栏 = 信息重复 + 弱层次） */
+.page-head {
+  padding: 32rpx 4rpx 24rpx;
+}
+.page-title {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: var(--t1);
+  line-height: 1.3;
+}
+.page-sub {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+
+/* ---------- 3. 卡片 ---------- */
+.card {
+  background: var(--card);
+  border-radius: var(--r-lg);
+  padding: 36rpx;
+  margin-bottom: 24rpx;
+  box-shadow: var(--sh-card);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.card:active {
+  transform: scale(.998);
+  box-shadow: 0 1rpx 2rpx rgba(16, 24, 40, .04), 0 4rpx 12rpx -4rpx rgba(16, 24, 40, .08);
+}
+.card-flush {
+  padding: 8rpx 32rpx;
+}
+.card-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+.card-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.card-more {
+  font-size: 26rpx;
+  color: var(--t3);
+}
+
+/* ---------- 4. 按钮 ---------- */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 96rpx;
+  border-radius: var(--r-full);
+  font-size: 32rpx;
+  font-weight: 600;
+  transition: transform .16s ease, background-color .16s ease, opacity .16s ease;
+}
+.btn-primary {
+  background: var(--brand-btn);
+  color: #fff;
+  box-shadow: 0 4rpx 12rpx -4rpx rgba(201, 69, 26, .4);
+}
+.btn-primary:active {
+  background: var(--brand-btn-press);
+  transform: scale(.98);
+  box-shadow: 0 2rpx 6rpx -2rpx rgba(201, 69, 26, .3);
+}
+.btn-ghost {
+  background: var(--fill);
+  color: var(--t2);
+}
+.btn-ghost:active {
+  background: #E7EBF0;
+  transform: scale(.97);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--brand-ink);
+  border: 2rpx solid var(--brand-line);
+}
+/* 危险操作（删除、注销）。用语义红：跟「支出」是同一套颜色语言，
+   老板看到红就知道这一步不可逆。白字对比度 4.83:1 ✓ */
+.btn-danger {
+  background: var(--expense);
+  color: #fff;
+  box-shadow: 0 8rpx 20rpx -8rpx rgba(217, 45, 32, .55);
+}
+.btn-danger:active {
+  background: #B42318;
+  transform: scale(.97);
+}
+.btn-sm {
+  height: 76rpx;
+  font-size: 28rpx;
+}
+.btn-block {
+  width: 100%;
+}
+.btn[disabled],
+.btn.is-disabled {
+  opacity: .45;
+}
+
+/* 原生 button 复位（pending 等页仍在用 button） */
+button::after {
+  border: none;
+}
+.btn-reset {
+  padding: 0;
+  margin: 0;
+  line-height: inherit;
+  background: transparent;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
+}
+.btn-reset::after {
+  border: none;
+}
+
+/* ---------- 5. 数字与金额 ---------- */
+/* tabular-nums：等宽数字，让一列金额的小数点在竖直方向对齐，扫读效率显著提升 */
+.num {
+  font-family: "DIN Alternate", "SF Pro Display", "Helvetica Neue", sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -.02em;
+}
+.money-lg {
+  font-size: 64rpx;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.money-md {
+  font-size: 44rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.money-sm {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.c-income {
+  color: var(--income);
+}
+.c-expense {
+  color: var(--expense);
+}
+.c-warn {
+  color: var(--warn);
+}
+.c-info {
+  color: var(--info);
+}
+.c-brand {
+  color: var(--brand-ink);
+}
+.c-t1 { color: var(--t1); }
+.c-t2 { color: var(--t2); }
+.c-t3 { color: var(--t3); }
+
+/* ---------- 6. 通用列表行 ---------- */
+.list {
+  padding: 4rpx 32rpx;
+}
+.row {
+  display: flex;
+  align-items: center;
+  min-height: 112rpx;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--line);
+  transition: background .12s ease;
+}
+.row:last-child {
+  border-bottom: none;
+}
+.row-tap:active {
+  background: var(--fill);
+}
+.row-main {
+  flex: 1;
+  min-width: 0;
+}
+.row-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row-sub {
+  margin-top: 6rpx;
+  font-size: 25rpx;
+  color: var(--t3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row-val {
+  margin-left: 24rpx;
+  flex-shrink: 0;
+  text-align: right;
+}
+.row-arrow {
+  margin-left: 16rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-right: 3rpx solid var(--t4);
+  border-top: 3rpx solid var(--t4);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+.row-ico {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: var(--r-md);
+  background: var(--fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34rpx;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+.row-ico-img {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+/* ---------- 7. 标签 ---------- */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 44rpx;
+  padding: 0 16rpx;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 1;
+}
+.tag-income { background: var(--income-weak); color: var(--income); }
+.tag-expense { background: var(--expense-weak); color: var(--expense); }
+.tag-warn { background: var(--warn-weak); color: var(--warn); }
+.tag-info { background: var(--info-weak); color: var(--info); }
+.tag-brand { background: var(--brand-weak); color: var(--brand-ink); }
+.tag-gray { background: var(--fill); color: var(--t3); }
+
+/* ---------- 8. 空状态（图标 + 说明 + 行动，替代纯文字） ---------- */
+.empty {
+  padding: 88rpx 32rpx;
+  text-align: center;
+}
+.empty-ico {
+  width: 88rpx;
+  height: 88rpx;
+  display: block;
+  margin: 0 auto 24rpx;
+  opacity: .45;
+}
+.empty-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t2);
+}
+.empty-desc {
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+  line-height: 1.6;
+}
+.empty-action {
+  display: inline-flex;
+  align-items: center;
+  /* 原来 76rpx（38px），不到 44px 的触控下限。空状态里那个按钮往往正是唯一的出路，
+     点不中等于把人堵在这儿 —— 按全站规则提到 88rpx。 */
+  height: 88rpx;
+  padding: 0 44rpx;
+  margin-top: 28rpx;
+  border-radius: var(--r-full);
+  background: var(--brand-btn);
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+/* ---------- 9. 筛选 chip ---------- */
+.chip-bar {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -8rpx 24rpx;
+}
+.chip {
+  height: 76rpx;
+  padding: 0 28rpx;
+  margin: 0 8rpx 16rpx;
+  border-radius: var(--r-full);
+  background: var(--card);
+  color: var(--t2);
+  font-size: 30rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: var(--sh-card);
+}
+.chip.is-on {
+  background: var(--brand-btn);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ---------- 9b. 分段控件（同一份数据的几种看法，平级切换） ---------- */
+/* 与 chip 的分工：chip 是「筛掉一部分」，seg 是「换个角度看同一批数据」——
+   所以 seg 的选中态用浅底 + 深字，不用实心橙：它不改变数据范围，不该抢主按钮的位置。 */
+.seg {
+  display: flex;
+  padding: 6rpx;
+  margin-bottom: 24rpx;
+  border-radius: var(--r-full);
+  background: var(--fill);
+}
+.seg-i {
+  flex: 1;
+  min-width: 0;
+  /* 原来 72rpx（36px），不到 44px 的触控下限。分段控件是整页最高频的开关，
+     按全站规则提到 88rpx。 */
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full);
+  font-size: 28rpx;
+  color: var(--t2);
+  transition: background .16s ease, color .16s ease;
+}
+.seg-i.is-on {
+  background: var(--card);
+  color: var(--brand-ink);
+  font-weight: 600;
+  box-shadow: 0 2rpx 8rpx -2rpx rgba(16, 24, 40, .1);
+}
+
+/* ---------- 10. 底部弹层（统一替代居中弹窗，拇指可达） ---------- */
+.sheet-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(16, 24, 40, .45);
+  z-index: 1000;
+  animation: yb-fade .2s ease;
+}
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* 自定义 tabBar 由框架渲染在页面内容之上，弹层写 bottom:0 会被它压住底部一截。
+     当前所有用到 .sheet 的页面都是 TabBar 页，所以统一停在 tabBar 之上；
+     tabBar 自身已含安全区内边距，这里不再重复加 padding-bottom。
+     非 TabBar 页若要用，覆盖成 bottom: 0 即可。 */
+  bottom: var(--tabbar-h);
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  /* --kb-lift = 键盘高度（px），弹层里有输入框且键盘弹起时由页面写上来。
+     键盘弹起时 tabBar 已被键盘压住，不能再叠加它的高度（会悬空一条缝），
+     所以取更高者 —— 键盘收起时 kb-lift 为 0，行为跟原来完全一致。 */
+  bottom: max(calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)), var(--kb-lift, 0px));
+  z-index: 1001;
+  background: var(--card);
+  border-radius: 36rpx 36rpx 0 0;
+  padding-bottom: 0;
+  animation: yb-up .28s cubic-bezier(.32, .72, 0, 1);
+  max-height: 88vh;
+  /* 键盘弹起时弹层要整体挪到键盘上方，高度上限也得跟着让出来，
+     否则它会被"抬上去"却仍然高过可视区，顶部内容够不着。 */
+  max-height: calc(88vh - var(--kb-lift, 0px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* 🔴 盒模型（2026-09-20 真机截图后补）
+     小程序默认 box-sizing: content-box，而弹层里 .sheet-bd / .sheet-ft
+     / .chat-input-bar 都是「flex 子项 + 左右 32rpx 内边距」：被拉伸到 100% 宽之后，
+     内边距又额外加一遍，总宽超出 64rpx。文字左对齐的弹层看不出来（右边只多一片空白），
+     但**对话气泡用 max-width 往右撑就露馅** —— 真机截图里 AI 气泡和用户气泡右边
+     都被切掉一截，就是它干的。
+     ⚠️ 别想着用 `.sheet *` 一次罩住所有后代：**wxss 不支持 `*` 通配符**，
+     写了直接编译失败（2026-09-20 已经栽过一次，模拟器报「编译 .wxss 文件错误」）。
+     要加就在每个容器上显式写，下面 .sheet-bd / .sheet-ft / .chat-input-bar 都是这么办的。 */
+  box-sizing: border-box;
+}
+.sheet-handle {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: var(--line);
+  margin: 16rpx auto 0;
+  flex-shrink: 0;
+}
+.sheet-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 32rpx 20rpx;
+  flex-shrink: 0;
+}
+.sheet-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--t1);
+}
+.sheet-close {
+  width: 64rpx;
+  height: 64rpx;
+  margin-right: -12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.sheet-close::before,
+.sheet-close::after {
+  content: "";
+  position: absolute;
+  width: 30rpx;
+  height: 3rpx;
+  border-radius: 2rpx;
+  background: var(--t4);
+}
+.sheet-close::before { transform: rotate(45deg); }
+.sheet-close::after { transform: rotate(-45deg); }
+.sheet-bd {
+  padding: 0 32rpx;
+  flex: 1;
+  min-height: 0;
+  /* 宽度含内边距。不写这行，被拉伸到 100% 后 32rpx 又额外加上去，右边溢出 */
+  box-sizing: border-box;
+}
+.sheet-ft {
+  display: flex;
+  padding: 20rpx 32rpx 28rpx;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.sheet-ft .btn {
+  flex: 1;
+}
+.sheet-ft .btn + .btn {
+  margin-left: 20rpx;
+}
+
+/* ---------- 11. 键值信息块 ---------- */
+.kv {
+  background: var(--fill);
+  border-radius: var(--r-md);
+  padding: 8rpx 24rpx;
+  margin-bottom: 24rpx;
+}
+.kv-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid rgba(16, 24, 40, .05);
+}
+.kv-row:last-child {
+  border-bottom: none;
+}
+.kv-k {
+  width: 130rpx;
+  flex-shrink: 0;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+.kv-v {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--t1);
+  word-break: break-all;
+}
+
+/* ---------- 12. 统计分栏 ---------- */
+.stat-grid {
+  display: flex;
+}
+.stat-col {
+  flex: 1;
+  min-width: 0;
+}
+.stat-col + .stat-col {
+  margin-left: 20rpx;
+}
+.stat-k {
+  font-size: 25rpx;
+  color: var(--t3);
+  margin-bottom: 10rpx;
+}
+.stat-v {
+  font-size: 42rpx;
+  font-weight: 700;
+}
+.stat-line {
+  width: 2rpx;
+  background: var(--line);
+  margin: 8rpx 36rpx;
+}
+
+/* ---------- 13. 骨架屏（替代整页白屏） ---------- */
+@keyframes yb-skeleton {
+  0% { opacity: 1; }
+  50% { opacity: .45; }
+  100% { opacity: 1; }
+}
+.skeleton-line {
+  height: 28rpx;
+  border-radius: 6rpx;
+  background: var(--fill);
+  animation: yb-skeleton 1.2s ease-in-out infinite;
+}
+
+/* ---------- 13.5 错误状态（统一错误展示 + 重试按钮） ---------- */
+.error-state {
+  padding: 88rpx 32rpx;
+  text-align: center;
+}
+.error-ico {
+  width: 88rpx;
+  height: 88rpx;
+  display: block;
+  margin: 0 auto 24rpx;
+  opacity: .45;
+}
+.error-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t2);
+}
+.error-desc {
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+  line-height: 1.6;
+}
+.error-action {
+  display: inline-flex;
+  align-items: center;
+  height: 88rpx;
+  padding: 0 44rpx;
+  margin-top: 28rpx;
+  border-radius: var(--r-full);
+  background: var(--brand-btn);
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+.error-action:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+/* ---------- 14. 动效 ---------- */
+@keyframes yb-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes yb-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes yb-pop {
+  from { opacity: 0; transform: scale(.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- 15. 响应式：大屏（平板 / 折叠屏展开）限制内容宽度 ---------- */
+/* rpx 按屏宽等比放大，不做限制会导致 iPad 上字号巨大、行宽过长难以扫读 */
+@media (min-width: 520px) {
+  .container {
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .sheet {
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+    left: 0;
+    right: 0;
+  }
+}
+
+/* ---------- 16. 工具类 ---------- */
+.flex { display: flex; }
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.items-center { align-items: center; }
+.flex-1 { flex: 1; min-width: 0; }
+.mt-8 { margin-top: 8rpx; }
+.mt-16 { margin-top: 16rpx; }
+.mt-24 { margin-top: 24rpx; }
+.mb-16 { margin-bottom: 16rpx; }
+.mb-24 { margin-bottom: 24rpx; }
+.t-sm { font-size: 26rpx; }
+.t-xs { font-size: 24rpx; }
+.t-bold { font-weight: 600; }
+.divider {
+  height: 1rpx;
+  background: var(--line);
+  margin: 24rpx 0;
+}
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tap-dim:active {
+  opacity: .7;
+}
+/* ---------- 13. 通用工具类 ---------- */
+/* 这三样被 3 个以上页面用到，之前每个页面各抄一份（.line1 抄了 2 次、.ph 只有 1 个页面有，
+   另外 3 个页面的输入框占位符颜色其实是失效的）。放在这里，全站才真的一致。 */
+.line1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 输入框占位符。用 placeholder-class="ph" 引它 ——
+   注意小程序**没有** ::placeholder 伪元素，占位符只能靠这个类。 */
+.ph {
+  color: var(--t4);
+  font-size: 27rpx;
+}
+
+/* ---------- 14. 区块头（列表/表格上方的小标题行） ---------- */
+.list-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 20rpx 4rpx 12rpx;
+}
+.list-hd-t {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+/* 标题后面那句小提示（「点某天看明细」）。压低存在感，只在需要时被看见 */
+.list-hd-l {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+}
+.list-hd-hint {
+  margin-left: 14rpx;
+  font-size: 24rpx;
+  font-weight: 400;
+  color: var(--t3);
+}
+/* 右侧的次要动作（「识别有误？改一下」）。上下给足内边距，撑到 88rpx 触控线 */
+.list-hd-reset {
+  font-size: 26rpx;
+  color: var(--brand-ink);
+  padding: 26rpx 0 26rpx 24rpx;
+}
+.list-hd-reset:active {
+  opacity: .6;
+}
+
+/* ---------- 品牌区（注册页 bind-phone / 登录页 login 共用） ----------
+   2026-09-20 从 bind-phone.wxss 提上来：这两页是同一个场景（用户第一次进来 /
+   登录没连上要重试），视觉必须完全一致 —— 各写一份迟早会长歪。
+   放在这里而不是各自复制，也符合"一个类被 ≥2 个页面用到就住在 app.wxss"。 */
+.brand-page {
+  min-height: 100vh;
+  padding: 0 40rpx;
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+}
+.brand {
+  padding: 84rpx 0 52rpx;
+  text-align: center;
+}
+.brand-mark {
+  width: 152rpx;
+  height: 152rpx;
+  margin: 0 auto 28rpx;
+  border-radius: 44rpx;
+  background: linear-gradient(150deg, #FF8A5B 0%, #C9451A 100%);
+  box-shadow: 0 20rpx 40rpx -16rpx rgba(201, 69, 26, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.brand-mark-ico {
+  width: 86rpx;
+  height: 86rpx;
+}
+.brand-name {
+  font-size: 50rpx;
+  font-weight: 700;
+  letter-spacing: 2rpx;
+  color: var(--t1);
+  line-height: 1.25;
+}
+/* 核心主张：整页最重要的一句话，给品牌橙、给粗体、给独立的呼吸空间 */
+.brand-slogan {
+  margin-top: 18rpx;
+  font-size: 33rpx;
+  font-weight: 600;
+  letter-spacing: .6rpx;
+  color: var(--brand-ink);
+  line-height: 1.4;
+}
+.brand-sub {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+/* 品牌区下方的大按钮 + 退路链（两页共用同一套节奏） */
+.brand-cta {
+  margin-top: 40rpx;
+}
+.brand-skip {
+  margin-top: 28rpx;
+  padding: 24rpx 0;
+  text-align: center;
+  font-size: 27rpx;
+  color: var(--t3);
+}
+.brand-skip:active {
+  opacity: .6;
+}
+/* 24rpx 是字号下限（12px）；颜色用 --t3 而不是 --t4 ——
+   这句话是要被读的（解释为什么到了这一页），不是装饰。 */
+.brand-note {
+  margin-top: 16rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--t3);
+  line-height: 1.6;
+}
+
+/* ---------- 跨页面共用的小组件（2026-09-20 从各页面提上来） ----------
+   判据很严：**只收那些在两个页面里逐字相同的定义**
+   （用 _verify/dup-classes.js 逐字比对过，属性顺序不同、内容相同也算）。
+   只要有一丁点差异 —— 哪怕只差 1rpx —— 就一律留在页面里：
+   那多半是有意的规格差异（同一个卡片在记账页是 96rpx、在报表页是 76rpx），
+   合并会把其中一个页面改样。剩下的差异清单见审查报告。 */
+
+/* 表单块：记账页的「改一下」和我的页的「改店名」共用同一套 */
+.f-block {
+  margin-bottom: 28rpx;
+}
+.f-label {
+  font-size: 28rpx;
+  color: var(--t3);
+  margin-bottom: 12rpx;
+}
+
+/* 采购单据里的品名与尾部留白（核对页 / 列表页共用） */
+.po-name {
+  font-size: 31rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.po-tail {
+  height: 24rpx;
+}
+
+/* 日期分组：记账页与查询页的日期行 */
+.day-sum {
+  font-size: 24rpx;
+  color: var(--t3);
+}
+
+/* 往来卡里的小字（金额下面的说明） */
+.debt-s {
+  font-size: 24rpx;
+  color: var(--t4);
+}
+
+/* 打勾圆点：注册页的"为什么值得"和记账页的同款列表共用 */
+.mk {
+  width: 28rpx;
+  height: 28rpx;
+  flex: none;
+  margin: 8rpx 12rpx 0 0;
+  position: relative;
+  border-radius: 50%;
+  background: var(--income-weak);
+}
+.mk::after {
+  content: "";
+  position: absolute;
+  left: 7rpx;
+  top: 7rpx;
+  width: 11rpx;
+  height: 6rpx;
+  border-left: 3rpx solid var(--income);
+  border-bottom: 3rpx solid var(--income);
+  transform: rotate(-45deg);
+}
+
+/* ══════════ 语音输入条（全站公共组件）══════════
+   2026-09-20 从 pages/advisor 抽出来 —— 老板要求记账页和参谋页用同一套。
+   结构固定为三件：[+] [🎤 输入框] [发送]
+     · 点「+」弹上传面板（拍照 / 相册 / 传文件），浮层用 .ibar-upload
+     · 话筒在输入框内；**按住输入框说话、松手提交，单击仍是聚焦打字**
+       （两页的"提交"含义不同：记账页=入账，参谋页=提问，由页面自己决定）
+   ⚠️ .ibar-upload 是 absolute，靠 .ibar 的 position:relative 定位 —— 两者必须成对出现。
+   ⚠️ 类名以 ibar- 开头，别和其他页面的 class 撞。 */
+.ibar {
+  display: flex;
+  align-items: center;
+  /* 左右内边距收到 20rpx：输入框要尽量宽（老板反馈换新输入条后"太窄"）；
+     上下收到 18rpx：整条做薄、往下贴，给上面的追问框让地方 */
+  padding: 18rpx 28rpx;
+  padding-bottom: calc(18rpx + env(safe-area-inset-bottom, 0px));
+  border-top: 1rpx solid var(--line);
+  flex-shrink: 0;
+  /* 🔴 必须有：上传浮层 .ibar-upload 是 absolute 定位，靠这个变成"相对输入条"算 bottom。
+     2026-09-20 漏了这行，浮层的 bottom:calc(100%+16rpx) 就一路往上找到 .sheet（fixed），
+     100% 变成整个弹层的高度（80vh）—— 浮层被推到屏幕外，表现就是"点 + 没反应"。
+     （其实是渲染了，只是长在看不见的地方。） */
+  position: relative;
+  /* 宽度含内边距：不带这行，被拉伸到 100% 后左右各多 24rpx，输入条右边被切 */
+  box-sizing: border-box;
+}
+
+/* ══════ 「+」按钮 ══════
+   老板要求：左侧只留一个 +。单手好按。
+   2026-09-20 收到 72rpx：把宽度让给输入框（老板反馈输入框太窄）；
+   09-21 再收到 64rpx + 加号改品牌色——配合浅橙输入框，整条操作区更醒目。 */
+.ibar-plus {
+  width: 88rpx;
+  height: 112rpx;
+  flex: none;
+  margin-right: 12rpx;
+  border-radius: var(--r-full);
+  background: var(--brand-weak);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.ibar-plus:active,
+.ibar-plus-hover {
+  background: rgba(228, 85, 29, .15);
+}
+.ibar-plus-ico {
+  width: 36rpx;
+  height: 36rpx;
+  position: relative;
+}
+.ibar-plus-ico::before,
+.ibar-plus-ico::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: var(--brand-ink);
+  border-radius: 2rpx;
+  transform: translate(-50%, -50%);
+}
+.ibar-plus-ico::before {
+  width: 36rpx;
+  height: 5rpx;
+}
+.ibar-plus-ico::after {
+  width: 5rpx;
+  height: 36rpx;
+}
+
+/* ══════ 输入框（话筒在框内）══════
+   2026-09-21 方案A（老板确认）：浅灰底压在白色底栏上"不亮堂、不醒目"，
+   改成**品牌浅橙底** + 话筒图标品牌色 + 高度 96→112rpx，输入区更大更亮眼；
+   话筒图标换 ic-mic-o.svg（品牌深橙），CI 上用 ic-mic-d.svg（深灰）已不用。
+   这个 view 同时是"按住说话"的触摸区，所以它必须够大、好按。 */
+.ibar-field {
+  flex: 1;
+  min-width: 0;
+  height: 112rpx;
+  display: flex;
+  align-items: center;
+  padding: 0 28rpx;
+  margin-right: 12rpx;
+  border-radius: var(--r-full);
+  background: var(--brand-weak);
+  box-sizing: border-box;
+  /* 录音时整框变品牌色 —— 比只改图标更醒目，老板一眼知道"它在听" */
+  transition: background .12s ease;
+}
+.ibar-field.is-rec {
+  background: var(--brand-btn);
+}
+.ibar-field-ico {
+  width: 44rpx;
+  height: 44rpx;
+  flex: none;
+  margin-right: 16rpx;
+}
+.ibar-input {
+  flex: 1;
+  min-width: 0;
+  height: 112rpx;
+  font-size: 32rpx;
+  color: var(--t1);
+}
+.ibar-send {
+  height: 112rpx;
+  padding: 0 28rpx;
+  margin-left: 0;
+  border-radius: var(--r-full);
+  background: var(--brand-btn);
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.ibar-send:active {
+  background: var(--brand-btn-press);
+}
+.ibar-send.is-disabled {
+  opacity: .4;
+}
+
+/* ══════ 上传面板（点「+」弹出）══════
+   在输入条上方居中的小浮层。用图标宫格，和记账页的加号面板同一套视觉语言 ——
+   老板明确说过要图标、不要 wx.showActionSheet 那种文字列表。 */
+.ibar-upload {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* 100% = 输入条自身高度（浮层是 .ibar 的子元素） */
+  bottom: calc(100% + 16rpx);
+  display: flex;
+  flex-direction: column;
+  padding: 12rpx;
+  border-radius: var(--r-lg);
+  background: var(--card);
+  box-shadow: 0 12rpx 40rpx -12rpx rgba(16, 24, 40, .28);
+  box-sizing: border-box;
+  z-index: 20;
+}
+.ibar-up-cell {
+  display: flex;
+  align-items: center;
+  min-height: 108rpx;      /* 触控下限 88rpx，留点余量 */
+  padding: 0 20rpx;
+  border-radius: var(--r-md);
+}
+.ibar-up-cell:active,
+.ibar-up-hover {
+  background: var(--fill);
+}
+.ibar-up-ico {
+  width: 76rpx;
+  height: 76rpx;
+  flex: none;
+  margin-right: 20rpx;
+  border-radius: var(--r-md);
+  background: var(--brand-weak);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ibar-up-img {
+  width: 44rpx;
+  height: 44rpx;
+}
+.ibar-up-t {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.ibar-up-close {
+  margin-top: 8rpx;
+  padding: 20rpx 0 8rpx;
+  text-align: center;
+  font-size: 27rpx;
+  color: var(--t3);
+  border-top: 1rpx solid var(--line);
+}
+.ibar-up-close:active {
+  opacity: .6;
+}

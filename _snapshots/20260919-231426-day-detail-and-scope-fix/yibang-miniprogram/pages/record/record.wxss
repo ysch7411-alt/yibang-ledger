@@ -1,0 +1,869 @@
+/* pages/record/record.wxss —— 录入优先：底部常驻一条录入带，全程不弹表单 */
+
+/* 给固定录入带留出空间（TabBar 108rpx + 录入带 ~124rpx） */
+.rec {
+  padding-bottom: calc(var(--tabbar-h) + 204rpx);
+  padding-bottom: calc(var(--tabbar-h) + 204rpx + env(safe-area-inset-bottom, 0px));
+}
+.rec-tail {
+  height: 24rpx;
+}
+
+/* ---------------- 今日收支 ---------------- */
+.today-card {
+  background: linear-gradient(160deg, #FFFFFF 0%, #FFF8F4 100%);
+}
+.card-hover {
+  transform: scale(.995);
+}
+.today-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.today-cap {
+  font-size: 26rpx;
+  color: var(--t3);
+}
+.today-hero {
+  font-size: 68rpx;
+  font-weight: 700;
+  letter-spacing: -1rpx;
+  margin: 8rpx 0 10rpx;
+}
+.today-ft {
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: var(--t3);
+}
+.today-ft .dot {
+  margin: 0 10rpx;
+  color: var(--line);
+}
+
+/* ---------------- 往来概况 ---------------- */
+.debt-card {
+  display: flex;
+  padding: 28rpx 24rpx;
+}
+.debt-col {
+  flex: 1;
+  text-align: center;
+}
+.debt-k {
+  font-size: 24rpx;
+  color: var(--t3);
+}
+.debt-v {
+  font-size: 42rpx;
+  font-weight: 700;
+  margin: 6rpx 0 4rpx;
+}
+.debt-s {
+  font-size: 24rpx;
+  color: var(--t4);
+}
+.debt-line {
+  width: 1rpx;
+  background: var(--line);
+  margin: 4rpx 12rpx;
+}
+
+/* ---------------- 列表 ---------------- */
+.day-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 6rpx 4rpx 8rpx;
+}
+.day-label {
+  font-size: 26rpx;
+  color: var(--t2);
+  font-weight: 500;
+}
+.day-sum {
+  font-size: 24rpx;
+  color: var(--t3);
+}
+.rec-line {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.rec-name {
+  margin-left: 12rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+
+/* ---------------- 左滑：修改 / 删除 ----------------
+   结构：.swipe（裁剪层）> .swipe-acts（垫在下面的两个按钮） + .swipe-body（会平移的内容）
+   裁剪必须放在 .swipe 上而不是 .swipe-body：body 要平移，裁它等于白裁。 */
+.swipe {
+  position: relative;
+  overflow: hidden;
+}
+.swipe-acts {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+}
+/* 132rpx × 2 = 264rpx，跟 record.js 的 ACTIONS_RPX 必须一致，改一处要改两处 */
+.swipe-act {
+  width: 132rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #fff;
+}
+.swipe-fix {
+  background: var(--t3);
+}
+.swipe-del {
+  background: var(--expense);
+}
+.swipe-act:active {
+  opacity: .86;
+}
+/* 底色必须是实色：半透明会让下面的按钮透出来，看着像脏了 */
+.swipe-body {
+  position: relative;
+  background: var(--card);
+  transition: transform .18s ease;
+  will-change: transform;
+}
+/* 手指正按着的时候关掉过渡 —— 否则位移会"追不上"手指，滑起来发黏 */
+.swipe.is-drag .swipe-body {
+  transition: none;
+}
+/* .row 现在被 .swipe 包了一层，:last-child 落不到它头上，
+   不补这条最后一行底下会多出一道悬空的横线 */
+.swipe:last-child .row {
+  border-bottom: none;
+}
+
+/* ---------------- 底部录入带 ---------------- */
+.dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--tabbar-h);
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  z-index: 880;
+  display: flex;
+  align-items: center;
+  padding: 22rpx 24rpx;
+  background: #FFFFFF;
+  border-top: 1rpx solid var(--line);
+  box-shadow: 0 -8rpx 24rpx -18rpx rgba(16, 24, 40, .35);
+}
+.dock-plus {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 50%;
+  background: var(--fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  position: relative;
+}
+.dock-plus-ico {
+  width: 34rpx;
+  height: 34rpx;
+  position: relative;
+}
+.dock-plus-ico::before,
+.dock-plus-ico::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: var(--t1);
+  border-radius: 2rpx;
+  transform: translate(-50%, -50%);
+}
+.dock-plus-ico::before {
+  width: 34rpx;
+  height: 4rpx;
+}
+.dock-plus-ico::after {
+  width: 4rpx;
+  height: 34rpx;
+}
+.dock-hover {
+  transform: scale(.94);
+}
+.dock-input {
+  flex: 1;
+  min-width: 0;
+  margin: 0 18rpx;
+  height: 104rpx;
+  border-radius: 52rpx;
+  background: var(--fill);
+  display: flex;
+  align-items: center;
+  padding: 0 32rpx;
+}
+.dock-field {
+  flex: 1;
+  min-width: 0;
+  font-size: 30rpx;
+  color: var(--t1);
+}
+.dock-mic {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  background: var(--brand-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-shadow: 0 8rpx 18rpx -8rpx rgba(201, 69, 26, .8);
+  transition: transform .14s ease, background .14s ease;
+}
+.dock-mic.is-rec {
+  background: #B03C10;
+  transform: scale(1.12);
+}
+.dock-mic-ico {
+  width: 50rpx;
+  height: 50rpx;
+}
+
+/* AI 处理中 */
+.dock-tip {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: var(--tabbar-h);
+  bottom: calc(var(--tabbar-h) + 176rpx + env(safe-area-inset-bottom, 0px));
+  z-index: 890;
+  display: flex;
+  align-items: center;
+  padding: 20rpx 26rpx;
+  border-radius: var(--r-lg);
+  background: #1F2937;
+  color: #F2F4F7;
+  font-size: 26rpx;
+  box-shadow: 0 12rpx 28rpx -14rpx rgba(16, 24, 40, .7);
+}
+.dock-spin {
+  width: 26rpx;
+  height: 26rpx;
+  margin-right: 14rpx;
+  border: 3rpx solid rgba(255, 255, 255, .28);
+  border-top-color: #FF9A6B;
+  border-radius: 50%;
+  animation: dockspin .8s linear infinite;
+}
+@keyframes dockspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------- 结果条 ---------------- */
+.receipt {
+  position: fixed;
+  left: 20rpx;
+  right: 20rpx;
+  bottom: var(--tabbar-h);
+  bottom: calc(var(--tabbar-h) + 172rpx + env(safe-area-inset-bottom, 0px));
+  z-index: 895;
+  display: flex;
+  align-items: center;
+  padding: 22rpx 24rpx;
+  border-radius: var(--r-lg);
+  background: #FFFFFF;
+  border: 1rpx solid var(--line);
+  box-shadow: 0 16rpx 36rpx -16rpx rgba(16, 24, 40, .45);
+  animation: receiptIn .22s ease-out;
+}
+@keyframes receiptIn {
+  from {
+    opacity: 0;
+    transform: translateY(16rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.receipt-ico {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  flex: none;
+  margin-right: 18rpx;
+  position: relative;
+  background: var(--income-weak);
+}
+.receipt-ico::after {
+  content: "";
+  position: absolute;
+  left: 12rpx;
+  top: 14rpx;
+  width: 14rpx;
+  height: 7rpx;
+  border-left: 3rpx solid var(--income);
+  border-bottom: 3rpx solid var(--income);
+  transform: rotate(-45deg);
+}
+.is-ask .receipt-ico,
+.is-error .receipt-ico {
+  background: var(--warn-weak);
+}
+.is-ask .receipt-ico::after,
+.is-error .receipt-ico::after {
+  content: "";
+  border: none;
+  width: 4rpx;
+  height: 12rpx;
+  background: var(--warn);
+  left: 18rpx;
+  top: 10rpx;
+  transform: none;
+  border-radius: 2rpx;
+  box-shadow: 0 16rpx 0 var(--warn);
+}
+.receipt-main {
+  flex: 1;
+  min-width: 0;
+}
+.receipt-t {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.receipt-d {
+  font-size: 25rpx;
+  color: var(--t3);
+  margin-top: 4rpx;
+}
+.receipt-acts {
+  flex: none;
+  display: flex;
+  align-items: center;
+  margin-left: 12rpx;
+}
+.receipt-act {
+  padding: 12rpx 20rpx;
+  border-radius: var(--r-full);
+  background: var(--brand-weak);
+  color: var(--brand-ink);
+  font-size: 25rpx;
+  font-weight: 600;
+  margin-left: 8rpx;
+}
+.receipt-act-danger {
+  background: var(--fill);
+  color: var(--t2);
+}
+.receipt-x {
+  flex: none;
+  width: 56rpx;
+  height: 56rpx;
+  margin-left: 8rpx;
+  position: relative;
+}
+.receipt-x::before,
+.receipt-x::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24rpx;
+  height: 3rpx;
+  background: var(--t4);
+  border-radius: 2rpx;
+}
+.receipt-x::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.receipt-x::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* 追问金额：只问一个数，不给表单 */
+.receipt-amount {
+  display: flex;
+  align-items: center;
+  margin-top: 16rpx;
+  height: 84rpx;
+  padding: 0 12rpx 0 20rpx;
+  border-radius: var(--r-md);
+  background: var(--fill);
+}
+.receipt-yen {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--t1);
+  margin-right: 8rpx;
+}
+.receipt-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--t1);
+}
+.receipt-save {
+  flex: none;
+  padding: 14rpx 26rpx;
+  border-radius: var(--r-full);
+  background: var(--brand-btn);
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+/* ---------------- 加号面板：四宫格图标 ---------------- */
+.plus-grid {
+  display: flex;
+  padding: 4rpx 16rpx 8rpx;
+}
+.plus-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16rpx 4rpx 20rpx;
+  transition: transform .14s ease;
+}
+.plus-hover {
+  transform: scale(.92);
+}
+.plus-ico {
+  width: 116rpx;
+  height: 116rpx;
+  border-radius: 32rpx;
+  background: var(--fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16rpx;
+}
+.plus-ico-img {
+  width: 50rpx;
+  height: 50rpx;
+}
+.plus-txt {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--t1);
+  line-height: 1.3;
+}
+.plus-desc {
+  font-size: 24rpx;
+  color: var(--t3);
+  margin-top: 4rpx;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* ---------------- 录音浮层 ---------------- */
+.rec-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 940;
+  background: rgba(16, 24, 40, .38);
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: calc(var(--tabbar-h) + 232rpx);
+}
+.rec-panel {
+  flex: 1;
+  margin: 0 24rpx;
+  padding: 40rpx 32rpx;
+  border-radius: var(--r-lg);
+  background: #1F2937;
+  text-align: center;
+  box-shadow: 0 24rpx 56rpx -20rpx rgba(0, 0, 0, .8);
+}
+.rec-pulse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44rpx;
+}
+.rec-dot {
+  width: 14rpx;
+  height: 14rpx;
+  margin: 0 8rpx;
+  border-radius: 50%;
+  background: #FF9A6B;
+  animation: recdot 1s ease-in-out infinite;
+}
+.rec-dot:nth-child(2) {
+  animation-delay: .16s;
+}
+.rec-dot:nth-child(3) {
+  animation-delay: .32s;
+}
+@keyframes recdot {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: .45;
+  }
+  50% {
+    transform: translateY(-12rpx);
+    opacity: 1;
+  }
+}
+.rec-time {
+  font-size: 68rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 16rpx 0 8rpx;
+  letter-spacing: -1rpx;
+}
+.rec-hint {
+  font-size: 25rpx;
+  color: rgba(255, 255, 255, .62);
+}
+
+/* ---------------- 纠错面板字段 ---------------- */
+.f-block {
+  margin-bottom: 28rpx;
+}
+.f-label {
+  font-size: 25rpx;
+  color: var(--t3);
+  margin-bottom: 12rpx;
+}
+/* 「来自 3 斤 × ¥5.00」：既说明这个金额怎么来的，也提前讲清改了会怎样 */
+.f-hint {
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  line-height: 1.5;
+  color: var(--t3);
+}
+.f-amount {
+  display: flex;
+  align-items: center;
+  height: 104rpx;
+  padding: 0 24rpx;
+  border-radius: var(--r-md);
+  background: var(--fill);
+}
+.f-yen {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--t1);
+  margin-right: 10rpx;
+}
+.f-amount-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 48rpx;
+  font-weight: 700;
+  color: var(--t1);
+}
+.f-input {
+  height: 88rpx;
+  padding: 0 24rpx;
+  border-radius: var(--r-md);
+  background: var(--fill);
+  font-size: 28rpx;
+  color: var(--t1);
+}
+
+/* ---------------- 今日汇总 sheet ---------------- */
+.sum-hero {
+  text-align: center;
+  padding: 12rpx 0 4rpx;
+}
+.sum-hero-k {
+  display: block;
+  font-size: 25rpx;
+  color: var(--t3);
+  margin-bottom: 8rpx;
+}
+.sum-hero-v {
+  display: block;
+  font-size: 72rpx;
+  font-weight: 700;
+  letter-spacing: -1rpx;
+}
+.detail-hd {
+  font-size: 24rpx;
+  color: var(--t3);
+  margin-bottom: 8rpx;
+}
+.detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.detail-row:last-child {
+  border-bottom: none;
+}
+.detail-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 27rpx;
+  color: var(--t1);
+  margin-right: 20rpx;
+}
+.detail-main {
+  flex: 1;
+  min-width: 0;
+  margin-right: 20rpx;
+}
+/* 标题原来自己带 flex/margin，现在挪到 .detail-main 上了，这里覆盖掉 */
+.detail-main .detail-name {
+  display: block;
+  margin-right: 0;
+}
+/* 「3 斤 × ¥5.00」：金额是怎么算出来的，摆在事由下面一行。
+   老板说「辣椒3斤5块一斤」，他自己心里有个 15，算式摆出来他才能核对。 */
+.detail-calc {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 23rpx;
+  color: var(--t3);
+}
+.detail-amt {
+  flex: none;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+/* ---------- 空账本第一屏：立主张 + 三条价值 ---------- */
+.first-card {
+  padding: 32rpx 32rpx 8rpx;
+  background: linear-gradient(160deg, #FFFFFF 0%, #FFF8F4 100%);
+}
+.first-name {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--brand-ink);
+  letter-spacing: .5rpx;
+  line-height: 1.4;
+}
+.first-sub {
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+.first-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.first-row:last-child {
+  border-bottom: none;
+}
+.first-ico {
+  width: 64rpx;
+  height: 64rpx;
+  flex: none;
+  margin-right: 20rpx;
+  border-radius: var(--r-md);
+  background: var(--brand-weak);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.first-ico-img {
+  width: 38rpx;
+  height: 38rpx;
+}
+.first-line {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+}
+.first-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--t1);
+}
+.mk {
+  width: 28rpx;
+  height: 28rpx;
+  flex: none;
+  margin: 8rpx 12rpx 0 0;
+  position: relative;
+  border-radius: 50%;
+  background: var(--income-weak);
+}
+.mk::after {
+  content: "";
+  position: absolute;
+  left: 7rpx;
+  top: 7rpx;
+  width: 11rpx;
+  height: 6rpx;
+  border-left: 3rpx solid var(--income);
+  border-bottom: 3rpx solid var(--income);
+  transform: rotate(-45deg);
+}
+/* ---------- 待识别照片暂存条 ---------- */
+/* 和 .receipt 同一个高度层级：两者不会同时出现（识别时会先清空 shots），
+   所以共用一套定位偏移就够了。 */
+.shots {
+  position: fixed;
+  left: 20rpx;
+  right: 20rpx;
+  bottom: var(--tabbar-h);
+  bottom: calc(var(--tabbar-h) + 172rpx + env(safe-area-inset-bottom, 0px));
+  z-index: 890;
+  padding: 20rpx 24rpx 22rpx;
+  border-radius: var(--r-lg);
+  background: #FFFFFF;
+  border: 1rpx solid var(--line);
+  box-shadow: 0 16rpx 36rpx -16rpx rgba(16, 24, 40, .45);
+}
+.shots-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.shots-t {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.shots-clear {
+  padding: 8rpx 4rpx 8rpx 24rpx;
+  font-size: 26rpx;
+  color: var(--t3);
+}
+.shots-list {
+  margin-top: 14rpx;
+  white-space: nowrap;
+}
+.shot {
+  display: inline-block;
+  width: 120rpx;
+  height: 120rpx;
+  margin-right: 16rpx;
+  position: relative;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--fill);
+}
+.shot-img {
+  width: 100%;
+  height: 100%;
+}
+/* 右上角的移除标记：点缩略图即移除 */
+.shot-del {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 40rpx;
+  height: 40rpx;
+  background: rgba(16, 24, 40, .55);
+  border-radius: 0 0 0 20rpx;
+}
+.shot-del::before,
+.shot-del::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 20rpx;
+  height: 3rpx;
+  border-radius: 2rpx;
+  background: #fff;
+}
+.shot-del::before { transform: translate(-50%, -50%) rotate(45deg); }
+.shot-del::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.shots-acts {
+  display: flex;
+  align-items: center;
+  margin-top: 20rpx;
+}
+.shots-more {
+  flex: 0 0 240rpx;
+  height: 88rpx;
+  border-radius: var(--r-full);
+  background: var(--fill);
+  color: var(--t2);
+  font-size: 28rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.shots-more:active { opacity: .75; }
+.shots-go {
+  flex: 1;
+  min-width: 0;
+  margin-left: 20rpx;
+  height: 88rpx;
+  border-radius: var(--r-full);
+  background: var(--brand-btn);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 20rpx -8rpx rgba(201, 69, 26, .6);
+}
+.shots-go:active { background: var(--brand-btn-press); transform: scale(.98); }
+
+/* 暂存条占了下半屏，列表要相应让出空间 */
+.container.rec.has-shots {
+  padding-bottom: 700rpx;
+  padding-bottom: calc(700rpx + env(safe-area-inset-bottom, 0px));
+}
+
+/* ---------------- 删除确认弹层 ---------------- */
+/* 把要删的这一条原样摆出来：老板是从列表滑进来的，得能对上号才不会删错 */
+.del-preview {
+  padding: 24rpx 26rpx;
+  border-radius: var(--r-md);
+  background: var(--fill);
+}
+.del-row {
+  display: flex;
+  align-items: center;
+}
+.del-name {
+  flex: 1;
+  min-width: 0;
+  margin: 0 16rpx;
+  font-size: 29rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.del-amt {
+  flex: none;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--t1);
+}
+.del-date {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--t3);
+}
+/* 「删掉就找不回来了」用语义红：不可逆的操作要让颜色先说话 */
+.del-warn {
+  padding: 20rpx 4rpx 4rpx;
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: var(--expense);
+}

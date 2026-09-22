@@ -1,0 +1,148 @@
+/* pages/search/search.wxss */
+
+.search-tail {
+  height: 40rpx;
+}
+
+/* ---------- 搜索框 ---------- */
+.search-bar {
+  display: flex;
+  align-items: center;
+  height: 96rpx;
+  padding: 0 28rpx;
+  margin-bottom: 20rpx;
+  background: #fff;
+  border-radius: var(--r-full);
+  box-shadow: var(--sh-card);
+}
+.search-ico {
+  width: 36rpx;
+  height: 36rpx;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+.search-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 29rpx;
+  color: var(--t1);
+}
+/* 用两条旋转线绘制「✕」，不依赖字体字形 */
+.search-clear {
+  position: relative;
+  width: 56rpx;
+  height: 56rpx;
+  margin-right: -12rpx;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.search-clear:active {
+  background: var(--fill);
+}
+.search-clear::before,
+.search-clear::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 26rpx;
+  height: 3rpx;
+  border-radius: 2rpx;
+  background: var(--t4);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.search-clear::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* 分段控件统一用 app.wxss 的 .seg / .seg-i / .is-on（这里原来还有第 5 份旧版副本） */
+
+/* AI 入口与对话弹层的样式已移到 pages/advisor/advisor.wxss（功能整体搬走） */
+
+/* ---------- 结果头 ---------- */
+/* .list-hd / .list-hd-t / .list-hd-reset 已提到 app.wxss（这里是第 4 份副本，删掉） */
+
+/* ---------- 日期分组 ---------- */
+.day-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4rpx 4rpx 14rpx;
+}
+.day-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--t2);
+}
+.rec-line {
+  display: flex;
+  align-items: center;
+}
+.rec-name {
+  margin-left: 12rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+  flex: 1;
+  min-width: 0;
+}
+
+/* 关键字高亮：底色 + 加深文字，扫结果时能立刻定位命中位置 */
+.hl {
+  background: #FFE9DC;
+  color: var(--brand-ink);
+  border-radius: 4rpx;
+  padding: 0 2rpx;
+}
+
+/* AI 对话弹层样式（.chat-*）已随功能移到 pages/advisor/advisor.wxss */
+
+/* 采购单入口：一行，不抢搜索框的视觉重心 */
+.po-entry {
+  display: flex;
+  align-items: center;
+  min-height: 108rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 24rpx;
+  background: var(--card);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-card);
+}
+.po-entry-ico {
+  width: 72rpx;
+  height: 72rpx;
+  flex: none;
+  margin-right: 22rpx;
+  border-radius: var(--r-md);
+  background: var(--brand-weak);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.po-entry-ico-img {
+  width: 42rpx;
+  height: 42rpx;
+}
+.po-entry-main {
+  flex: 1;
+  min-width: 0;
+}
+.po-entry-t {
+  font-size: 31rpx;
+  font-weight: 600;
+  color: var(--t1);
+}
+.po-entry-d {
+  margin-top: 6rpx;
+  font-size: 25rpx;
+  color: var(--t3);
+}
+
+/* ---------- 列表底部的"还有没有更多" ---------- */
+/* 不能让用户以为"就这么多"，也不能让他一直往下拽却没有新内容 */
+.sm-more {
+  padding: 32rpx 0 8rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--t3);
+}

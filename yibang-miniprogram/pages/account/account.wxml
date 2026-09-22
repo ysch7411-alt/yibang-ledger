@@ -1,0 +1,64 @@
+<!--pages/account/account.wxml-->
+<view class="container container-page" style="{{_cv}}">
+  <view class="page-head">
+    <view class="page-title">账号与安全</view>
+    <view class="page-sub">你的账号绑在微信上，这里管手机号和退出</view>
+  </view>
+
+  <!-- 微信账号：小程序里退不掉这个绑定，如实说 -->
+  <view class="card">
+    <view class="acc-row">
+      <view class="acc-k">微信账号</view>
+      <view class="acc-v">
+        <text wx:if="{{loggedIn}}" class="acc-ok">已关联</text>
+        <text wx:else class="acc-off">未登录</text>
+      </view>
+    </view>
+    <view class="acc-note">账号和你的微信绑定，换微信号才会是另一个账号。</view>
+  </view>
+
+  <!-- 手机号 -->
+  <view class="card card-flush">
+    <view class="row row-tap" bindtap="goBindPhone">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-user.svg" mode="aspectFit" /></view>
+      <view class="row-main">
+        <view class="row-title">手机号</view>
+        <view class="row-sub">{{phone ? '换手机时用它找回账本' : '绑一下，换手机也能找回'}}</view>
+      </view>
+      <view class="acc-val">{{phone || '去绑定'}}</view>
+      <view class="row-arrow"></view>
+    </view>
+  </view>
+
+  <!-- 退出 / 重新登录 -->
+  <view class="card card-flush">
+    <view wx:if="{{loggedIn}}" class="row row-tap" bindtap="logout">
+      <view class="row-main"><view class="row-title">退出登录</view></view>
+      <view class="row-arrow"></view>
+    </view>
+    <view wx:else class="row row-tap" bindtap="relogin">
+      <view class="row-main">
+        <view class="row-title">微信一键登录</view>
+        <view class="row-sub">用当前微信号重新登录</view>
+      </view>
+      <view class="row-arrow"></view>
+    </view>
+  </view>
+
+  <!-- 危险区：注销账号（合规硬要求，必须清晰可找） -->
+  <view class="danger-hd">危险操作</view>
+  <view class="card card-flush">
+    <view class="row row-tap" bindtap="deleteAccount">
+      <view class="row-main">
+        <view class="row-title c-expense">注销账号</view>
+        <view class="row-sub">永久删除全部账目、往来对象、采购单和照片，不可恢复</view>
+      </view>
+      <view class="row-arrow"></view>
+    </view>
+  </view>
+
+  <view class="acc-foot">
+    <view>注销后无法找回，建议先在「报表」截图留存</view>
+    <view>如需协助，可通过小程序详情页的联系方式找到我们</view>
+  </view>
+</view>

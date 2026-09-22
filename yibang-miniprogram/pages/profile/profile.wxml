@@ -1,0 +1,173 @@
+<!--pages/profile/profile.wxml-->
+<view class="container" style="{{_cv}}">
+
+  <!-- 身份卡：全站唯一使用满品牌色的区域，承担「我是谁 + 我的规模」 -->
+  <view class="me-card">
+    <view class="me-top">
+      <view class="me-avatar">{{initial}}</view>
+      <view class="me-info" bindtap="openProfile">
+        <view class="me-name">{{userInfo.nickname || '易帮用户'}}</view>
+        <view class="me-shop-row">
+          <text class="me-shop">{{userInfo.shop_name || '点这里填店名'}}</text>
+          <image class="me-edit" src="/images/ic-pencil-w.svg" mode="aspectFit" />
+        </view>
+      </view>
+      <view class="me-notify" bindtap="goNotifications">
+        <image class="me-notify-ico" src="/images/ic-bell-w.svg" mode="aspectFit" />
+        <view wx:if="{{unreadCount > 0}}" class="me-notify-badge">{{unreadCount > 99 ? '99+' : unreadCount}}</view>
+      </view>
+      <view class="me-plan {{isPro ? 'pro' : 'free'}}" bindtap="goToPlan">
+        {{isPro ? '终身会员' : '免费版'}}
+      </view>
+    </view>
+
+    <view class="me-stats">
+      <view class="me-stat">
+        <view class="me-stat-v num">{{stat.records}}</view>
+        <view class="me-stat-k">累计记账</view>
+      </view>
+      <view class="me-sep"></view>
+      <view class="me-stat">
+        <view class="me-stat-v num">{{stat.contacts}}</view>
+        <view class="me-stat-k">往来对象</view>
+      </view>
+      <view class="me-sep"></view>
+      <view class="me-stat">
+        <view class="me-stat-v num">{{stat.days}}</view>
+        <view class="me-stat-k">记账天数</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 数据管理 ========== -->
+  <view class="section-title">数据管理</view>
+  <view class="card card-flush">
+    <view class="row row-tap" bindtap="openDataManage">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-folder-d.svg" mode="aspectFit" /></view>
+      <view class="row-main">
+        <view class="row-title">导出与备份</view>
+        <view class="row-sub">导出Excel对账 · 数据备份恢复</view>
+      </view>
+      <view class="row-arrow"></view>
+    </view>
+  </view>
+
+  <!-- ========== 经营工具 ========== -->
+  <view class="section-title">经营工具</view>
+  <view class="card card-flush">
+    <view class="row row-tap" bindtap="goRoleManage">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-people.svg" mode="aspectFit" /></view>
+      <view class="row-main">
+        <view class="row-title">成员管理</view>
+        <view class="row-sub">老板/经理/员工角色权限</view>
+      </view>
+      <view wx:if="{{pendingCount > 0}}" class="tag tag-warn">{{pendingCount}} 条待审</view>
+      <view class="row-arrow"></view>
+    </view>
+    <view class="row row-tap" bindtap="goPurchase">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-gear.svg" mode="aspectFit" /></view>
+      <view class="row-main">
+        <view class="row-title">采购单管理</view>
+        <view class="row-sub">拍过的送货单都在这儿</view>
+      </view>
+      <view class="row-arrow"></view>
+    </view>
+    <view class="row row-tap" bindtap="goAdvisor">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-info.svg" mode="aspectFit" /></view>
+      <view class="row-main">
+        <view class="row-title">生意参谋</view>
+        <view class="row-sub">AI自动分析你的经营状况</view>
+      </view>
+      <view class="tag tag-brand">AI</view>
+      <view class="row-arrow"></view>
+    </view>
+  </view>
+
+  <!-- ========== 其他 ========== -->
+  <view class="section-title">其他</view>
+  <view class="card card-flush">
+    <view class="row row-tap" bindtap="goToPlan">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-card.svg" mode="aspectFit" /></view>
+      <view class="row-main"><view class="row-title">我的套餐</view></view>
+      <view class="row-arrow"></view>
+    </view>
+    <view class="row row-tap" wx:if="{{_f && _f.promote}}" bindtap="goToPromote">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-megaphone.svg" mode="aspectFit" /></view>
+      <view class="row-main"><view class="row-title">推广赚钱</view></view>
+      <view class="tag tag-brand">推荐奖励</view>
+      <view class="row-arrow"></view>
+    </view>
+    <view class="row row-tap" bindtap="goToAccount">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-gear.svg" mode="aspectFit" /></view>
+      <view class="row-main">
+        <view class="row-title">账号与安全</view>
+        <view class="row-sub">{{phone ? '手机号 ' + phone : '绑定手机号 · 退出 · 注销'}}</view>
+      </view>
+      <view class="row-arrow"></view>
+    </view>
+    <view class="row row-tap" bindtap="showAbout">
+      <view class="row-ico"><image class="row-ico-img" src="/images/ic-info.svg" mode="aspectFit" /></view>
+      <view class="row-main"><view class="row-title">关于易帮账本</view></view>
+      <view class="row-arrow"></view>
+    </view>
+  </view>
+
+  <view class="me-footer">
+    <view class="me-footer-l1">重庆大头针人工智能有限责任公司</view>
+    <view class="me-footer-l2">v1.0.0</view>
+  </view>
+</view>
+
+<!-- ============ 改昵称 / 店名 ============
+     店名不是装饰：报表分享出去时，对方靠它认出"这是谁家的账"。
+     原来这行写着「点这里完善店名」却点不动，是个空头承诺。 -->
+<view class="sheet-mask" wx:if="{{showProfile}}" bindtap="closeProfile" />
+<!-- --kb-lift：这个弹层里有两个输入框，键盘弹起时不挪上来，下面的「保存」就够不着 -->
+<view class="sheet" wx:if="{{showProfile}}" style="--kb-lift: {{kbLift}}px;">
+  <view class="sheet-handle"></view>
+  <view class="sheet-hd">
+    <text class="sheet-title">你的店名</text>
+    <view class="sheet-close" bindtap="closeProfile"></view>
+  </view>
+
+  <view class="sheet-bd">
+    <view class="pf-note">填了店名，分享报表给别人看时，对方一眼就知道这是谁家的账。</view>
+
+    <view class="f-block">
+      <view class="f-label">店名</view>
+      <input
+        class="f-input"
+        value="{{form.shop_name}}"
+        maxlength="30"
+        placeholder="如：老易五金店"
+        placeholder-class="ph"
+        adjust-position="{{false}}"
+        bindinput="onFormShop"
+        bindfocus="onKbFocus"
+        bindblur="onKbBlur"
+        bindkeyboardheightchange="onKbHeight"
+      />
+    </view>
+
+    <view class="f-block">
+      <view class="f-label">你的称呼</view>
+      <input
+        class="f-input"
+        value="{{form.nickname}}"
+        maxlength="20"
+        placeholder="如：老易"
+        placeholder-class="ph"
+        adjust-position="{{false}}"
+        bindinput="onFormNick"
+        bindfocus="onKbFocus"
+        bindblur="onKbBlur"
+        bindkeyboardheightchange="onKbHeight"
+      />
+    </view>
+  </view>
+
+  <view class="sheet-ft">
+    <view class="btn btn-ghost" bindtap="closeProfile">取消</view>
+    <view class="btn btn-primary {{savingProfile ? 'is-disabled' : ''}}" bindtap="saveProfile">保存</view>
+  </view>
+</view>

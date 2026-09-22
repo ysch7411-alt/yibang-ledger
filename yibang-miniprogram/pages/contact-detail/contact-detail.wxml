@@ -1,0 +1,55 @@
+<!--pages/contact-detail/contact-detail.wxml-->
+<view class="container" style="{{_cv}}">
+
+  <!-- 往来对象信息卡 -->
+  <view class="info-card">
+    <view class="info-avatar">{{contact.name ? contact.name.charAt(0) : '?'}}</view>
+    <view class="info-main">
+      <view class="info-name">{{contact.name}}</view>
+      <view class="info-type">{{contact.type === 1 ? '客户' : '供应商'}}</view>
+    </view>
+    <view class="info-balance">
+      <view class="balance-v num {{contact.balance > 0 ? 'c-income' : (contact.balance < 0 ? 'c-expense' : '')}}">
+        {{contact.balance > 0 ? '+' : (contact.balance < 0 ? '-' : '')}}¥{{balanceText}}
+      </view>
+      <view class="balance-label">{{contact.balance > 0 ? '应收' : (contact.balance < 0 ? '应付' : '已结清')}}</view>
+    </view>
+  </view>
+
+  <!-- 联系信息 -->
+  <view wx:if="{{contact.phone || contact.remark}}" class="card contact-info-card">
+    <view wx:if="{{contact.phone}}" class="info-row">
+      <text class="info-row-k">电话</text>
+      <text class="info-row-v">{{contact.phone}}</text>
+    </view>
+    <view wx:if="{{contact.remark}}" class="info-row">
+      <text class="info-row-k">备注</text>
+      <text class="info-row-v">{{contact.remark}}</text>
+    </view>
+  </view>
+
+  <!-- 往来记录 -->
+  <view class="section-title">往来记录</view>
+
+  <view wx:if="{{records.length}}" class="record-list">
+    <view class="record-item" wx:for="{{records}}" wx:key="id">
+      <view class="record-left">
+        <view class="record-content">{{item.content || (item.type === 1 ? '收入' : '支出')}}</view>
+        <view class="record-date">{{item.record_date}}</view>
+      </view>
+      <view class="record-right">
+        <view class="record-amount num {{item.type === 1 ? 'c-income' : 'c-expense'}}">
+          {{item.type === 1 ? '+' : '-'}}¥{{item.amountText}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:else class="empty-state">
+    <image class="empty-icon" src="/images/ic-empty.svg" mode="aspectFit" />
+    <view class="empty-title">暂无往来记录</view>
+    <view class="empty-desc">记账时选择这个往来对象，记录会自动出现在这里</view>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>
