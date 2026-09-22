@@ -1,7 +1,7 @@
 <!--pages/login/login.wxml-->
 <!-- 只在微信静默登录没通过时出现（app.js → gotoLogin）。
      页面要回答两个问题：① 我为什么在这 ② 现在能做什么。
-     ⚠️ 底部「先进入看看」不能去掉 —— 微信点名的两条违规是"一进门就要求授权"
+     ⚠️ 底部「先随便看看」不能去掉 —— 微信点名的两条违规是"一进门就要求授权"
      和"拒绝授权就不给用"；登录没连上更不该把人锁在门外。 -->
 <view class="brand-page" style="{{_cv}}">
 
@@ -10,22 +10,22 @@
       <image class="brand-mark-ico" src="/images/ic-brand.svg" mode="aspectFit" />
     </view>
     <view class="brand-name">易帮账本</view>
-    <view class="brand-slogan">会思考，越用越懂你的账本</view>
-    <view class="brand-sub">{{reason || '再连一次微信，账本会自动回来'}}</view>
+    <view class="brand-slogan">会记账的小帮手，越用越懂你</view>
+    <view class="brand-sub">{{reason || '再连一次微信，你的账就回来了'}}</view>
   </view>
 
   <!-- 重试也失败时才出现：说清楚是"又没连上"，别让用户以为按钮没反应 -->
   <view wx:if="{{errorTip}}" class="card lg-err">
-    <view class="lg-err-t">这次也没连上</view>
+    <view class="lg-err-t">又没连上，再试一次</view>
     <view class="lg-err-d">{{errorTip}}</view>
   </view>
 
   <view class="brand-cta">
     <view class="btn btn-primary btn-block {{busy ? 'is-disabled' : ''}}" bindtap="doLogin">
-      {{busy ? '正在登录…' : '微信一键登录'}}
+      {{busy ? '正在登录…' : '用微信登录'}}
     </view>
-    <view class="brand-note">不用输账号密码 —— 点一下就用你当前的微信身份继续</view>
+    <view class="brand-note">不用记密码，点一下就进去</view>
   </view>
 
-  <view class="brand-skip" bindtap="skip">先进入看看</view>
+  <view class="brand-skip" bindtap="skip">先随便看看</view>
 </view>

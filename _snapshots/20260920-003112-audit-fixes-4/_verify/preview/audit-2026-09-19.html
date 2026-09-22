@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>易帮账本 · 功能补充与全面审计</title>
+<style>
+  :root{
+    --ink:#101828; --ink2:#344054; --ink3:#667085; --line:#EDF0F3; --fill:#F6F7F9;
+    --brand:#C9451A; --brand-weak:#FFF4EE; --expense:#D92D20; --income:#0B7A43;
+    --warn:#B54708; --warn-weak:#FFF6E5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 20px 80px;background:#F6F7F9;color:var(--ink);
+    font:15px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:-.3px}
+  .sub{color:var(--ink3);font-size:14px;margin-bottom:32px}
+  h2{font-size:19px;margin:44px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  h3{font-size:16px;margin:26px 0 10px}
+  .card{background:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px;
+    box-shadow:0 2px 6px rgba(16,24,40,.03),0 12px 32px -14px rgba(16,24,40,.12)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--ink3);font-weight:500;font-size:13px;background:var(--fill)}
+  tr:last-child td{border-bottom:none}
+  code{background:var(--fill);padding:1px 6px;border-radius:5px;font-size:13px;
+    font-family:ui-monospace,Consolas,monospace}
+  .ok{color:var(--income);font-weight:600}
+  .bad{color:var(--expense);font-weight:600}
+  .warnbox{background:var(--warn-weak);border:1px solid #F5D9A8;border-radius:12px;padding:16px 20px;margin:16px 0}
+  .warnbox .t{color:var(--warn);font-weight:600;margin-bottom:6px}
+  .notebox{background:var(--brand-weak);border-left:4px solid var(--brand);border-radius:8px;padding:14px 18px;margin:16px 0}
+  .p0{border-left:4px solid var(--expense)}
+  .p1{border-left:4px solid var(--warn)}
+  .p2{border-left:4px solid var(--t4,#98A2B3)}
+  .shot img{border-radius:10px;border:1px solid var(--line);display:block;width:250px}
+  .shot span{display:block;font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.55;width:250px}
+  .tag{display:inline-block;font-size:12px;padding:1px 9px;border-radius:99px;margin-right:6px;
+    background:var(--fill);color:var(--ink2)}
+  .tag-fix{background:#E8F5EC;color:var(--income)}
+  .tag-todo{background:var(--warn-weak);color:var(--warn)}
+  .tag-skip{background:var(--fill);color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>功能补充与全面审计</h1>
+  <div class="sub">上月筛选 · 服务端区间查询 · 全项目审计 · 2026-09-19</div>
+
+  <div class="notebox">
+    <b>一句话结论：</b>两件事都做完了，全部检查项全绿。审计额外挖出 <b>2 个有实际风险的问题</b>
+    （其中一个是审计脚本自己会往你真实账号里写数据），已修；另有 6 条优化建议，按优先级列在最后。
+  </div>
+
+  <h2>一、两件功能</h2>
+
+  <h3>1. 范围筛选改成走服务端</h3>
+  <div class="card">
+    <div class="warnbox" style="margin-top:0">
+      <div class="t">改之前的问题：会静默给你错答案</div>
+      查询页原来是把<b>最新 200 条拉到手机本地再筛</b>。所以搜一个三个月前的人名，
+      结果是空的 —— <b>你会以为没这笔账，其实是它压根没被加载进来</b>。
+      数据越多越明显，而且它<b>不报错、只给错答案</b>。这正是最难发现的一类问题。
+    </div>
+    现在改成：每换一个条件就重新向服务器查一次，并且<b>能一直往下拉</b>加载更早的记录。
+    筛选条件（时间范围 / 收支 / 关键词）全部由服务器执行，查到多少就是多少。
+
+    <table style="margin-top:14px">
+      <tr><th style="width:30%">改了什么</th><th>效果</th></tr>
+      <tr><td>时间范围 → 服务端</td><td>不再受"本地只有 200 条"限制</td></tr>
+      <tr><td>收/支筛选 → 服务端</td><td>口径跟日报完全一致（只有"收入/回款"算进账）</td></tr>
+      <tr><td>关键词 → 服务端</td><td>事由、往来对象名、金额都能搜；通配符已转义</td></tr>
+      <tr><td>上拉加载更多</td><td>一页 200 条，到底了会明确写「共 N 条，到底了」</td></tr>
+      <tr><td>下拉刷新</td><td>列表页的自然手势</td></tr>
+      <tr><td>关键词防抖</td><td>停止输入 0.35 秒才查，不是每敲一个字都发请求</td></tr>
+      <tr><td>空结果说清原因</td><td>「『猪』· 上月 这些条件下没有记录」而不是干巴巴一句"没有记录"</td></tr>
+      <tr><td>「请求没通」与「真没有」分开</td><td>前者给重试按钮，不会让你以为账丢了</td></tr>
+    </table>
+  </div>
+
+  <h3>2. 「上月」筛选</h3>
+  <div class="card">
+    时间范围 chips 现在是：<b>全部 / 今天 / 近 7 天 / 本月 / 上月</b>。
+    区间口径直接复用项目里已有的那套算法，不另写一份 —— 免得"页面算一套、别处算一套"。
+  </div>
+
+  <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:18px">
+    <div class="shot">
+      <img src="../shots/q-lastmonth.jpg" alt="上月筛选">
+      <span><b>「上月」已加上</b><br>212 条、按天分组<br>下方可继续上拉加载</span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <b>验证是怎么做的（这步很关键）：</b>你的账本里一条 8 月的记录都没有，
+    所以"上月筛选返回 0 条"<b>证明不了任何事</b> —— 筛错了也是 0。
+    于是<b>专门造了 8 月的账</b>（收 1234.56 / 支 78.90）来验，才确认筛选真的对。
+    同理，分页那条路 9 条数据根本走不到，<b>专门造了 210 条</b>把分页逼出来：
+    200 → 212，<b>重复 0、漏行 0</b>。验完全部清理，你的数据一条没动。
+    <br><br>
+    <span style="color:var(--ink3);font-size:13px">
+      逐项结果：全部 9 · 上月 2 · 本月 7 · 今天 7 · 只收入 4 · 只支出 5 · 搜「猪」2 · 上月+搜 2。
+    </span>
+  </div>
+
+  <h2>二、审计结果：全部检查项</h2>
+  <table>
+    <tr><th style="width:52%">检查项</th><th>结果</th></tr>
+    <tr><td>接口端点（37 个逐个打一遍）</td><td class="ok">40 / 40</td></tr>
+    <tr><td>越权扫描（需登录的接口不带凭证必须拒绝）</td><td class="ok">30 / 30，可未授权访问 0 个</td></tr>
+    <tr><td>多租户隔离（读/改/删别人的数据）</td><td class="ok">9 / 9</td></tr>
+    <tr><td>前端结构 / 注册一致性 / 资源 / 语法 / JSON</td><td class="ok">全部通过</td></tr>
+    <tr><td>静态自检（含跨页样式作用域）</td><td class="ok">通过 · 其自测 9 / 9</td></tr>
+    <tr><td>分组汇总 / 分享 / 语音归类 / 分类统计</td><td class="ok">15 · 33 · 54 · 13 全过</td></tr>
+    <tr><td>日历日期算术</td><td class="ok">25 / 25</td></tr>
+    <tr><td>依赖安全（npm audit）</td><td class="ok">0 漏洞</td></tr>
+    <tr><td>上传文件：数据库记录与磁盘是否一致</td><td class="ok">6 : 6，无孤立文件</td></tr>
+    <tr><td>小程序体积</td><td class="ok">516 KB（主包上限 2 MB）</td></tr>
+  </table>
+
+  <h2>三、审计挖出的问题</h2>
+
+  <h3><span class="tag tag-fix">已修</span>1. 审计脚本会往你真实的账号里写数据</h3>
+  <div class="warnbox p0">
+    多租户隔离测试原来写的是「<b>找一个 id 不是 1 的用户</b>」来造测试数据 ——
+    而线上现在真的有第二个账号，<b>就是你本人的账号</b>。
+    跑一次它就会往你的账本里插 3 条测试数据（一条 ¥999.99 的假流水等），跑完才删。
+    <br><br>
+    <b>中途崩了就留在那儿了，而你完全不知道这条账从哪来的。</b>
+    <br><br>
+    已改成使用<b>专用测试账号</b>，并且即使中途出错也会收尾清理。
+  </div>
+
+  <h3><span class="tag tag-fix">已修</span>2. 线上数据库缺 7 个索引</h3>
+  <div class="warnbox p0">
+    代码里声明了 7 个索引（比如"按用户 + 日期查流水"的那个），但线上<b>一个都没有</b>。
+    <br><br>
+    原因：建表语句对<b>已经存在</b>的表什么都不做，而补字段的那套迁移只补了列、<b>没补索引</b>。
+    <br><br>
+    <b>后果</b>：每一个查询都在全表扫描。现在只有 12 条记录，你完全感觉不到；
+    等哪天有几万条，就是"点一下转半天"—— <b>而且它不报错，只是慢</b>，
+    等发现的时候通常已经慢到不能用了。
+    <br><br>
+    已补上并逐个用 EXPLAIN 复核：<b>5 类查询现在全部走索引</b>，且重复执行不会重复建。
+  </div>
+
+  <h3><span class="tag tag-fix">已修</span>3. 查询页的"假筛选"</h3>
+  <div class="card">
+    就是上面第一节那个问题 —— 本地筛 200 条。已改服务端筛选 + 分页。
+  </div>
+
+  <h3><span class="tag tag-todo">建议改</span>4. 对外暴露着一个 404 的域名</h3>
+  <div class="card p1">
+    <code>h5.dtzai.cn</code> 指向一个不存在的目录，访问直接 404。
+    既然 H5 明确不做，这个配置应该摘掉（或补个占位页）。
+    一个 404 的域名挂在外面，被人看到会显得没做完。
+  </div>
+
+  <h3><span class="tag tag-todo">建议改</span>5. 两个没人用的接口</h3>
+  <div class="card p1">
+    <table style="margin:0">
+      <tr><th style="width:34%">接口</th><th>情况</th></tr>
+      <tr>
+        <td><code>POST /ai/ocr-parse</code></td>
+        <td>已经被更快的单据识别接口取代了，但代码还在 —— <b>它是要花 AI 额度的</b>，
+          留着等于留了个能被误调的收费口子</td>
+      </tr>
+      <tr>
+        <td><code>GET /share/mine</code></td>
+        <td>当时为"我分享过哪些"列表页预留的，页面一直没做</td>
+      </tr>
+    </table>
+  </div>
+
+  <h3><span class="tag tag-todo">建议改</span>6. 服务挂了没人知道</h3>
+  <div class="card p1">
+    后端的重启次数目前是 36 次。我核对过：<b>是今天反复部署造成的，不是崩溃循环</b>，所以现在没问题。
+    但这也说明<b>没有任何告警</b> —— 真哪天进程崩了、或者接口开始大面积报错，
+    只有等你打开小程序发现不对才会知道。
+    <br><br>
+    建议加一个最简单的：重启次数超阈值、或健康检查连续失败就发通知。
+  </div>
+
+  <h3><span class="tag tag-todo">建议改</span>7. 审计脚本自己也会误导人</h3>
+  <div class="card p1">
+    服务端审计里打印的"表行数"用的是数据库的<b>估算值</b>（InnoDB 的特性），
+    它显示 <code>transactions 1 行</code>，而实际有 12 行。
+    <b>审计输出本身也会骗人</b>，应该改成真实统计。
+  </div>
+
+  <h3><span class="tag tag-todo">建议改</span>8. 查询页一页拉 200 条</h3>
+  <div class="card p1">
+    一次渲染 200 行，列表长的时候首屏会有点顿。现在有上拉加载了，一页改成 50 更顺，
+    反正往下拉就能续。属于小优化，不做也不会出问题。
+  </div>
+
+  <h3><span class="tag tag-skip">可以不做</span>9. 一处死常量、一处用不上的兜底</h3>
+  <div class="card p2">
+    单据识别里的 <code>OCR_MODEL</code> 常量在选型改成视觉模型后就没有再用；
+    月度汇总接口的本地兜底分支因为后端接口一直正常所以从没触发过。
+    <b>两处都无害</b>，只是"看着像还有用"，真想清理的话顺手就行。
+  </div>
+
+  <h2>四、顺带查清的一件事（挺要紧的）</h2>
+  <div class="notebox">
+    <b>线上现在有两个账号，别再搞混：</b>
+    <table style="margin-top:10px;background:transparent">
+      <tr><th style="width:16%">账号</th><th style="width:34%">是谁</th><th>数据</th></tr>
+      <tr>
+        <td><b>1 号</b></td>
+        <td><b>微信开发者工具里登录的那个微信号</b>（测试账号）</td>
+        <td>测试用的流水和往来对象</td>
+      </tr>
+      <tr>
+        <td><b>2 号</b></td>
+        <td><b>你本人手机上的账号</b>（昵称「老易」、店名「老易的店」）</td>
+        <td>你的真实流水</td>
+      </tr>
+    </table>
+    <div style="margin-top:14px">
+      <b>所以：在开发者工具里看到的账，不是你自己手机上的账。</b>
+      你之前说"文件上传不成功"，在工具里看到的其实是另一个账号的数据 —— 排查问题时这点很容易把人带偏。
+    </div>
+  </div>
+
+  <div class="warnbox">
+    <div class="t">⚠️ 两处我之前说错了，更正一下</div>
+    1. 我前面<b>两次说过「你的店名还没填」—— 说错了。</b>你的店名早就填成「老易的店」了，
+    我看到的是测试账号（1 号）那个空的店名。<b>我拿错了对象下结论。</b>
+    <br><br>
+    2. 你 23:33 点的那次「分享报表」我验过了，<b>链接完全正常</b>：
+    对方打开看到的是「<b>老易的店 · 今日报表</b>」，5 笔、收 ¥2,957、支 ¥51。
+    而我在清理测试数据时差点把这条真实的分享记录删掉 —— 是发现它的账号是 2 号才停的手。
+    <br><br>
+    那 7 个索引的问题也是这次审计才发现的，<b>它已经存在一段时间了</b>，不是今天引入的。
+  </div>
+
+  <h2>五、要你拍板的</h2>
+  <div class="card">
+    <ol style="margin:0;padding-left:22px">
+      <li><b>上面那 5 条「建议改」，要不要我一起做掉？</b>
+        都是小改动，一轮就能完成（404 域名 / 死接口 / 重启告警 / 审计脚本修正 / 每页 50 条）。</li>
+      <li><b>分享功能现在还不能给外人用 —— 小程序没发布。</b>
+        未发布时分享出去的卡片只有"体验版成员"能打开，你自己测试正常，发给客户打不开。
+        要真给别人看，得走完 <b>ICP 备案 → 服务类目（工具→记账）→ 隐私指引 → 提交审核 → 发布</b>。
+        这几件只有你能做，我这边随时可以出材料和逐条指导。</li>
+    </ol>
+  </div>
+
+</div>
+</body>
+</html>

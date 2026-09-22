@@ -4,8 +4,8 @@
   <view wx:if="{{state === 'no-token'}}" class="card">
     <view class="empty">
       <image class="empty-ico" src="/images/ic-info.svg" mode="aspectFit" />
-      <view class="empty-title">这个链接不完整</view>
-      <view class="empty-desc">可能是转发时被截断了。让分享的人重新发一次就好。</view>
+      <view class="empty-title">链接打不开了</view>
+      <view class="empty-desc">转发的时候链接断了，让对方重新发一次就行</view>
     </view>
   </view>
 
@@ -13,8 +13,8 @@
   <view wx:elif="{{state === 'not-found'}}" class="card">
     <view class="empty">
       <image class="empty-ico" src="/images/ic-clock.svg" mode="aspectFit" />
-      <view class="empty-title">这份报表已经过期了</view>
-      <view class="empty-desc">分享出来的报表有有效期。让分享的人重新发一份就能看到。</view>
+      <view class="empty-title">这份报表过期了</view>
+      <view class="empty-desc">分享的报表有时间限制，让对方重新发一份就行</view>
     </view>
   </view>
 
@@ -22,8 +22,8 @@
   <view wx:elif="{{state === 'failed'}}" class="card">
     <view class="empty">
       <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
-      <view class="empty-title">没能读到这份报表</view>
-      <view class="empty-desc">网络不太顺，点下面再试一次。</view>
+      <view class="empty-title">没加载出来</view>
+      <view class="empty-desc">网络不太好，点一下再试</view>
       <view class="empty-action" bindtap="retry">重新加载</view>
     </view>
   </view>
@@ -72,7 +72,7 @@
     <view wx:if="{{rows.length === 0}}" class="card">
       <view class="empty">
         <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
-        <view class="empty-title">这段时间还没有记账</view>
+        <view class="empty-title">这段时间还没记账</view>
         <view class="empty-desc">账本里还没有这个区间的记录。</view>
       </view>
     </view>
@@ -97,14 +97,14 @@
 
     <!-- 只读说明：让对方明确知道自己看到的是什么、能不能改 -->
     <view class="rv-note">
-      <text>这是一份只读的报表，只能查看，不能修改。</text>
+      <text>这份报表只能看，不能改</text>
       <text wx:if="{{expireDay}}">链接有效到 {{expireDay}} 为止。</text>
     </view>
 
     <view class="rv-cta card">
-      <view class="rv-cta-t">说一句话就能记账的本子</view>
-      <view class="rv-cta-d">不用打字、不用选分类，拍一张单子也会自动拆成明细</view>
-      <view class="rv-cta-btn" bindtap="goTry">我也用一下</view>
+      <view class="rv-cta-t">说句话就能记账，太方便了</view>
+      <view class="rv-cta-d">不用打字，拍张单子就自动记好</view>
+      <view class="rv-cta-btn" bindtap="goTry">我也试试</view>
     </view>
 
     <view class="rv-by">由 易帮账本 生成 · 已被查看 {{viewCount}} 次</view>

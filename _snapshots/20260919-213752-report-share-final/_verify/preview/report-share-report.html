@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>易帮账本 · 报表分享</title>
+<style>
+  :root{
+    --ink:#101828; --ink2:#344054; --ink3:#667085; --line:#EDF0F3; --fill:#F6F7F9;
+    --brand:#C9451A; --brand-weak:#FFF4EE; --expense:#D92D20; --income:#0B7A43;
+    --warn:#B54708; --warn-weak:#FFF6E5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 20px 80px;background:#F6F7F9;color:var(--ink);
+    font:15px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:-.3px}
+  .sub{color:var(--ink3);font-size:14px;margin-bottom:32px}
+  h2{font-size:19px;margin:44px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .card{background:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px;
+    box-shadow:0 2px 6px rgba(16,24,40,.03),0 12px 32px -14px rgba(16,24,40,.12)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--ink3);font-weight:500;font-size:13px;background:var(--fill)}
+  tr:last-child td{border-bottom:none}
+  code{background:var(--fill);padding:1px 6px;border-radius:5px;font-size:13px;
+    font-family:ui-monospace,Consolas,monospace}
+  pre{background:#0F172A;color:#E2E8F0;padding:16px 18px;border-radius:10px;overflow:auto;
+    font-size:13px;line-height:1.65;font-family:ui-monospace,Consolas,monospace;white-space:pre-wrap}
+  .ok{color:var(--income);font-weight:600}
+  .bad{color:var(--expense);font-weight:600}
+  .warnbox{background:var(--warn-weak);border:1px solid #F5D9A8;border-radius:12px;padding:16px 20px;margin:16px 0}
+  .warnbox .t{color:var(--warn);font-weight:600;margin-bottom:6px}
+  .notebox{background:var(--brand-weak);border-left:4px solid var(--brand);border-radius:8px;padding:14px 18px;margin:16px 0}
+  .shots{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+  .shot img{border-radius:10px;border:1px solid var(--line);display:block}
+  .shot.tall img{width:250px}
+  .shot.wide img{width:230px}
+  .shot span{display:block;font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>报表分享 · 带明细</h1>
+  <div class="sub">「分享带明细的报表」— 2026-09-19</div>
+
+  <h2>一、原来的分享等于没分享</h2>
+  <div class="card">
+    报表页那两个分享按钮，其实都是把这样一段文字复制到剪贴板：
+    <pre>📊 易帮账本 · 2026-09-19
+
+💰 收入：¥7,500.00
+💸 支出：¥45.14
+📈 结余：+¥7,454.86（7 笔）
+
+智能记账，越记越明白</pre>
+    <div style="color:var(--ink2)">
+      <b>一条明细都没有。</b>老板发出去的东西自己没法核，对方更看不出这钱花在哪。<br>
+      顺带说明：后端其实有个生成分享链接的接口（<code>/share/create</code>），
+      但前端一次都没调用过 —— 而且你说过 H5 先不做，所以链接方案这一版<b>不启用</b>
+      （没渲染页时把链接露出去，对方点开只会看到一坨 JSON）。
+    </div>
+  </div>
+
+  <h2>二、做成了什么样</h2>
+  <div class="shots">
+    <div class="shot tall">
+      <img src="../shots/rep-preview.jpg" alt="今日报表图">
+      <span><b>今日报表图（7 笔）</b><br>品牌条 + 汇总卡 + 逐笔明细<br>按时间正序，收绿支红<br>1500×2352，微信里一屏看完</span>
+    </div>
+    <div class="shot tall">
+      <img src="../shots/rep-trunc.jpg" alt="明细很多时">
+      <span><b>明细多的时候（33 笔）</b><br>图上画最新 20 笔 +<br>「另有 13 笔未列出」<br>不假装列全了</span>
+    </div>
+    <div class="shot wide">
+      <img src="../shots/rep-sheet.jpg" alt="分享面板">
+      <span><b>分享面板</b><br>图片 / 文字两条路<br>各说清自己适合什么</span>
+    </div>
+  </div>
+
+  <div class="notebox" style="margin-top:22px">
+    <b>为什么两条路都要有——它们解决的不是同一件事：</b>
+    <table style="margin-top:10px;background:transparent">
+      <tr><th style="width:22%"></th><th>图片</th><th>文字</th></tr>
+      <tr><td>微信里的体验</td><td class="ok">最顺（不用点链接，聊天里直接看）</td><td>要粘贴</td></tr>
+      <tr><td>内容容量</td><td class="bad">有上限（长图在微信里预览很差）</td><td class="ok">全量不截断</td></tr>
+      <tr><td>适合</td><td>看一眼</td><td>逐条核 / 粘进表格</td></tr>
+    </table>
+    只做图会在明细多时丢内容，只做文字则让老板多一步粘贴。
+  </div>
+
+  <h2>三、途中自检抓到的两个真问题</h2>
+
+  <div class="warnbox">
+    <div class="t">🐛 每张报表图底部都多一块空白（52px）</div>
+    canvas 不会自己撑开，高度必须先算。我给"算高度"和"实际绘制"写了两套数字，
+    页脚那段预算写了 92、实际只走 40 —— <b>每张图底部都会多一条空白</b>，手机上肉眼还不一定看出来。
+    <br><br>
+    修法是让绘制函数<b>返回实际用掉的高度</b>，跟预算一比，差超过 2px 就报警并上报。
+    这条自检第一次跑就抓到了它。现在线上信标里能看到：
+    <code>report-image rows=7 h=1176</code>（修之前是 1228），且<b>没有</b> <code>report-layout-drift</code>。
+  </div>
+
+  <div class="warnbox">
+    <div class="t">🐛 一个坏日期参数能让接口 500</div>
+    给"按区间取明细"加过滤时，被自己的测试打回来：<code>2026-13-99</code> 能过
+    <code>^\d{4}-\d{2}-\d{2}$</code> 这个正则，但一路传到数据库的日期比较就报错，
+    <b>整个接口返回 500</b> —— 一个参数写错，请求被打死，用户看到"服务出错"，跟他的操作毫无关系。
+    <br><br>
+    全项目<b>有 6 处</b>这么写，另外新建和修改记录的日期<b>完全没校验</b>。已统一成一个工具函数：
+    格式对还不够，要<b>回读比对</b>（<code>2 月 30 日</code>会被悄悄滚到 3 月，回读就不相等了）。
+    顺手给列表接口的 <code>size</code> 也封了顶 —— 原来 <code>?size=999999</code> 能把整张表拉出来。
+  </div>
+
+  <h2>四、验证</h2>
+  <table>
+    <tr><th style="width:46%">项目</th><th>结果</th></tr>
+    <tr><td>区间查询 / size 上限 / 脏日期不再 500 / 多租户隔离 / 月度汇总</td><td class="ok">9 / 9</td></tr>
+    <tr><td>日期工具单测（含 2026-02-30、2026-13-99、闰年）</td><td class="ok">8 / 8</td></tr>
+    <tr><td>今日报表图版式（高度自检 <code>drift</code>）</td><td class="ok">0（完全吻合）</td></tr>
+    <tr><td>明细截断分支（临时插 26 条数据测的）</td><td class="ok">rows=20 / hidden=13 / drift=0，dpr 自动降级</td></tr>
+    <tr><td>文字版</td><td class="ok">7 笔全量、时间正序</td></tr>
+    <tr><td>语音归类回归 / 分类统计回归</td><td class="ok">54 / 54 · 13 / 13（改过后端，确认采购线没被改坏）</td></tr>
+    <tr><td>静态自检 / WXML 配对 / 指令 / 样式括号 / console</td><td class="ok">全过，无报错</td></tr>
+  </table>
+  <div class="card" style="margin-top:16px">
+    <span style="color:var(--ink3);font-size:13px">
+      成图是怎么验的：把生成的图用小程序自己的图片预览打开，再截模拟器画面 ——
+      不用改一行源码就能看到真实产物，比"点一下没报错"可靠得多。<br>
+      测试数据已全部清理，账本回到真实基线（7 条流水 / 收入 ¥7,500.00 / 支出 ¥45.14 / 4 个往来对象）。
+    </span>
+  </div>
+
+  <h2>五、顺手做对的两件小事</h2>
+  <div class="card">
+    <ul style="margin:0;padding-left:20px">
+      <li>「分享报表」按钮原来只有 64rpx 高（32px），低于 44px 的触控下限 —— 提到 88rpx。
+        这个按钮正是老板要点的那个。</li>
+      <li>「往来总览」的「一键对账」保持原样：那是另一个场景，逐人金额本身就是明细。</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

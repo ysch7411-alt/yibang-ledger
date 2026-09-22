@@ -1,7 +1,7 @@
 <!--pages/purchase-list/purchase-list.wxml-->
 <view class="container container-page" style="{{_cv}}">
   <view class="page-head">
-    <view class="page-title">采购单</view>
+    <view class="page-title">采购单管理</view>
     <view class="page-sub">{{tab === 'list' ? '拍过的单子都在这儿，点一下看明细' : '合并成一张入库，也能按维度拆开看'}}</view>
   </view>
 

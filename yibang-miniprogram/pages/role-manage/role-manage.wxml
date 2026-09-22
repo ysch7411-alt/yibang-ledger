@@ -4,7 +4,7 @@
   <!-- 顶部说明 -->
   <view class="tip-card">
     <view class="tip-title">成员与角色</view>
-    <view class="tip-desc">店主可添加合伙人、经理、员工，不同角色拥有不同权限</view>
+    <view class="tip-desc">添加团队成员，不同角色能做的事不一样</view>
   </view>
 
   <!-- 角色说明 -->
@@ -15,15 +15,15 @@
     </view>
     <view class="legend-item">
       <view class="legend-dot dot-boss"></view>
-      <text class="legend-text">合伙人：查看报表/导出</text>
+      <text class="legend-text">合伙人：看账、导出数据</text>
     </view>
     <view class="legend-item">
       <view class="legend-dot dot-manager"></view>
-      <text class="legend-text">经理：记账/管员工/确认报表</text>
+      <text class="legend-text">经理：记账、管员工、确认账目</text>
     </view>
     <view class="legend-item">
       <view class="legend-dot dot-staff"></view>
-      <text class="legend-text">员工：仅记账，需审核</text>
+      <text class="legend-text">员工：只能记账，需要审核</text>
     </view>
   </view>
 

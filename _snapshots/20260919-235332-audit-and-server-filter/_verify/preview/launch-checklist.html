@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>易帮账本 · 生产上线清单</title>
+<style>
+  :root{--bg:#0F1216;--card:#171B21;--line:#262C34;--t1:#E8ECF1;--t2:#A9B4C0;--t3:#6B7784;
+    --ok:#3FB950;--bad:#F85149;--warn:#D29922;--brand:#FF8A5B;--info:#58A6FF;}
+  *{box-sizing:border-box;}
+  body{margin:0;padding:40px 28px 72px;background:var(--bg);color:var(--t1);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1100px;margin:0 auto;}
+  h1{margin:0 0 10px;font-size:26px;font-weight:700;letter-spacing:-.4px;}
+  h2{margin:46px 0 12px;font-size:17px;font-weight:700;}
+  p{margin:0 0 10px;font-size:13.5px;line-height:1.85;color:var(--t2);}
+  b{color:var(--t1);font-weight:600;}
+  code{background:#0C0F13;border:1px solid var(--line);border-radius:4px;padding:1px 5px;
+    font-size:12px;color:var(--brand);font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .hero{margin-top:22px;padding:22px 24px;border-radius:14px;
+    background:linear-gradient(160deg,#1C1512 0%,#14181D 100%);border:1px solid #4A3220;}
+  .hero .tag{display:inline-block;margin-bottom:10px;padding:3px 10px;border-radius:999px;
+    background:rgba(210,153,34,.16);color:var(--warn);font-size:11.5px;font-weight:700;}
+  .hero p{color:var(--t1);font-size:14px;margin:0;}
+  .hero p+p{margin-top:8px;color:var(--t2);font-size:13.5px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;}
+  th{font-size:11.5px;color:var(--t3);letter-spacing:.4px;}
+  td{color:var(--t2);}
+  tr:last-child td{border-bottom:none;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 18px 12px;}
+  .ok{color:var(--ok);font-weight:600;}
+  .bad{color:var(--bad);font-weight:600;}
+  .warn{color:var(--warn);font-weight:600;}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;}
+  .box{display:inline-block;width:18px;height:18px;border-radius:5px;border:2rpx solid #3A424C;
+    vertical-align:-3px;margin-right:8px;flex:none;}
+  .box.done{background:rgba(63,185,80,.18);border-color:var(--ok);position:relative;}
+  .box.done::after{content:"";position:absolute;left:5px;top:3px;width:6px;height:3px;
+    border-left:2px solid var(--ok);border-bottom:2px solid var(--ok);transform:rotate(-45deg);}
+  .box.todo{border-color:var(--warn);}
+  ul{margin:0;padding-left:20px;}
+  li{font-size:13.5px;line-height:1.95;color:var(--t2);margin-bottom:4px;}
+  .note{margin-top:16px;padding:18px 20px;border-radius:14px;background:#131A22;border:1px solid #1E3550;}
+  .note h3{margin:0 0 8px;font-size:14px;color:var(--info);}
+  .note p{color:var(--t1);font-size:13.5px;margin:0 0 6px;}
+  .note p:last-child{margin-bottom:0;}
+  .step{counter-reset:none;}
+  .step li{margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>易帮账本 · 生产上线清单</h1>
+  <p>2026-09-19 · 每一项都有实跑证据，不是"应该没问题"</p>
+
+  <div class="hero">
+    <span class="tag">当前状态</span>
+    <p><b>代码和服务器这一侧已经达到上线标准</b>：接口 38/38、越权扫描 28/28、多租户隔离 9/9、14 个页面编译通过、每日备份已做恢复演练。</p>
+    <p><b>还差 3 件只有在微信后台才能做的事</b>（域名托管、隐私声明、类目备案）。这三件不做，真机上上传/录音/注册都会失败 —— 但都不是代码问题。</p>
+  </div>
+
+  <h2>一、已就绪（我这边验过的）</h2>
+  <div class="panel">
+    <table>
+      <tr><th>项</th><th>证据</th><th>状态</th></tr>
+      <tr><td>前端页面完整性</td><td>14 个页面四件套齐全、app.json ↔ 磁盘双向一致、27 张图片全存在</td><td class="ok">✓</td></tr>
+      <tr><td>前端运行时</td><td>12 个页面逐页打开，控制台报错 <b>0</b></td><td class="ok">✓</td></tr>
+      <tr><td>前端质量门禁</td><td>静态自检 / WXML 标签配对 / 指令合法性 / WXSS 花括号变量 / 真实编译 全过</td><td class="ok">✓</td></tr>
+      <tr><td>后端接口</td><td>31 个端点 + 7 项健壮性用例 = <b>38/38</b></td><td class="ok">✓</td></tr>
+      <tr><td>鉴权</td><td>28 个需登录接口在无 token 时全部 401，<b>无越权访问</b></td><td class="ok">✓</td></tr>
+      <tr><td>多租户隔离</td><td>A 商户读/改/删 B 商户数据 9 项全部被拦，<b>9/9</b></td><td class="ok">✓</td></tr>
+      <tr><td>数据库</td><td>10 张表 + 关键列齐全，数据全是真实使用痕迹</td><td class="ok">✓</td></tr>
+      <tr><td><b>数据库备份</b></td><td>原来两条备份 cron 都指向不存在的脚本（从未备份）。已补脚本并<b>做过真实恢复演练：10 张表行数全一致、中文还原正确</b></td><td class="ok">✓ 已修</td></tr>
+      <tr><td>服务器</td><td>pm2 开机自启 enabled、磁盘 59%、负载 0.56、logrotate 已配 su</td><td class="ok">✓</td></tr>
+      <tr><td>AI 选型与成本</td><td>视觉 <code>qwen3-vl-flash</code> 8/10、文本 <code>qwen-flash</code>；一门店一月约 1 元</td><td class="ok">✓</td></tr>
+      <tr><td>可观测性</td><td>客户端错误信标 <code>/api/debug/beacon</code>，17 个埋点，真机已实测可用</td><td class="ok">✓</td></tr>
+      <tr><td>采集与上传</td><td>拍照上传前缩到长边 1600px（实测宽高比不变形）；AI 接口超时 60 秒</td><td class="ok">✓</td></tr>
+      <tr><td>数据卫生</td><td>无引用文件与磁盘孤儿已清理（files 10→1，uploads 19→1）</td><td class="ok">✓</td></tr>
+    </table>
+  </div>
+
+  <h2>二、只有你能做的（微信后台，我做不了）</h2>
+  <p>这三件是<b>真机功能的硬前提</b>，按顺序做：</p>
+  <div class="panel">
+    <table>
+      <tr><th style="width:36px"></th><th>要做的事</th><th>在哪做</th><th>不做会怎样</th></tr>
+      <tr>
+        <td><span class="box todo"></span></td>
+        <td><b>解除域名第三方托管</b>，然后配三类合法域名：<br>
+          <code>request</code> / <code>uploadFile</code> / <code>downloadFile</code> → <code>https://api.dtzai.cn</code><br>
+          <span class="warn">socket 留空，不要填</span>（填 https 会报「协议头非法」）</td>
+        <td>小程序后台 →「开发管理 → 开发设置 → 服务器域名」<br>（现在是「已托管给第三方」，要先在账号设置里解除）</td>
+        <td class="bad">真机上传照片、录音全失败（今天的故障根因）</td>
+      </tr>
+      <tr>
+        <td><span class="box todo"></span></td>
+        <td><b>《用户隐私保护指引》声明这四项</b>：<br>
+          手机号 · 麦克风 · 相册（含摄像头）· 从聊天选择文件</td>
+        <td>小程序后台 →「设置 → 服务内容声明 → 用户隐私保护指引」</td>
+        <td class="bad">手机号授权弹不出来，注册流程走不完</td>
+      </tr>
+      <tr>
+        <td><span class="box todo"></span></td>
+        <td><b>服务类目 + ICP 备案</b>：记账/财务类目需要相应资质</td>
+        <td>小程序后台 →「设置 → 基本设置 → 服务类目」</td>
+        <td class="bad">提交审核会被驳回，上不了线</td>
+      </tr>
+      <tr>
+        <td><span class="box"></span></td>
+        <td><span class="warn">可选</span>：添加「微信同声传译」插件（语音边说边出字，几乎零等待）</td>
+        <td>小程序后台 →「设置 → 第三方设置 → 插件管理」</td>
+        <td>不加也能用，只是语音要等服务端转写</td>
+      </tr>
+    </table>
+  </div>
+
+  <h2>三、你做完上面三件之后，我这边最后跑一遍真机验收</h2>
+  <div class="panel">
+    <ol class="step">
+      <li><span class="box todo"></span> <b>真机手机号注册</b> —— 点「一键绑定手机号」，成功即通<br>
+        <span class="mono">失败的话我读服务端 [beacon] 日志，能直接告诉你缺的是哪一项</span></li>
+      <li><span class="box todo"></span> <b>真机语音记一笔</b> —— 按住说「收了张老板5000货款」</li>
+      <li><span class="box todo"></span> <b>真机拍照入库</b> —— 拍一张有明细的送货单，核对页确认</li>
+      <li><span class="box todo"></span> <b>上传体验版 → 提交审核</b></li>
+    </ol>
+    <p style="margin:10px 0 0"><b>每一次我都能给出证据</b>，不用你描述现象：真机请求有 nginx access log，失败原因有信标日志，数据有库表核对。</p>
+  </div>
+
+  <h2>四、上线后要盯的事</h2>
+  <div class="panel">
+    <table>
+      <tr><th>项</th><th>现状</th><th>建议</th></tr>
+      <tr><td>SSL 证书</td><td><code>api.dtzai.cn</code> 剩余 <b>59 天</b>（11/18 到期）<br><code>app.dtzai.cn</code> 剩余 75 天</td><td>到期前续期，建议设个提醒</td></tr>
+      <tr><td>数据库备份</td><td>每日 02:00 自动备份，保留 14 份，<b>已演练可恢复</b></td><td>目前只备在同机。建议再加一份异地/对象存储（防机器整台挂掉）</td></tr>
+      <tr><td>手机号额度</td><td>每小程序 1000 次免费额度</td><td>用量到 800 次时去后台加购（1000次 ¥30）</td></tr>
+      <tr><td>nginx 配置源</td><td class="warn">生效的是系统 nginx，宝塔那份配置是死的</td><td>改配置前先确认改的是哪份，别改到不生效的地方</td></tr>
+      <tr><td>另一条失效 cron</td><td class="warn"><code>/opt/saas/backup.sh</code> 不存在（另一个项目的）</td><td>不是本项目，但同样每天静默失败，建议一并处理</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    <h3>两个提醒</h3>
+    <p><b>1. 手机号门槛现在是关着的。</b>因为你的后台还没配好隐私声明，如果开着，你打开小程序会被卡在注册页出不去（今天就发生了）。
+    等你在后台配完，跟我说一声，我把门槛打开。</p>
+    <p><b>2. 发版前记得跑审计。</b>三个脚本已经留在 <code>_verify/</code> 下：
+    <code>audit-api.js</code>（接口 38 项）、<code>audit-auth.js</code>（越权扫描）、<code>audit-isolation.js</code>（多租户隔离）、
+    <code>audit-frontend.js</code>（前端结构与语法）。今天就是靠它们抓出"全站 500"和"两个写接口假成功"的。</p>
+  </div>
+
+</div>
+</body>
+</html>

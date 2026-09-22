@@ -1,7 +1,7 @@
 <!--pages/plan/plan.wxml-->
 <view class="container container-page container-cta" style="{{_cv}}">
   <view class="page-head">
-    <view class="page-title">我的套餐</view>
+    <view class="page-title">会员套餐</view>
     <view class="page-sub">一次付费，终身使用，不再续费</view>
   </view>
 

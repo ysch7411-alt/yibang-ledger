@@ -1,0 +1,31 @@
+<h2>7.1 服务器与域名配置（已就绪）</h2>
+
+<callout emoji="✅" background-color="light-green"><p><b>基础设施已具备：</b>阿里云服务器 + 已认证小程序 + 已备案域名，可以直接开始部署开发。</p></callout>
+
+<table>
+<colgroup><col width="150"/><col width="300"/><col width="250"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>项目</p></th><th background-color="light-gray"><p>信息</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p><b>云服务器IP</b></p></td><td><p>101.201.79.119</p></td><td><p>阿里云ECS，后端+数据库都部署在这台</p></td></tr>
+<tr><td><p><b>API域名</b></p></td><td><p>api.dtzai.cn</p></td><td><p>已ICP备案，解析到服务器IP</p></td></tr>
+<tr><td><p><b>微信小程序</b></p></td><td><p>已完成企业认证</p></td><td><p>可直接调用微信支付、用户信息等接口</p></td></tr>
+</tbody>
+</table>
+
+<h3>服务器部署规划</h3>
+<p>单机部署，所有服务都跑在101.201.79.119这台阿里云服务器上：</p>
+<ul>
+<li><b>Nginx</b>：反向代理 + HTTPS + 静态文件</li>
+<li><b>Node.js</b>：后端API服务，PM2进程管理</li>
+<li><b>MySQL 8.0</b>：业务数据库</li>
+<li><b>Redis</b>：缓存 + 会话管理</li>
+<li><b>对象存储</b>：用阿里云OSS（或腾讯云COS），不用本地磁盘存文件</li>
+</ul>
+
+<h3>域名与HTTPS配置</h3>
+<ol>
+<li>api.dtzai.cn → 101.201.79.119（A记录）</li>
+<li>Nginx配置SSL证书（Let's Encrypt免费证书 或 阿里云免费证书）</li>
+<li>所有API走HTTPS，微信小程序强制要求</li>
+<li>微信小程序后台配置合法域名：api.dtzai.cn</li>
+</ol>

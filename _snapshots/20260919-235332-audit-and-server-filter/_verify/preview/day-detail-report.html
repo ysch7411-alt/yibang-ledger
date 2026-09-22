@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>易帮账本 · 点汇总表看当天明细</title>
+<style>
+  :root{
+    --ink:#101828; --ink2:#344054; --ink3:#667085; --line:#EDF0F3; --fill:#F6F7F9;
+    --brand:#C9451A; --brand-weak:#FFF4EE; --expense:#D92D20; --income:#0B7A43;
+    --warn:#B54708; --warn-weak:#FFF6E5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 20px 80px;background:#F6F7F9;color:var(--ink);
+    font:15px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:940px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:-.3px}
+  .sub{color:var(--ink3);font-size:14px;margin-bottom:32px}
+  h2{font-size:19px;margin:44px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .card{background:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px;
+    box-shadow:0 2px 6px rgba(16,24,40,.03),0 12px 32px -14px rgba(16,24,40,.12)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--ink3);font-weight:500;font-size:13px;background:var(--fill)}
+  tr:last-child td{border-bottom:none}
+  code{background:var(--fill);padding:1px 6px;border-radius:5px;font-size:13px;
+    font-family:ui-monospace,Consolas,monospace}
+  .ok{color:var(--income);font-weight:600}
+  .bad{color:var(--expense);font-weight:600}
+  .warnbox{background:var(--warn-weak);border:1px solid #F5D9A8;border-radius:12px;padding:16px 20px;margin:16px 0}
+  .warnbox .t{color:var(--warn);font-weight:600;margin-bottom:6px}
+  .notebox{background:var(--brand-weak);border-left:4px solid var(--brand);border-radius:8px;padding:14px 18px;margin:16px 0}
+  .shots{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+  .shot img{border-radius:10px;border:1px solid var(--line);display:block;width:250px}
+  .shot span{display:block;font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.55;width:250px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>点每日汇总表，看当天明细</h1>
+  <div class="sub">2026-09-19</div>
+
+  <h2>一、怎么用</h2>
+  <div class="card">
+    每日汇总表平时<b>只有数字</b>（日期 / 收入 / 支出 / 结余），跟你要的"简洁"一致。
+    <b>点某一天那一行，当天每一笔就展开在那行下面</b>；再点一下收起来。
+    <br><br>
+    展开的那一行会变橙色、右边的小三角翻过来 —— 一眼就知道下面那串是哪天的。
+    明细按时间<b>从早到晚</b>排（看一天的账是从早读到晚），末尾写清「N 笔 · 上面是这一天的全部记录」。
+  </div>
+
+  <div class="shots" style="margin-top:20px">
+    <div class="shot">
+      <img src="../shots/simple-top.jpg" alt="默认只有数字">
+      <span><b>默认：只有数字</b><br>表格里不出现任何明细，<br>页面照样简洁。</span>
+    </div>
+    <div class="shot">
+      <img src="../shots/day-detail.jpg" alt="点开后的明细">
+      <span><b>点一下某天：明细展开</b><br>7 笔逐条列出，收绿支红，<br>末尾写明这是全部记录。</span>
+    </div>
+  </div>
+
+  <h2>二、一个刻意的取舍：明细不跟着表格一起加载</h2>
+  <div class="card">
+    本月光是记账日就有几十天、几百笔。<b>如果进页面就把所有明细全拉下来</b>，
+    又慢又白花流量，而你多数时候只想看"哪天多哪天少"。
+    <br><br>
+    所以：<b>汇总先给，明细按需点开</b>。点开过的天会告诉你"这是在读明细"，
+    读不到时明确说"没读到，点这里重试" —— 而不是让你以为这天真的没账。
+  </div>
+
+  <h2>三、顺手挖出一串老问题（这个更像收获）</h2>
+  <div class="warnbox">
+    <div class="t">🐛 我给自检工具补了一个盲区，一次扫出 7 个类、21 处引用</div>
+    这次写样式时发现：我在报表页用了一个区块头样式，但<b>它只定义在采购页和记账页里</b> ——
+    也就是说报表页的那几个小标题<b>一直是没样式的裸文字</b>。
+    <br><br>
+    更关键的是：<b>我的自检工具是绿的</b>。因为小程序里样式是<b>按页面隔离</b>的，
+    而工具却把所有样式揉在一起查，所以"在别的页面定义过"也被它当成了有样式。
+    <br><br>
+    改成按页面各自的作用域判定之后，一次报出 21 处，其中一串<b>都是早就存在的问题</b>：
+    <table style="margin-top:12px">
+      <tr><th style="width:24%">东西</th><th style="width:20%">实际状况</th><th>后果</th></tr>
+      <tr>
+        <td>输入框里的提示字颜色</td>
+        <td>4 个页面在用，只有 1 个页面有定义</td>
+        <td class="bad">另外 3 个页面的提示字颜色<b>一直是失效的</b>（这就是为什么它们看着灰得不太一样）</td>
+      </tr>
+      <tr>
+        <td>区块头小标题</td>
+        <td>5 个页面在用，有 <b>4 份互不相同的副本</b></td>
+        <td class="bad">报表页的区块头没样式；4 份副本字号还各不相同</td>
+      </tr>
+      <tr>
+        <td>长文本截断</td>
+        <td>3 个页面在用，2 份副本</td>
+        <td>分享出去的报表页长文本不截断，会顶破排版</td>
+      </tr>
+      <tr>
+        <td>往来卡片</td>
+        <td>2 个页面在用，只有 1 个页面有定义</td>
+        <td class="bad"><b>同一个名字在两个页面是两个意思</b>（一个横排一个竖排），
+          现在只因另一页没定义才侥幸没坏 —— 哪天补上定义就会突然错乱</td>
+      </tr>
+    </table>
+    <div style="margin-top:14px">
+      <b>判据很简单：一个东西被 2 个以上页面用到，它就该住在公共样式里。</b>
+      已经全部收拾干净，3 个页面的输入框提示字颜色也恢复正常了。
+    </div>
+  </div>
+
+  <h2>四、验证</h2>
+  <table>
+    <tr><th style="width:52%">项目</th><th>结果</th></tr>
+    <tr><td>点某天 → 展开当天明细（7 笔，时间正序）</td><td class="ok">通过</td></tr>
+    <tr><td>默认不展开、不预加载明细</td><td class="ok">通过</td></tr>
+    <tr><td>自检工具的作用域判定（改了逻辑，专门做了回归样本）</td><td class="ok">9 / 9</td></tr>
+    <tr><td>自检工具全项目扫描</td><td class="ok">21 处问题 → 0 处</td></tr>
+    <tr><td>回归：日历 25/25 · 分组汇总 15/15 · 分享 33/33 · 语音归类 54/54 · 分类统计 13/13</td><td class="ok">全过</td></tr>
+    <tr><td>静态自检 / WXML 配对 / 指令 / 样式 / 控制台</td><td class="ok">全过 · 无报错</td></tr>
+  </table>
+
+  <div class="notebox">
+    <b>改了校验工具的判定逻辑，就必须拿故意写错的样本回归一次</b> —— 否则不知道它到底还灵不灵。
+    这次做了 9 项回归（全局能用 / 跨页使用必须报 / 不互相泄漏 / 组合选择器要认 /
+    @import 要跟 / 事件处理器与图片照旧能查）。<br>
+    它第一次跑就抓出<b>我自己夹具写错的一处</b>。测试失败时先怀疑测试本身。
+  </div>
+
+</div>
+</body>
+</html>

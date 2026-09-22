@@ -1,8 +1,8 @@
-<!--pages/summary/summary.wxml-->
+﻿<!--pages/summary/summary.wxml-->
 <view class="container" style="{{_cv}}">
   <view class="page-head">
     <view class="page-head-left">
-      <view class="page-title">报表</view>
+      <view class="page-title">经营情况</view>
       <view class="page-sub">不用会计，一眼看懂</view>
     </view>
     <view class="page-head-right">
@@ -15,10 +15,8 @@
   <!-- 收支汇总：今日 / 本月 两种口径切换，替代原先「首页弹窗 + 本页卡片」两处重复 -->
   <view class="card sum-card">
     <view class="seg">
-      <view class="seg-i {{period === 'yesterday' ? 'is-on' : ''}}" data-p="yesterday" bindtap="pickPeriod">昨日</view>
       <view class="seg-i {{period === 'today' ? 'is-on' : ''}}" data-p="today" bindtap="pickPeriod">今日</view>
       <view class="seg-i {{period === 'month' ? 'is-on' : ''}}" data-p="month" bindtap="pickPeriod">本月</view>
-      <view class="seg-i {{period === 'year' ? 'is-on' : ''}}" data-p="year" bindtap="pickPeriod">本年</view>
     </view>
 
     <view class="sum-hero">
@@ -43,40 +41,32 @@
     <view class="sum-ft">
       <view class="sum-ft-left">
         <text class="sum-count">{{stat.count}} 笔已入账</text>
-        <!-- 报表状态 -->
-        <view wx:if="{{reportStatus && reportStatus.status === 2}}" class="report-status confirmed">
-          <text class="status-dot"></text>
-          <text class="status-text">已确认·已锁定</text>
-        </view>
-        <view wx:elif="{{reportStatus && reportStatus.status === 3}}" class="report-status pending">
-          <text class="status-dot"></text>
-          <text class="status-text">解锁申请中</text>
-        </view>
-        <view wx:elif="{{reportStatus && reportStatus.status === 1}}" class="report-status draft">
-          <text class="status-dot"></text>
-          <text class="status-text">草稿中</text>
-        </view>
-      </view>
-      <view class="sum-ft-acts">
-        <!-- 确认报表：经理/店主，草稿状态 -->
-        <view wx:if="{{canConfirmReport && reportStatus && reportStatus.status === 1}}" class="confirm-report-btn" bindtap="confirmReport">
-          <text>确认报表</text>
-        </view>
-        <!-- 申请解锁：经理，已确认状态 -->
-        <view wx:if="{{myRole === 3 && reportStatus && reportStatus.status === 2}}" class="unlock-btn" bindtap="openUnlock">
-          <text>申请解锁</text>
-        </view>
-        <!-- 取消确认：店主，已确认状态 -->
-        <view wx:if="{{myRole === 1 && reportStatus && reportStatus.status === 2}}" class="unconfirm-btn" bindtap="unconfirmReport">
-          <text>取消确认</text>
-        </view>
-        <!-- 日历入口 -->
-        <text class="sum-link" wx:if="{{_f && _f.calendar}}" bindtap="toggleCal">{{calOpen ? '收起日历' : (_t.calendarEntry || '按日查询 ›')}}</text>
-        <view class="sum-share" wx:if="{{_f && _f.shareReport}}" bindtap="openShare">{{_t.shareBtn || '分享报表'}}</view>
       </view>
     </view>
   </view>
 
+  <!-- 操作按钮区：分享收支报表 -->
+  <view class="action-bar">
+    <!-- 分享报表 -->
+    <view wx:if="{{_f && _f.shareReport}}" class="action-btn action-primary action-btn-full" bindtap="openShare">
+      <text>{{_t.shareBtn || '分享报表'}}</text>
+    </view>
+  </view>
+
+  <!-- 应收应付卡片：往来情况 -->
+  <view class="card debt-card">
+    <view class="debt-col" bindtap="goContacts">
+      <view class="debt-k">别人欠我的</view>
+      <view class="debt-v num c-income">¥{{receivable}}</view>
+      <view class="debt-s">{{receivableCount}} 位往来 ›</view>
+    </view>
+    <view class="debt-line"></view>
+    <view class="debt-col" bindtap="goContacts">
+      <view class="debt-k">我欠别人的</view>
+      <view class="debt-v num c-expense">¥{{payable}}</view>
+      <view class="debt-s">{{payableCount}} 位往来 ›</view>
+    </view>
+  </view>
   <!-- ============ 报表日历（默认不出现）============
        整张卡片的开关就是上面那行小字「按日查询」。不点，页面上就没有日历。
        日视图的格子里**只放日期数字 + 收/支色条，不放金额**：
@@ -149,139 +139,18 @@
         <text class="cal-dot">·</text>
         <text>{{calSel.count}} 笔</text>
       </view>
+      <view class="cal-sel-share" bindtap="shareSelectedDay">
+        <text class="cal-sel-share-ico">📤</text>
+        <text>分享这天报表</text>
+      </view>
     </view>
   </view>
 
-  <!-- ============ 每日汇总表（折叠）============
-       首屏默认收起，点一下才展开。减少视觉噪音，让用户一眼看到核心数据。 -->
-  <view class="list-hd" bindtap="toggleDayTable">
-    <view class="list-hd-l">
-      <text class="list-hd-t">{{dayTableTitle}}</text>
-      <text class="list-hd-hint" wx:if="{{dayTable && dayTable.length}}">{{dayTableOpen ? '点某天看明细' : '点这里展开'}}</text>
-    </view>
-    <view class="list-hd-arrow {{dayTableOpen ? 'up' : ''}}"></view>
-  </view>
-  <view class="card card-flush" wx:if="{{dayTableOpen}}">
-    <view wx:if="{{dayTableFailed}}" class="tbl-tip is-bad" bindtap="retryDayTable">没读到，点这里重试</view>
-    <view wx:elif="{{dayTable && dayTable.length === 0}}" class="tbl-tip">这个月还没有记账</view>
-    <block wx:elif="{{dayTable}}">
-      <view class="tbl-hd">
-        <text class="tbl-c1">日期</text>
-        <text class="tbl-c2">收入</text>
-        <text class="tbl-c3">支出</text>
-        <text class="tbl-c4">结余</text>
-        <view class="tbl-cx"></view>
-      </view>
-      <view class="tbl-grp" wx:for="{{dayTable}}" wx:key="key" wx:for-item="r">
-        <view class="tbl-r {{dayOpenKey === r.key ? 'is-open' : ''}}" data-k="{{r.key}}" bindtap="toggleDayRow">
-          <text class="tbl-c1">{{r._label}}</text>
-          <text class="tbl-c2 num">{{r._income}}</text>
-          <text class="tbl-c3 num">{{r._expense}}</text>
-          <text class="tbl-c4 num {{r._isPositive ? 'c-income' : 'c-expense'}}">{{r._isPositive ? '+' : '-'}}¥{{r._netAbs}}</text>
-          <view class="tbl-cx"><view class="tbl-caret {{dayOpenKey === r.key ? 'up' : ''}}"></view></view>
-        </view>
-
-        <!-- 这一天的逐笔。只在这一行被点开时才存在 -->
-        <view wx:if="{{dayOpenKey === r.key}}" class="dd">
-          <view wx:if="{{dayLoading}}" class="dd-tip">正在读明细…</view>
-          <view wx:elif="{{dayFail}}" class="dd-tip is-bad" catchtap="retryDay">没读到，点这里重试</view>
-          <block wx:elif="{{dayDetails.length}}">
-            <view class="dd-r" wx:for="{{dayDetails}}" wx:key="id" wx:for-item="d">
-              <text class="dd-t">{{d.time}}</text>
-              <text class="dd-n ellipsis">{{d.title}}</text>
-              <text class="dd-a num {{d.cls}}">{{d.amount}}</text>
-            </view>
-            <view class="dd-sum">{{dayDetails.length}} 笔 · 上面是这一天的全部记录</view>
-          </block>
-          <view wx:else class="dd-tip">这一天没有记录</view>
-        </view>
-      </view>
-      <view class="tbl-r is-total">
-        <text class="tbl-c1">合计</text>
-        <text class="tbl-c2 num">{{dayTotal._income}}</text>
-        <text class="tbl-c3 num">{{dayTotal._expense}}</text>
-        <text class="tbl-c4 num {{dayTotal._isPositive ? 'c-income' : 'c-expense'}}">{{dayTotal._isPositive ? '+' : '-'}}¥{{dayTotal._netAbs}}</text>
-        <view class="tbl-cx"></view>
-      </view>
-    </block>
-  </view>
 
   <!-- 每月汇总表已移除（2026-09-19 用户要求）：
        月度是低频数据，放在报表页只是占地方。要看某个月的账，去「查询」页
        按范围筛（那边有「本月」，并且会按天分组给出每天的收支）。 -->
 
-  <!-- 应收应付 -->
-  <view class="card">
-    <view class="debt-hd">
-      <text class="card-title">往来总览</text>
-      <text class="card-more" wx:if="{{_f && _f.shareReport}}" bindtap="shareReconciliation">一键对账 ›</text>
-    </view>
-    <view class="debt-body">
-      <view class="debt-col">
-        <view class="debt-k">别人欠我</view>
-        <view class="debt-v num c-income">¥{{receivable}}</view>
-        <view class="debt-s">{{receivableCount}} 位</view>
-      </view>
-      <view class="debt-line"></view>
-      <view class="debt-col">
-        <view class="debt-k">我欠别人</view>
-        <view class="debt-v num c-expense">¥{{payable}}</view>
-        <view class="debt-s">{{payableCount}} 位</view>
-      </view>
-    </view>
-  </view>
-
-  <!-- 往来明细 -->
-  <view class="seg">
-    <view class="seg-i {{activeTab === 'receivable' ? 'is-on' : ''}}" data-tab="receivable" bindtap="switchTab">客户应收</view>
-    <view class="seg-i {{activeTab === 'payable' ? 'is-on' : ''}}" data-tab="payable" bindtap="switchTab">供应商应付</view>
-  </view>
-
-  <view class="card card-flush">
-    <view wx:if="{{loading}}" class="pad">
-      <view class="skeleton-line" style="width: 46%;"></view>
-      <view class="skeleton-line mt-24" style="width: 70%;"></view>
-    </view>
-
-    <view wx:elif="{{contactList.length === 0}}" class="empty">
-      <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
-      <view class="empty-title">{{activeTab === 'receivable' ? '还没有客户欠款' : '还没有供应商欠款'}}</view>
-      <view class="empty-desc">记一笔带对方名字的账，这里就会自动汇总</view>
-      <view class="empty-action" bindtap="goRecord">去记一笔</view>
-    </view>
-
-    <block wx:else>
-      <view
-        wx:for="{{contactList}}"
-        wx:key="id"
-        class="row row-tap"
-        data-id="{{item.id}}"
-        bindtap="goToDetail"
-      >
-        <view class="ct-avatar">{{item._initial}}</view>
-        <view class="row-main">
-          <view class="row-title">{{item.name}}</view>
-          <view class="row-sub">{{item.phone || '未填手机号'}}</view>
-        </view>
-        <view class="row-val num {{item._cls}}">{{item._amountText}}</view>
-        <view class="row-arrow"></view>
-      </view>
-    </block>
-  </view>
-
-  <!-- 生意参谋入口：AI分析是特色功能，从TabBar移到这里，不占主导航位置 -->
-  <view class="card advisor-entry" bindtap="goAdvisor">
-    <view class="advisor-entry-left">
-      <view class="advisor-entry-icon">
-        <image class="advisor-entry-icon-img" src="/images/ic-sparkle.svg" mode="aspectFit" />
-      </view>
-      <view class="advisor-entry-info">
-        <view class="advisor-entry-title">生意参谋 <text class="tag tag-brand">AI</text></view>
-        <view class="advisor-entry-desc">自动分析经营状况，给你实用建议</view>
-      </view>
-    </view>
-    <view class="advisor-entry-arrow"></view>
-  </view>
 
   <view class="sum-tail"></view>
 </view>

@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>易帮账本 · 界面优化说明 v2</title>
+<style>
+  :root{
+    --bg:#12161C; --panel:#1A2029; --panel2:#212936; --line:#2B3441;
+    --t1:#E9EDF2; --t2:#A9B4C2; --t3:#79879A;
+    --brand:#FF6B35; --brand-btn:#C9451A; --brand-ink:#FF9463;
+    --income:#3DD68C; --expense:#FF7B72; --warn:#E5A23C; --info:#6EA8FE;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--t1);
+    font:15px/1.75 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px 96px}
+
+  header{padding:56px 0 32px;border-bottom:1px solid var(--line)}
+  .kicker{font-size:13px;letter-spacing:.14em;color:var(--brand-ink);text-transform:uppercase}
+  h1{font-size:34px;margin:12px 0 10px;letter-spacing:-.01em}
+  .lede{color:var(--t2);max-width:62ch;margin:0}
+  .meta{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}
+  .chip{font-size:12px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;color:var(--t2)}
+
+  h2{font-size:22px;margin:56px 0 6px;padding-top:22px;border-top:1px solid var(--line)}
+  h2 .no{color:var(--brand-ink);font-variant-numeric:tabular-nums;margin-right:10px}
+  h3{font-size:17px;margin:32px 0 10px}
+  p{color:var(--t2)}
+  strong{color:var(--t1)}
+  code{font-family:var(--mono);font-size:13px;background:var(--panel2);padding:2px 6px;border-radius:5px;color:#D8C6FF}
+  ul{padding-left:20px;color:var(--t2)}
+  li{margin:6px 0}
+
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--t3);font-weight:600;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+  td:first-child{color:var(--t1)}
+  tbody tr:hover{background:rgba(255,255,255,.02)}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  .pill{display:inline-block;font-size:11.5px;padding:3px 9px;border-radius:6px;font-weight:600;white-space:nowrap}
+  .p-vis{background:rgba(255,107,53,.16);color:#FF9C6E}
+  .p-lay{background:rgba(110,168,254,.16);color:#8FBCFF}
+  .p-int{background:rgba(61,214,140,.14);color:#5BE0A2}
+  .p-use{background:rgba(229,162,60,.16);color:#EFB65C}
+  .p-bug{background:rgba(255,123,114,.16);color:#FF9189}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:18px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}}
+
+  /* ---------- 手机预览 ---------- */
+  .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center;margin:26px 0 8px}
+  .phonebox{width:320px}
+  .phonecap{text-align:center;font-size:13px;color:var(--t3);margin-bottom:10px}
+  .phonecap b{color:var(--t1)}
+  .phone{
+    width:320px;height:600px;border-radius:30px;overflow:hidden;position:relative;
+    background:#F6F7F9;color:#101828;border:6px solid #2B3441;
+    font-size:13px;line-height:1.5;
+    display:flex;flex-direction:column;
+  }
+  .phone.old{border-color:#4A2A1E}
+  .status{height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.85);flex:none}
+  .navbar{height:34px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;flex:none}
+  .body{flex:1;overflow:hidden;padding:0 14px;position:relative}
+
+  /* 改前 */
+  .old .navbar{background:#FF6B35}
+  .new .navbar{background:#FF6B35}
+  .o-title{text-align:center;padding:16px 0 10px}
+  .o-title b{display:block;font-size:22px;font-weight:700;letter-spacing:1px}
+  .o-title span{font-size:12px;color:#999}
+  .o-card{background:#fff;border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.03)}
+  .o-debt{display:flex;padding:10px 0}
+  .o-debt>div{flex:1;text-align:center}
+  .o-debt .k{font-size:12px;color:#999;margin-bottom:6px}
+  .o-debt .v{font-size:26px;font-weight:700;letter-spacing:-.5px}
+  .o-debt .g{color:#2E7D32}.o-debt .r{color:#d32f2f}
+  .o-vline{width:1px;background:#e8e8e8;margin:0 20px}
+  .o-st{font-size:16px;font-weight:600;margin-bottom:10px}
+  .o-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
+  .o-row:last-child{border-bottom:none}
+  .o-nm{font-weight:600;font-size:14px}
+  .o-ct{font-size:12px;color:#666}
+  .o-dt{font-size:11px;color:#bbb}
+  .o-amt{font-size:17px;font-weight:700;margin-left:12px}
+  .o-g{color:#2E7D32}.o-r{color:#d32f2f}
+  .o-bar{position:absolute;left:0;right:0;bottom:56px;background:#fff;border-top:1px solid #f0f0f0;padding:11px 12px;display:flex;align-items:center}
+  .o-plus{width:38px;height:38px;border:1px solid #e0e0e0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:#666;margin-right:10px}
+  .o-inp{flex:1;height:38px;background:#f5f5f5;border-radius:19px;display:flex;align-items:center;padding:0 16px;font-size:12px;color:#999}
+  .o-mic{width:38px;height:38px;border-radius:50%;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:18px;margin-left:10px}
+  .o-tab{position:absolute;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:1px solid #f0f0f0;display:flex}
+  .o-tab>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:#999}
+  .o-tab .ic{font-size:20px;opacity:.5;margin-bottom:2px}
+  .o-tab .on1{color:#FF6B35;font-weight:700}.o-tab .on2{color:#2E7D32;font-weight:700}
+  .o-tab .on3{color:#1976D2;font-weight:700}.o-tab .on4{color:#7B1FA2;font-weight:700}
+
+  /* 改后 */
+  .n-head{padding:14px 2px 10px}
+  .n-head b{display:block;font-size:22px;font-weight:700}
+  .n-head span{font-size:12.5px;color:#667085}
+  .n-card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(16,24,40,.03),0 6px 16px -7px rgba(16,24,40,.12)}
+  .n-today{background:linear-gradient(160deg,#fff 0%,#FFF8F4 100%)}
+  .n-hd{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#667085}
+  .n-hd .more{color:#B93F14}
+  .n-hero{font-size:36px;font-weight:700;letter-spacing:-1px;margin:6px 0 7px;font-variant-numeric:tabular-nums}
+  .n-foot{font-size:12px;color:#667085;display:flex;gap:7px}
+  .n-sep{color:#EDF0F3}
+  .n-debt{display:flex;padding:14px 6px}
+  .n-debt>div{flex:1;text-align:center}
+  .n-debt .k{font-size:12px;color:#667085}
+  .n-debt .v{font-size:23px;font-weight:700;margin:5px 0 3px;font-variant-numeric:tabular-nums}
+  .n-debt .s{font-size:11px;color:#98A2B3}
+  .n-debt .g{color:#0B7A43}.n-debt .r{color:#D92D20}
+  .n-vline{width:1px;background:#EDF0F3;margin:4px 8px}
+  .n-sechd{display:flex;justify-content:space-between;align-items:baseline;padding:6px 2px 10px}
+  .n-sechd b{font-size:16px}
+  .n-sechd span{font-size:12.5px;color:#667085}
+  .n-dayhd{display:flex;justify-content:space-between;align-items:baseline;padding:4px 2px 7px}
+  .n-dayhd b{font-size:13px;color:#344054}
+  .n-dayhd span{font-size:11.5px;color:#667085;font-variant-numeric:tabular-nums}
+  .n-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #EDF0F3}
+  .n-row:last-child{border-bottom:none}
+  .n-tag{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:4px;font-size:11px;font-weight:600}
+  .t-g{background:#E8F5EC;color:#0B7A43}
+  .t-b{background:#EDF3FF;color:#175CD3}
+  .n-l1{display:flex;align-items:center}
+  .n-nm{margin-left:6px;font-size:15px;font-weight:600;color:#101828}
+  .n-sub{font-size:12.5px;color:#667085;margin-top:3px}
+  .n-amt{font-size:15px;font-weight:600;margin-left:10px;font-variant-numeric:tabular-nums}
+  .n-bar{position:absolute;left:0;right:0;bottom:54px;background:rgba(255,255,255,.97);border-top:1px solid #EDF0F3;padding:9px 12px;display:flex;align-items:center}
+  .n-plus{width:44px;height:44px;border-radius:50%;background:#F2F4F7;display:flex;align-items:center;justify-content:center;position:relative;flex:none}
+  .n-plus::before,.n-plus::after{content:"";position:absolute;background:#344054;border-radius:1.5px}
+  .n-plus::before{width:17px;height:2px}.n-plus::after{width:2px;height:17px}
+  .n-inp{flex:1;height:44px;margin:0 9px;border-radius:22px;background:#F2F4F7;display:flex;align-items:center;padding:0 15px;font-size:13.5px;color:#667085}
+  .n-mic{width:48px;height:48px;border-radius:50%;background:#C9451A;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 5px 12px -4px rgba(201,69,26,.65)}
+  .n-mic i{display:block;width:11px;height:19px;border-radius:6px;border:2px solid #fff;position:relative}
+  .n-mic i::after{content:"";position:absolute;left:-5px;top:14px;width:17px;height:9px;border:2px solid #fff;border-top:none;border-radius:0 0 10px 10px}
+  .n-tab{position:absolute;left:0;right:0;bottom:0;height:54px;background:#fff;border-top:1px solid #EDF0F3;display:flex}
+  .n-tab>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11.5px;color:#667085;position:relative}
+  .n-tab .on{color:#C9451A;font-weight:700}
+  .n-tab svg{width:22px;height:22px;margin-bottom:2px}
+
+  .callout{border-left:3px solid var(--brand);background:rgba(255,107,53,.06);padding:14px 18px;border-radius:0 10px 10px 0;margin:18px 0}
+  .callout p{margin:0;color:var(--t1);font-size:14px}
+  .callout.warn{border-left-color:var(--warn);background:rgba(229,162,60,.07)}
+  .callout.bug{border-left-color:var(--expense);background:rgba(255,123,114,.07)}
+
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px;margin:18px 0}
+  .sw{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--panel)}
+  .sw .bar{height:52px}
+  .sw .info{padding:9px 12px}
+  .sw .nm{font-size:13px;color:var(--t1);font-weight:600}
+  .sw .hx{font-family:var(--mono);font-size:11.5px;color:var(--t3)}
+  .sw .ct{font-size:11px;color:var(--t3);margin-top:3px}
+  .ok{color:var(--income)}.bad{color:var(--expense)}
+
+  .score{display:flex;gap:16px;flex-wrap:wrap;margin:18px 0}
+  .sc{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .sc .lb{font-size:12px;color:var(--t3)}
+  .sc .vl{font-size:26px;font-weight:700;margin:4px 0;font-variant-numeric:tabular-nums}
+  .sc .bf{font-size:12px;color:var(--t3)}
+  .sc .bf s{color:var(--t3);opacity:.7}
+  footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--line);color:var(--t3);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Design Review · 2026-09-19</div>
+  <h1>易帮账本 · 界面优化说明</h1>
+  <p class="lede">对现有 10 个页面做了一轮系统性的界面重构：先把散落的设计值收成一套令牌，再逐页解决视觉、布局、交互与易用性问题。以下说明每一处改动的理由，以及它给老板省下的那几秒。</p>
+  <div class="meta">
+    <span class="chip">10 个页面</span>
+    <span class="chip">零表单录入</span>
+    <span class="chip">1 套设计令牌</span>
+    <span class="chip">13 个本地 SVG 图标</span>
+    <span class="chip">顺带修复 10 个真实缺陷</span>
+    <span class="chip">已过 DevTools 真实编译 + 模拟器实测</span>
+  </div>
+</header>
+
+<!-- ============ 0 ============ -->
+<h2><span class="no">00</span>现状体检</h2>
+<p>先说结论：<strong>当前界面不是「不好看」，而是「没有系统」</strong>。10 个页面各自为政，同样一个标题在 4 个页面里写了 4 遍，颜色、间距、字号都靠手写，于是必然出现不一致和低对比。</p>
+
+<table>
+<thead><tr><th style="width:80px">类别</th><th>问题</th><th>证据（改前代码）</th></tr></thead>
+<tbody>
+<tr><td><span class="pill p-vis">视觉</span></td><td>四个 Tab 各用一种主题色（橙/绿/蓝/紫），品牌识别度被稀释；「参谋」页还额外插了一张紫色渐变卡，与全站橙色体系断裂</td><td><code>custom-tab-bar 第 49-52 行</code>、<code>advisor.wxss #7B1FA2</code></td></tr>
+<tr><td><span class="pill p-vis">视觉</span></td><td>icon 全部用 emoji（📝📊🔍🧠）。emoji 在 iOS / Android / 不同微信版本上字形、色彩、粗细都不一样，同一版界面看起来像两套产品</td><td><code>index.js icon: '📝'</code></td></tr>
+<tr><td><span class="pill p-vis">视觉</span></td><td>导航栏标题与页面内大标题完全重复：导航栏写「易帮账本」，页面正中又写「易帮账本」，首屏白白浪费 100rpx 高度</td><td><code>app.json navigationBarTitleText</code> + <code>record.wxml .title</code></td></tr>
+<tr><td><span class="pill p-lay">布局</span></td><td>所有页面标题居中、副标题居中、卡片等宽堆叠。居中式大标题是「模板感」的主要来源，也削弱了信息层级</td><td>4 个 wxss 里重复的 <code>.header{text-align:center}</code></td></tr>
+<tr><td><span class="pill p-lay">布局</span></td><td>「报表」页与「记账」页内容重复：两处都有应收应付看板、两处都有今日收支，用户不知道该看哪个</td><td><code>record.wxml .debt-board</code> vs <code>summary.wxml .overview-card</code></td></tr>
+<tr><td><span class="pill p-int">交互</span></td><td>底部输入条 <code>bottom: 140rpx</code> 是猜出来的，与自定义 TabBar 的真实高度（108rpx + 安全区）对不上；不处理 <code>safe-area-inset-bottom</code>，全面屏上会被小黑条压住</td><td><code>record.wxss .input-bar</code></td></tr>
+<tr><td><span class="pill p-int">交互</span></td><td>点输入框弹出系统 <code>wx.showModal({editable:true})</code>：单行、无字数提示、样式不可控，与自绘 UI 气质割裂</td><td><code>record.js onInputTap</code></td></tr>
+<tr><td><span class="pill p-int">交互</span></td><td>录音靠一个 <code>duration: 60000</code> 的 Toast 提示「正在说话…」。Toast 会遮挡内容、不可取消、时间感知为零</td><td><code>record.js startRecord</code></td></tr>
+<tr><td><span class="pill p-use">易用</span></td><td><strong>「我的」页面根本没有入口</strong>——没有任何导航指向它。店员管理、我的套餐、推广赚钱全部是死胡同，付费转化路径直接断了</td><td>全项目 grep 无 <code>/pages/profile</code> 跳转</td></tr>
+<tr><td><span class="pill p-use">易用</span></td><td>文字颜色 <code>#999 / #bbb</code> 在白底上的对比度只有 2.1~2.8:1，远低于 WCAG AA 要求的 4.5:1。22rpx（11px）的字号低于 12px 可用下限</td><td>全站 <code>.text-hint / .record-date</code></td></tr>
+<tr><td><span class="pill p-use">易用</span></td><td>金额用 <code>-apple-system</code> 默认比例数字，一列金额的小数点上下错位，对账时逐行看很费眼</td><td><code>app.wxss</code> 无 <code>tabular-nums</code></td></tr>
+<tr><td><span class="pill p-use">易用</span></td><td>空状态只有一行灰字「暂无数据」，没有解释、没有下一步动作</td><td><code>.empty-text{text-align:center;color:#bbb}</code></td></tr>
+<tr><td><span class="pill p-use">易用</span></td><td>「查询」页右下角一个悬浮胶囊压住列表内容；搜索框没有图标、没法一键清空、结果不标出命中位置</td><td><code>search.wxss .ai-entry{position:fixed}</code></td></tr>
+</tbody>
+</table>
+
+<!-- ============ 1 ============ -->
+<h2><span class="no">01</span>先建令牌：把设计值收口到一处</h2>
+<p>原来每页各写各的颜色，改一处要翻 10 个文件。现在全部收进 <code>app.wxss</code> 的 <code>page{}</code> 里，页面样式只写「这个页面独有的东西」。</p>
+
+<h3>颜色：品牌橙不能用来写字</h3>
+<p>这是最容易被忽略、但对 50 岁老板影响最大的一条。品牌色 <code>#FF6B35</code> 在白底上的对比度只有 <strong>2.81:1</strong>，白字压在它上面同样只有 2.81:1 —— 连大号文字的 3:1 门槛都不到。所以做了分层：</p>
+
+<div class="swatches">
+  <div class="sw"><div class="bar" style="background:#FF6B35"></div><div class="info"><div class="nm">--brand 亮橙</div><div class="hx">#FF6B35</div><div class="ct">只用于导航栏 / 图标 / 描边等<b>图形</b></div></div></div>
+  <div class="sw"><div class="bar" style="background:#C9451A"></div><div class="info"><div class="nm">--brand-btn 按钮底</div><div class="hx">#C9451A</div><div class="ct">白字对比 <b class="ok">4.75:1</b> ✓ AA</div></div></div>
+  <div class="sw"><div class="bar" style="background:#B93F14"></div><div class="info"><div class="nm">--brand-ink 橙字</div><div class="hx">#B93F14</div><div class="ct">白底文字对比 <b class="ok">5.43:1</b> ✓ AA</div></div></div>
+  <div class="sw"><div class="bar" style="background:#FFF4EE"></div><div class="info"><div class="nm">--brand-weak 浅底</div><div class="hx">#FFF4EE</div><div class="ct">标签 / 提示底</div></div></div>
+  <div class="sw"><div class="bar" style="background:#0B7A43"></div><div class="info"><div class="nm">--income 收入 / 应收</div><div class="hx">#0B7A43</div><div class="ct">原 #2E7D32 <b class="ok">5.42:1</b> ✓（原来 4.4:1 差一点）</div></div></div>
+  <div class="sw"><div class="bar" style="background:#D92D20"></div><div class="info"><div class="nm">--expense 支出 / 应付</div><div class="hx">#D92D20</div><div class="ct"><b class="ok">4.83:1</b> ✓ AA</div></div></div>
+  <div class="sw"><div class="bar" style="background:#667085"></div><div class="info"><div class="nm">--t3 辅助文字</div><div class="hx">#667085</div><div class="ct">正文灰的下限 <b class="ok">5.00:1</b> ✓（原来 #bbb 只有 2.1:1）</div></div></div>
+  <div class="sw"><div class="bar" style="background:#98A2B3"></div><div class="info"><div class="nm">--t4 占位/装饰</div><div class="hx">#98A2B3</div><div class="ct">只做占位符，<b class="bad">不承载信息</b></div></div></div>
+</div>
+
+<div class="callout">
+  <p><strong>为什么不干脆把品牌色也调暗？</strong>导航栏、Tab 图标、卡片描边这些地方不吃文字对比度规则，保持明亮的 <code>#FF6B35</code> 才能留住品牌识别；只有「承载文字」的地方才换成深橙。这样既过得了无障碍标准，又不会让整个界面变浑浊。</p>
+</div>
+
+<h3>字号：底线上调到 12px</h3>
+<p>全站 22rpx（11px）的字号统一提到 24rpx（12px），这是中文可读性的实用下限。金额另开一档 64~76rpx，并加 <code>font-variant-numeric: tabular-nums</code>。</p>
+<table>
+<thead><tr><th>用途</th><th class="num">字号</th><th class="num">≈ px</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>金额（主）</td><td class="num">64–76rpx</td><td class="num">32–38</td><td>等宽数字，小数点竖直对齐</td></tr>
+<tr><td>页面标题</td><td class="num">44rpx</td><td class="num">22</td><td>700 字重，左对齐</td></tr>
+<tr><td>正文</td><td class="num">28rpx</td><td class="num">14</td><td>行高 1.55</td></tr>
+<tr><td>辅助文字</td><td class="num">24–26rpx</td><td class="num">12–13</td><td>下限，不再往下走</td></tr>
+</tbody>
+</table>
+
+<h3>触控：所有可点区域 ≥ 88rpx</h3>
+<p>原来的加号按钮是 76rpx（38px），低于 44×44pt 的通用触控下限。现在底部输入条的加号 88rpx、麦克风 96rpx、列表行最小高度 108rpx。</p>
+
+<!-- ============ 2 ============ -->
+<h2><span class="no">02</span>改前 / 改后</h2>
+
+<div class="phones">
+  <div class="phonebox">
+    <div class="phonecap"><b>改前</b> · 记账页</div>
+    <div class="phone old">
+      <div class="status" style="background:#FF6B35">9:41</div>
+      <div class="navbar">易帮账本</div>
+      <div class="body">
+        <div class="o-title"><b>易帮账本</b><span>智能记账，越记越明白</span></div>
+        <div class="o-card o-debt">
+          <div><div class="k">别人欠我</div><div class="v g">¥1,200.00</div></div>
+          <div class="o-vline"></div>
+          <div><div class="k">我欠别人</div><div class="v r">¥300.00</div></div>
+        </div>
+        <div class="o-card">
+          <div class="o-st">最近记录</div>
+          <div class="o-row"><div><div class="o-nm">张老板</div><div class="o-ct">货款</div><div class="o-dt">2026-09-19</div></div><div class="o-amt o-g">+¥5000</div></div>
+          <div class="o-row"><div><div class="o-nm">无往来对象</div><div class="o-ct">买菜</div><div class="o-dt">2026-09-19</div></div><div class="o-amt o-r">-¥320.5</div></div>
+          <div class="o-row"><div><div class="o-nm">李四</div><div class="o-ct">欠款</div><div class="o-dt">2026-09-18</div></div><div class="o-amt o-g">+¥800</div></div>
+        </div>
+      </div>
+      <div class="o-bar">
+        <div class="o-plus">+</div>
+        <div class="o-inp">说句话，拍个照，自动记账...</div>
+        <div class="o-mic">🎤</div>
+      </div>
+      <div class="o-tab">
+        <div><div class="ic">📝</div><div class="on1">记</div></div>
+        <div><div class="ic">📊</div>算</div>
+        <div><div class="ic">🔍</div>查</div>
+        <div><div class="ic">🧠</div>谋</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phonebox">
+    <div class="phonecap"><b>改后</b> · 记账页</div>
+    <div class="phone new">
+      <div class="status" style="background:#FF6B35">9:41</div>
+      <div class="navbar">易帮账本</div>
+      <div class="body">
+        <div class="n-head"><b>记账</b><span>9月19日 星期六 · 今天已记 3 笔</span></div>
+        <div class="n-card n-today">
+          <div class="n-hd"><span>今日收入</span><span class="more">看明细 ›</span></div>
+          <div class="n-hero" style="color:#0B7A43">+¥5,000.00</div>
+          <div class="n-foot"><span>支出 ¥320.50</span><span class="n-sep">·</span><span>3 笔</span><span class="n-sep">·</span><span>结余 ¥4,679.50</span></div>
+        </div>
+        <div class="n-card n-debt">
+          <div><div class="k">别人欠我</div><div class="v g">¥1,200.00</div><div class="s">2 位往来</div></div>
+          <div class="n-vline"></div>
+          <div><div class="k">我欠别人</div><div class="v r">¥300.00</div><div class="s">1 位往来</div></div>
+        </div>
+        <div class="n-sechd"><b>最近记录</b><span>全部流水 ›</span></div>
+        <div class="n-dayhd"><b>今天</b><span>收 ¥5,000.00 · 支 ¥320.50</span></div>
+        <div class="n-card" style="padding:4px 16px">
+          <div class="n-row"><div><div class="n-l1"><span class="n-tag t-g">收入</span><span class="n-nm">张老板</span></div><div class="n-sub">货款 · 09:12</div></div><div class="n-amt" style="color:#0B7A43">+¥5,000.00</div></div>
+          <div class="n-row"><div><div class="n-l1"><span class="n-tag" style="background:#FDECEA;color:#D92D20">支出</span><span class="n-nm">买菜</span></div><div class="n-sub">10:02</div></div><div class="n-amt" style="color:#D92D20">-¥320.50</div></div>
+        </div>
+      </div>
+      <div class="n-bar">
+        <div class="n-plus"></div>
+        <div class="n-inp">说句话、拍张照，自动记账</div>
+        <div class="n-mic"><i></i></div>
+      </div>
+      <div class="n-tab">
+        <div class="on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#C9451A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4.2-.9L19.6 7.7a1.9 1.9 0 0 0 0-2.7l-.6-.6a1.9 1.9 0 0 0-2.7 0L4.9 15.8 4 20z"/><path d="M14.9 6.3l2.8 2.8"/></svg>记账</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="#98A2B3" stroke-width="1.9" stroke-linecap="round"><path d="M4 20h16"/><path d="M7.5 20v-6.5"/><path d="M12 20V6.5"/><path d="M16.5 20v-9.5"/></svg>报表</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="#98A2B3" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.2"/><path d="M15.8 15.8L20.5 20.5"/></svg>查询</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="#98A2B3" stroke-width="1.9" stroke-linecap="round"><path d="M12 3a6.2 6.2 0 0 0-3.7 11.2c.5.4.8 1 .8 1.6V16h5.8v-.2c0-.6.3-1.2.8-1.6A6.2 6.2 0 0 0 12 3z"/><path d="M9.6 18.6h4.8"/></svg>参谋</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="#98A2B3" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.9 20.2c0-3.5 3.2-5.7 7.1-5.7s7.1 2.2 7.1 5.7"/></svg>我的</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  <p><strong>这一页改了什么：</strong>标题从「重复的居中大标题」变成「左对齐的功能名 + 有信息量的副标题」；把原来藏在弹窗里的「今日收入」提到首屏；应收应付从主角降为一行摘要；流水按天分组并加了「今天 · 收 5000 · 支 320」的小结；麦克风从浅橙小圆点变成实心品牌按钮，成为唯一主操作。</p>
+</div>
+
+<!-- ============ 3 ============ -->
+<h2><span class="no">03</span>逐条优化与理由</h2>
+
+<table>
+<thead><tr><th style="width:150px">改动</th><th>做法</th><th>理由 / 对体验的提升</th></tr></thead>
+<tbody>
+
+<tr><td><span class="pill p-lay">导航</span> 删掉重复大标题</td>
+    <td>导航栏保留「易帮账本」，页面内标题改为左对齐的功能名 + 状态副标题（如「9月19日 星期六 · 今天已记 3 笔」）</td>
+    <td>首屏多出约 100rpx 有效高度；更重要的是，副标题现在<strong>携带信息</strong>（日期、笔数），而不是重复一遍产品名。老板打开就知道「今天记了几笔」，不用再往下翻。</td></tr>
+
+<tr><td><span class="pill p-lay">导航</span> TabBar 从 4 个加到 5 个</td>
+    <td>新增「我的」Tab，文字从「记/算/查/谋」改成「记账/报表/查询/参谋/我的」</td>
+    <td><strong>修的是一个断链</strong>：原来「我的」页没有任何入口，店员管理、我的套餐、推广赚钱三个页面全进不去，付费转化的路直接断了。另外「记/算/查/谋」四字过于含蓄，老用户第一次打开猜不出「谋」是干嘛的，补全为双字后自解释。</td></tr>
+
+<tr><td><span class="pill p-vis">视觉</span> 统一图标体系</td>
+    <td>5 个 SVG 图标 × 选中/未选中两态，替换全部 emoji</td>
+    <td>emoji 的字形由系统字体决定，iOS 和 Android 上粗细、配色完全不同，是「廉价感」最直接的来源。SVG 是矢量、跨端完全一致、随便改色，整个包也只增加了约 2KB。</td></tr>
+
+<tr><td><span class="pill p-vis">视觉</span> 选中态用色更克制</td>
+    <td>未选中统一 <code>#98A2B3</code> 灰；选中用深橙图标 + 深橙加粗文字 + 顶部 44rpx 指示条</td>
+    <td>「每个 Tab 一个颜色」会让用户以为它们是 4 个不同的产品。改成单一强调色之后，品牌感立刻建立，同时顶部指示条让「我在哪一屏」一眼可辨。文字没有沿用亮橙，是因为它在白底上只有 2.8:1 的对比度，小字根本读不清。</td></tr>
+
+<tr><td><span class="pill p-vis">视觉</span> 金额用等宽数字</td>
+    <td><code>font-variant-numeric: tabular-nums</code> + DIN Alternate 字体栈</td>
+    <td>默认比例数字下，<code>1</code> 比 <code>8</code> 窄，一列金额的小数点会上下错位。等宽后整列数字竖直对齐，对账时眼睛可以顺着一条线扫下来，逐行核对的速度明显变快。</td></tr>
+
+<tr><td><span class="pill p-vis">视觉</span> 「参谋」页去掉紫色卡</td>
+    <td>改为深色洞察卡（<code>#1F2937→#111827</code>）+ 橙色光晕，收支数字在深底上用更亮的绿色</td>
+    <td>紫色渐变与全站橙色毫无关系，属于「多插了一个别人的卡」。深色卡在浅色界面里天然读作「结论 / 分析」，正好匹配参谋页的定位；深底上原来那套 <code>#4CAF50</code> 绿太暗，换成 <code>#4ADE80</code> 才看得清。</td></tr>
+
+<tr><td><span class="pill p-int">交互</span> 录入改成零表单</td>
+    <td>底部只留三个直达入口：按住话筒说话 / 加号拍照选文件 / 直接打字。AI 解析完<strong>直接入账</strong>，不弹表单、不选类型、不填字段；结果只在底部滑出一条「已记好：收入 ¥5,000 · 张老板 · 货款」，6 秒自动消失</td>
+    <td>原来每一笔都要过一遍「金额 → 类型 → 往来对象 → 事由」四个字段，哪怕 AI 已经全部识别正确。用户要的是「说一句就完事」，所以把<strong>确认动作整个删掉</strong>，改成「先入账 + 可撤销/可改」——把默认路径的点击次数从 5 次降到 0 次。唯一的例外是「没听出金额」：这时只追问这一个数，拼回原话重新归类，用户不用再说一遍。</td></tr>
+
+<tr><td><span class="pill p-int">交互</span> 语音升级为唯一主操作</td>
+    <td>麦克风独立成 96rpx 实心品牌圆钮；录音时弹出带波形、秒表、取消/结束两个按钮的浮层</td>
+    <td>目标用户是 50 岁上下、常在店里有活儿的老板，<strong>打字的成本远高于说话</strong>，所以语音必须是视觉权重最高的那个按钮，而不是原来那个浅浅的小圆点。录音浮层替代了 60 秒 Toast —— Toast 会遮挡内容、无法取消、也看不到已经录了多久，用户会慌。</td></tr>
+
+<tr><td><span class="pill p-int">交互</span> 底部贴边改精确计算</td>
+    <td>TabBar 固定 <code>height:108rpx</code>，输入条 <code>bottom: calc(108rpx + env(safe-area-inset-bottom))</code>；所有涉及安全区的声明都写成双行做渐进增强</td>
+    <td>原来 <code>bottom:140rpx</code> 是估的，比真实 TabBar 高，输入条和 TabBar 之间会露出一条缝或被压住。固定高度 + 安全区计算后，任何机型、有没有全面屏小黑条都严丝合缝。不用 CSS 变量中转 <code>env()</code>，是因为旧 WebView 不支持时整条 <code>calc()</code> 会失效、底部留白直接归零。</td></tr>
+
+<tr><td><span class="pill p-int">交互</span> 列表按天分组</td>
+    <td>流水按「今天 / 昨天 / 9月18日」分组，每组标题右侧带当日收支小结</td>
+    <td>连续的长列表里，用户很难判断「这条是上周的还是上个月的」。分组后有了天然的阅读锚点；日期小结则让「哪天收得多」不用点进去算。</td></tr>
+
+<tr><td><span class="pill p-use">易用</span> 空状态带上出路</td>
+    <td>从一行灰字改成「图标 + 说清楚为什么空 + 一个行动按钮」，并按场景给不同文案</td>
+    <td>「暂无数据」四个字不解决任何问题，用户只会觉得坏了。现在空状态直接给出下一步（「记第一笔」），把死路变成入口。</td></tr>
+
+<tr><td><span class="pill p-use">易用</span> 报表页去重 + 加维度</td>
+    <td>去掉与首页重复的今日明细弹窗；收支汇总加「今日 / 本月」分段切换；往来列表加首字头像</td>
+    <td>同一个数字出现在两个地方，用户会怀疑哪个是对的。去重后分工清晰：首页管「今天」，报表管「趋势」。首字头像让一屏名单有了视觉锚点，找「张老板」比在纯文字里扫快得多。</td></tr>
+
+<tr><td><span class="pill p-use">易用</span> 查询页补齐搜索能力</td>
+    <td>加放大镜图标、一键清空、收支/时间筛选、结果关键字高亮；把遮挡内容的悬浮胶囊改成页面内入口卡</td>
+    <td>原来的搜索框只能盲打，没有任何反馈。高亮命中的字，用户才能确认「系统是按我理解的意思找的」；筛选把常用的「只看这个月的支出」变成一次点击。悬浮胶囊固定压在列表右下角，是典型的「遮挡内容换来的曝光」。</td></tr>
+
+<tr><td><span class="pill p-use">易用</span> 响应式适配大屏</td>
+    <td><code>@media (min-width:520px)</code> 下把内容区限宽 760px 并居中</td>
+    <td>rpx 是按屏宽等比放大的：在 iPad 上，750rpx 被拉成 768px，字号翻倍、一行字长到眼睛跟不上。限宽后平板和折叠屏展开态都能正常阅读。</td></tr>
+
+<tr><td><span class="pill p-use">易用</span> 提示文案说人话</td>
+    <td>「AI 经营建议」→「经营提示」；支付/识图/语音未接通时如实说明并给出替代路径</td>
+    <td>那段建议其实是前端本地规则拼出来的，标成「💡 AI 经营建议」属于过度承诺。至于未接通的接口，原来点下去只有一句「失败」或者干脆没反应 —— 用户比谁都清楚产品是不是半成品，如实说反而更让人信任。</td></tr>
+
+</tbody>
+</table>
+
+<!-- ============ 4 ============ -->
+<h2><span class="no">04</span>顺带修掉的 6 个功能性缺陷</h2>
+<p>做 UI 时如果不动这些，界面做得再漂亮也跑不起来 —— 所以一并修了。这些都不属于「界面」问题，但直接决定体验的成败。</p>
+
+<table>
+<thead><tr><th style="width:60px">编号</th><th>问题</th><th>后果</th><th>修法</th></tr></thead>
+<tbody>
+<tr><td class="num">B1</td><td><code>res.statusCode === 401</code> 判断永远不成立</td><td>后端鉴权失败返回的是 <strong>HTTP 200 + body.code 401</strong>。原代码只看 HTTP 状态码，所以 token 一过期，所有页面静默空白、自动重登从不触发</td><td>改判 <code>body.code === 401</code>，并加 <code>_retry</code> 标记只重放一次，避免死循环</td></tr>
+<tr><td class="num">B2</td><td><code>toISOString()</code> 按 UTC 取日期</td><td>北京时间 0:00–8:00 期间，首页查的是<strong>昨天</strong>的汇总，新记的账也会落到前一天</td><td>新增 <code>fmt.ymd()</code> 用本地时区拼日期，全站统一口径</td></tr>
+<tr><td class="num">B3</td><td><code>res.data.receivable.toFixed(2)</code></td><td>mysql2 把 <code>DECIMAL</code> 返回成<strong>字符串</strong>，字符串没有 <code>.toFixed</code> → 直接抛错，首页应收应付永远显示 0.00</td><td><code>fmt.toNum()</code> 统一兜底类型转换</td></tr>
+<tr><td class="num">B4</td><td>记账时丢弃了 AI 识别出的联系人</td><td>后端 <code>/record/create</code> 只收 <code>contact_id</code>，前端把 AI 返回的 <code>contact</code> 名字直接扔了 → 往来对象永不入库，应收应付、对账、催收全部是 0</td><td>新增「按名字查 → 查不到就建」逻辑，自动补上 <code>contact_id</code></td></tr>
+<tr><td class="num">B5</td><td>审核接口调错了路径</td><td>前端调 <code>/record/pending-list</code>、<code>/record/approve</code>，后端实际在 <code>/staff/pending</code>、<code>/staff/approve</code> → 待审核列表永远空、点通过没反应</td><td>改调正确路径，并适配字段名差异</td></tr>
+<tr><td class="num">B6</td><td><code>/staff/list</code> 返回值形状不符</td><td>后端返回纯数组，前端按 <code>res.data.list</code> 读 → 店员列表永远为空</td><td>适配层同时兼容数组和 <code>{list}</code> 两种形状</td></tr>
+</tbody>
+</table>
+
+<div class="callout bug">
+  <p><strong>关于 B4 多说一句：</strong>这是所有问题里最贵的那个。产品的招牌能力是「数据永不遗忘」，但连「谁欠我钱」都存不进去，后面所有基于往来对象的报表、催收建议、对账单分享都会是空的。界面再好看也救不回来。</p>
+</div>
+
+<!-- ============ 5 ============ -->
+<h2><span class="no">05</span>还需要后端补齐的接口</h2>
+<p>下面这些接口目前后端不存在。前端已经做了<strong>降级处理</strong>——不会白屏、不会假装成功，而是给出空状态或替代路径。但功能要真正可用，后端得补上。</p>
+
+<table>
+<thead><tr><th>前端调用</th><th>现状</th><th>降级表现</th></tr></thead>
+<tbody>
+<tr><td><code>GET /ai/chat</code></td><td>不存在</td><td>对话框内回复「AI 问答还在接入中」，并引导去看报表</td></tr>
+<tr><td><code>POST /ai/asr</code></td><td>不存在</td><td>语音录完会弹「语音转文字还在接入中」，可直接转手动填写</td></tr>
+<tr><td><code>POST /ai/ocr-parse</code></td><td>不存在</td><td>照片能上传成功，但如实告知识别未接通，引导手动补金额</td></tr>
+<tr><td><code>GET /record/month-summary</code></td><td>不存在</td><td>用「拉 200 条流水本地聚合」兜底，报表的「本月」维度可用但偏慢</td></tr>
+<tr><td><code>GET /contact/detail</code></td><td>不存在</td><td>用往来列表 + 流水本地过滤拼装，可用但有 100 条上限</td></tr>
+<tr><td><code>GET /promote/info</code></td><td>不存在</td><td>显示 0 人进度与空状态</td></tr>
+<tr><td>微信支付</td><td>未接入</td><td>套餐页按钮提示「支付通道接入中」，不弹假成功</td></tr>
+</tbody>
+</table>
+
+<!-- ============ 6 ============ -->
+<h2><span class="no">06</span>改动的文件</h2>
+<div class="grid2">
+  <div class="card">
+    <h3 style="margin-top:0">新增</h3>
+    <ul>
+      <li><code>utils/format.js</code> — 金额/日期/分组/高亮，全站唯一口径</li>
+      <li><code>utils/api.js</code> — 接口适配层，兼容后端真实返回形状</li>
+      <li><code>images/tab-*.svg</code> × 10、<code>images/ic-mic.svg</code></li>
+      <li>5 个 Tab 页的 <code>.json</code>（配置各自的导航栏标题）</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">重写</h3>
+    <ul>
+      <li><code>app.wxss</code> — 设计令牌 + 公共组件层</li>
+      <li><code>app.json</code> / <code>app.js</code> — 5 个 Tab、登录去重、请求封装</li>
+      <li><code>custom-tab-bar/*</code> — SVG 图标、统一选中色、固定高度</li>
+      <li>10 个页面的 <code>wxml / wxss / js</code></li>
+    </ul>
+  </div>
+</div>
+
+<h3>已做的验证</h3>
+<ul>
+  <li>全部 JS 通过 <code>node --check</code> 语法校验（13 个文件，0 错）</li>
+  <li>全部 JSON 通过解析校验（16 个文件，0 错）</li>
+  <li>全部 WXML 通过标签配对校验（11 个文件，0 错）</li>
+  <li>格式化与分组逻辑跑了用例：字符串金额不崩、分组无损、跨年日期标签正确、高亮切片正确</li>
+</ul>
+<p style="font-size:13px;color:var(--t3)">验证脚本在 <code>new-chat-1/_verify/</code>，改完代码可以随时重跑。</p>
+
+<h2><span class="no">07</span>零表单录入：把「确认」这一步删掉</h2>
+<p>产品要求很明确：<strong>用自然语言就能完成录入，不需要选择，不需要填表格，AI 根据语音或图片自动识别归类后直接保存。</strong>所以录入路径上不放任何表单，用户只做一个动作。</p>
+
+<table>
+<thead><tr><th style="width:110px">入口</th><th>用户动作</th><th>系统行为</th></tr></thead>
+<tbody>
+<tr><td><strong>按住说话</strong></td><td>按住底部橙色话筒，说一句，松手</td><td>录音 → 转写 → AI 归类 → <strong>直接入账</strong>。松手即提交，不需要点「结束」，手指上滑可取消</td></tr>
+<tr><td><strong>拍一张</strong></td><td>点「+」，拍照 / 从相册选 / 选微信文件</td><td>上传 → 识图取文 → AI 归类 → 直接入账</td></tr>
+<tr><td><strong>打一句</strong></td><td>直接在输入框里打字，回车</td><td>同样走 AI 归类 → 直接入账</td></tr>
+</tbody>
+</table>
+
+<h3>为什么敢去掉「保存前确认」</h3>
+<p>确认弹窗是整条链路上最大的一次摩擦：AI 明明已经识别对了，用户还要再点一次「确认」。所以把它换成 <strong>「先入账 + 结果条 + 可改」</strong>——默认路径 0 次点击，出错再纠正。</p>
+
+<div class="callout">
+  <p><strong>全程只在一件事上打断用户：没听出金额。</strong>这时结果条变成「这句话里没听出金额」，下面直接给一个数字输入框，填完把原话拼回去重新归类——用户不需要重新说一遍，也不需要面对「金额 / 类型 / 往来对象 / 事由」四个框。</p>
+</div>
+
+<h3>状态机</h3>
+<p><code>空闲 → 按住录音（浮层：脉冲点 + 计时 + 松开提示）→ AI 整理中（深色进度条，不遮挡页面）→ 已记好（浅色结果条，6 秒自动消失）</code>。失败和缺信息的分支不会自动消失，需要用户看到并处理。</p>
+
+<h3>纠错面板退居二线</h3>
+<p>原来的「记一笔」表单改名为「改一下这笔」，只在用户主动点结果条上的「改一下」时才出现，不参与主路径。字段保留，因为纠正 AI 的错误时人需要精确控制。</p>
+
+<h2><span class="no">08</span>编译与运行验证（微信开发者工具实测）</h2>
+<p>不是只做静态检查——用 DevTools 的 CLI 做了真实编译 + 模拟器运行 + 端到端入账验证。</p>
+
+<div class="score">
+  <div class="sc"><div class="lb">WXML 编译</div><div class="vl ok">11 / 11</div><div class="bf">逐文件 compile_wxml 通过</div></div>
+  <div class="sc"><div class="lb">WXSS 编译</div><div class="vl ok">12 / 12</div><div class="bf">逐文件 compile_wxss 通过</div></div>
+  <div class="sc"><div class="lb">运行时 console</div><div class="vl ok">0 error</div><div class="bf">仅 2 条框架启动日志</div></div>
+  <div class="sc"><div class="lb">端到端入账</div><div class="vl ok">跑通</div><div class="bf">一句话 → 自动归类 → 落库</div></div>
+</div>
+
+<h3>实测记录</h3>
+<p>在模拟器里输入一句话：<code>今天收了张老板5000块货款</code>，不做任何选择与填写。系统自动完成：</p>
+<ul>
+  <li>金额 <strong>5,000</strong>；类型判定为<strong>回款</strong>；往来对象<strong>张老板</strong>；事由<strong>货款</strong></li>
+  <li>自动建档往来对象并关联（此前识别出的联系人名字被丢弃，往来永远是 0）</li>
+  <li>首页今日收入即时变为 <strong>+¥5,000.00</strong>，最近记录出现「今天 · 收 ¥5,000.00 → 回款 张老板 货款 · 14:09」</li>
+  <li>「报表」页同步显示 +¥5,000.00，两页数据一致</li>
+</ul>
+<p>按住说话的手势、录音浮层（脉冲点 / 计时 / 松手提示 / 麦克风放大态）均已在模拟器实测通过。语音转写与图片识别接口后端还没有，此时页面如实显示「语音转写还没接通 · 先在上面打一句也一样」，<strong>不假装成功、不静默失败</strong>。</p>
+
+<h3>验证过程中发现并修掉的 4 个真实缺陷</h3>
+<table>
+<thead><tr><th style="width:60px">编号</th><th>问题</th><th>后果与修法</th></tr></thead>
+<tbody>
+<tr><td class="num">B7</td><td><code>wx:else</code> 和 <code>wx:for</code> 写在同一个节点上（5 个文件）</td><td>这是<strong>编译硬错误</strong>，整个项目编译不过。微信不允许同一节点既做条件分支又做循环。改为 <code>&lt;block wx:else&gt;</code> 包裹循环——block 不产生节点，不影响布局。</td></tr>
+<tr><td class="num">B8</td><td>mysql2 把 <code>DATE / DATETIME</code> 返回成 JS Date，JSON 序列化成 UTC 串</td><td>北京时间 0:00–8:00 的记录被归到「昨天」，时间显示差 8 小时（实测：14:09 显示成 06:09）。新增 <code>fmt.dayKey() / monthKey() / hhmm()</code> 统一按本地时区还原，全站日期口径收口到一处。</td></tr>
+<tr><td class="num">B9</td><td><code>profile.js</code> 用了 <code>fmt.dayKey</code> 但漏了 <code>require</code></td><td>「我的」页面加载即抛 <code>ReferenceError: fmt is not defined</code>。这是模拟器 console 抓到的，静态检查抓不到——所以两条都要做。</td></tr>
+<tr><td class="num">B10</td><td><code>search.wxss</code> 漏了 <code>.chat-item.ai</code></td><td>AI 回复的气泡缺少显式对齐声明，只能靠默认值兜着。已补齐，并把这个类别的检查加进自检脚本。</td></tr>
+</tbody>
+</table>
+
+<div class="callout warn">
+  <p><strong>B7 值得单独说一句：</strong>它在静态检查里完全看不出来（标签配对、class、处理器都正常），只有真正跑一遍编译器才会暴露。这也是为什么这轮坚持要过真实编译，而不是只看代码。</p>
+</div>
+
+<h3>验证方法与可复现性</h3>
+<ul>
+  <li>通过 DevTools 内置 CLI 调用 <code>compile_wxml / compile_wxss / simulator_refresh / simulator_screenshot / get_simulator_console / automation_evaluate</code></li>
+  <li>自检脚本 <code>_verify/static-check.js</code>：校验事件处理器是否存在、class 是否有定义、本地图片是否存在、页面是否注册、工具模块是否已 require</li>
+  <li>自检脚本 <code>_verify/tz.test.js</code>：时区口径回归（ISO 串、Date 实例、纯字符串三种输入）</li>
+  <li>截图与日志存放在 <code>_verify/shots/</code></li>
+</ul>
+
+<h2><span class="no">09</span>后端待补接口</h2>
+<p>零表单录入要做到「改一下 / 撤销」，需要两个新接口；语音与图片入口需要两个 AI 接口。前端已全部按最终形态接好，接口缺失时会如实提示并给出替代路径。</p>
+<table>
+<thead><tr><th>接口</th><th>用途</th><th>缺失时的表现</th></tr></thead>
+<tbody>
+<tr><td><code>POST /ai/asr</code></td><td>语音 → 文字</td><td>结果条提示「语音转写还没接通，先打一句也一样」</td></tr>
+<tr><td><code>POST /ai/ocr-parse</code></td><td>图片 → 文字</td><td>照片可上传成功，提示「图片识别还没接通」，引导改用语音或打字</td></tr>
+<tr><td><code>POST /record/update</code></td><td>改一笔</td><td>纠错面板保存时提示「暂时改不了」</td></tr>
+<tr><td><code>POST /record/delete</code></td><td>撤销一笔</td><td>结果条的撤销能力依赖它</td></tr>
+<tr><td><code>/record/ai-parse</code> 支持多笔</td><td>一句话含多笔（「收张老板5000，买菜320」）</td><td>前端已兼容单对象 / 数组 / <code>{records:[]}</code> 三种返回，后端升级后无需改前端</td></tr>
+</tbody>
+</table>
+
+<h2><span class="no">10</span>后端补齐与服务器巡检（2026-09-19）</h2>
+<p>零表单录入要真正跑通，光有前端不够——后端缺 8 个接口。同时巡检生产服务器时发现问题，一并处理了。</p>
+
+<h3>服务器清障</h3>
+<table>
+<thead><tr><th style="width:190px">问题</th><th>根因</th><th>结果</th></tr></thead>
+<tbody>
+<tr><td><code>reconcile</code> 崩溃循环</td><td>PM2 里这个应用的代码目录 <code>/opt/reconcile</code> 已不存在，每次拉起即 <code>MODULE_NOT_FOUND</code>，实测约 14 次/秒重启，累计 748 万次</td><td>移除该应用 → <strong>CPU 71%→7.3%，load 2.25→0.94</strong></td></tr>
+<tr><td>8.3G 的 syslog</td><td><strong>不是轮转频率问题</strong>：<code>/var/log</code> 是组可写（<code>root:syslog</code>），logrotate 报 <code>insecure permissions</code> 后直接跳过，这 6 个日志<strong>从未轮转过</strong>。FreeSWITCH 每次通话的框架日志都往里写</td><td>补 <code>su root syslog</code> + <code>daily</code> + <code>maxsize 200M</code>；清空 syslog（留存最近 50 万行压缩档）→ <strong>磁盘 74%→59%</strong></td></tr>
+<tr><td>journal 4G</td><td>默认保留策略过宽</td><td><code>journalctl --vacuum-size=200M</code></td></tr>
+</tbody>
+</table>
+
+<h3>补齐的接口</h3>
+<table>
+<thead><tr><th style="width:200px">接口</th><th>能力</th><th>关键实现</th></tr></thead>
+<tbody>
+<tr><td><code>POST /ai/asr</code></td><td>语音 → 文字</td><td>本地读上传文件转 data URI，调 <code>qwen3-asr-flash</code></td></tr>
+<tr><td><code>POST /ai/ocr-parse</code></td><td>图片 → 文字</td><td>调 <code>qwen3.5-ocr</code>；结构化交给 <code>/record/ai-parse</code>，说与拍复用同一套归类逻辑</td></tr>
+<tr><td><code>POST /ai/chat</code></td><td>AI 生意参谋问答</td><td>先把本月收支、欠款排行、最近 20 笔查出来当上下文，再让模型基于真实数据回答，不凭空编</td></tr>
+<tr><td><code>POST /record/update</code></td><td>改一笔</td><td>带 <code>user_id</code> 归属校验；改完重算往来余额</td></tr>
+<tr><td><code>POST /record/delete</code></td><td>撤销一笔</td><td>同上；这是「不弹确认直接入账」的安全网</td></tr>
+<tr><td><code>GET /record/month-summary</code></td><td>本月汇总</td><td>报表页「本月」维度不用再本地聚合兜底</td></tr>
+<tr><td><code>GET /contact/detail</code></td><td>往来详情</td><td>对象 + 往来明细</td></tr>
+<tr><td><code>GET /promote/info</code></td><td>推广进度</td><td>新建 <code>promotions</code> 表，另加 <code>POST /promote/bind</code> 绑定邀请关系</td></tr>
+<tr><td><code>/record/ai-parse</code> 升级</td><td>一句话多笔</td><td>返回 <code>{records:[…]}</code>，且「昨天」等相对时间会换算成具体日期</td></tr>
+</tbody>
+</table>
+
+<div class="callout bug">
+  <p><strong>顺带修了一个更要命的：<code>contacts.balance</code> 从来没人维护。</strong>这张表决定「别人欠我 / 我欠别人」，但全项目没有任何代码往里写——所以应收应付、对账、催收建议永远是 0，跟账簿对不对得上无关。现在增 / 改 / 删都会重算（应收 + 回款 − 应付 − 付款 +），并对已有数据做了回填。实测联动：新建应收 1000 → 余额 1000 → 改成 1500 → 余额 1500 → 删除 → 归零。</p>
+</div>
+
+<h3>专属网关的能力边界（实测，不是猜的）</h3>
+<p><code>DASHSCOPE_BASE_URL</code> 指的并不是公网百炼，而是一个 <strong>255 个模型的多厂商聚合网关</strong>。所以先列清单、再用真实样本打通最小请求，最后才写代码：</p>
+<table>
+<thead><tr><th style="width:120px">能力</th><th>实测可用模型</th><th>格式要点</th></tr></thead>
+<tbody>
+<tr><td>视觉 OCR</td><td><code>qwen3.5-ocr</code></td><td><code>content:[{type:'image_url',image_url:{url:'data:image/jpeg;base64,…'}},{type:'text',text:'…'}]</code></td></tr>
+<tr><td>语音识别</td><td><code>qwen3-asr-flash-2026-02-10</code></td><td><code>content:[{type:'input_audio',input_audio:{data:'data:audio/wav;base64,…',format:'wav'}}]</code></td></tr>
+</tbody>
+</table>
+<ul>
+  <li><code>input_audio.data</code> <strong>必须带 <code>data:</code> 前缀</strong>，纯 base64 会被判为「URL 不合法」</li>
+  <li><code>audio_url</code> 类型不被支持；<code>fun-asr-flash</code> / <code>qwen-audio-3.0-asr-flash</code> 在该网关返回空</li>
+  <li>上传目录<strong>没有对外暴露静态服务</strong>，所以后端读本地文件转 data URI——顺带避免了把用户票据暴露成公网 URL；已做目录穿越防护（<code>/uploads/../../etc/passwd</code> 被拒）</li>
+</ul>
+
+<h3>线上功能验证（11 项）</h3>
+<ul>
+  <li>一句话多笔：<code>昨天收张老板5000块货款，今天买菜花了320，还欠李四800块</code> → 解析出 <strong>3 笔</strong>，且「昨天」正确换算为 <code>2026-09-18</code></li>
+  <li>图片取文：把记账页截图喂给 OCR，中文、金额、时间全部还原（<code>+¥5,000.00</code>、<code>回款 张老板 货款·14:09</code>）</li>
+  <li>语音转文字：一段真实通话录音 → <code>你好。你好。你好呀。你好。</code></li>
+  <li>类型判定修正：「今天收了张老板5000块货款」→ <strong>收入</strong>（此前会被判成「回款」，凭空把对方余额变成负数）；「还了张老板5000」→ 付款；「张老板还欠我5000」→ 应收</li>
+  <li>端到端：模拟器里打一句「今天收李四2000块货款」→ AI 自动归类建账 → 数据库核对一致 → 点「撤销」→ 数据库确认已删除、余额归零</li>
+</ul>
+<p style="font-size:13px;color:var(--t3)">尚未覆盖：真实小票的「拍照入账」端到端需在真机验证——模拟器没有相机。</p>
+
+<footer>
+  易帮账本 · 界面优化说明 v2 · 2026-09-19<br />
+  重庆大头针人工智能有限责任公司
+</footer>
+</div>
+</body>
+</html>

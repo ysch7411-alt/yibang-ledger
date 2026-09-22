@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OCR 选型验证报告</title>
+<style>
+  :root {
+    --bg:#0F1216; --card:#171B21; --line:#262C34; --t1:#E8ECF1; --t2:#A9B4C0; --t3:#6B7784;
+    --ok:#3FB950; --bad:#F85149; --warn:#D29922; --brand:#FF8A5B; --info:#58A6FF;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:40px 28px 72px; background:var(--bg); color:var(--t1);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1080px; margin:0 auto; }
+  h1 { margin:0 0 10px; font-size:25px; font-weight:700; letter-spacing:-.4px; }
+  h2 { margin:42px 0 12px; font-size:16px; font-weight:700; }
+  p { margin:0 0 10px; font-size:13.5px; line-height:1.85; color:var(--t2); }
+  b { color:var(--t1); font-weight:600; }
+  code { background:#0C0F13; border:1px solid var(--line); border-radius:4px; padding:1px 5px;
+    font-size:12px; color:var(--brand); font-family:ui-monospace,Menlo,Consolas,monospace; }
+  .verdict { margin-top:22px; padding:20px 22px; border-radius:14px;
+    background:linear-gradient(160deg,#1E1712 0%,#14181D 100%); border:1px solid #4A3220; }
+  .verdict .tag { display:inline-block; margin-bottom:10px; padding:3px 10px; border-radius:999px;
+    background:rgba(255,138,91,.15); color:var(--brand); font-size:11.5px; font-weight:700; }
+  .verdict p { color:var(--t1); font-size:14px; margin:0; }
+  .verdict p + p { margin-top:8px; color:var(--t2); font-size:13.5px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--line); }
+  th { font-size:11.5px; color:var(--t3); letter-spacing:.4px; }
+  td { color:var(--t2); }
+  tr:last-child td { border-bottom:none; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:4px 18px 12px; }
+  .panel-t { padding:14px 0 4px; font-size:13px; font-weight:700; color:var(--t1); }
+  .ok { color:var(--ok); font-weight:600; } .bad { color:var(--bad); font-weight:600; }
+  .pick { color:var(--brand); font-weight:700; }
+  .mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; }
+  .grade { display:inline-block; width:22px; height:22px; line-height:22px; text-align:center;
+    border-radius:6px; font-size:12px; font-weight:700; margin-right:5px; }
+  .g-yes { background:rgba(63,185,80,.16); color:var(--ok); }
+  .g-no  { background:rgba(248,81,73,.16); color:var(--bad); }
+  ul { margin:0; padding-left:20px; } li { font-size:13.5px; line-height:1.9; color:var(--t2); margin-bottom:6px; }
+  .note { margin-top:14px; padding:18px 20px; border-radius:14px; background:#131A22; border:1px solid #1E3550; }
+  .note h3 { margin:0 0 8px; font-size:14px; color:var(--info); }
+  .note p { color:var(--t1); font-size:13.5px; margin:0; }
+  .warn { background:#1C1512; border-color:#4A3220; }
+  .warn h3 { color:var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>OCR 选型验证报告</h1>
+  <p>2026-09-19 · 易帮账本 · 8 个模型 × 5 档难度 × 2 个任务，全部线上实测</p>
+
+  <div class="verdict">
+    <span class="tag">结论</span>
+    <p><b>用 <code>qwen3-vl-flash</code>（通用视觉模型），不要用"专用 OCR 模型"。</b></p>
+    <p>而且——<b>我上一轮判断错了</b>。当时我拿一张干净图跑了 3 轮全对，就选了 <code>qwen-vl-ocr-latest</code>；
+    这次补上难度梯度后，它的真实通过率只有 <b>2/5</b>，而通用视觉模型是 <b>8/10</b>。已经换掉。</p>
+  </div>
+
+  <h2>一、为什么要"专用 OCR 模型"反而不行</h2>
+  <p>因为它做的是<strong>逐字认字</strong>，不是<strong>把表格理解成结构</strong> —— 这是两种能力。让它一边认字一边输出 JSON 时，
+  小字会被读错。最直接的证据在「拍远」那档（把单据缩到 800px，模拟站得远一点拍）：</p>
+  <div class="panel">
+    <table>
+      <tr><th>路径</th><th>干净</th><th>手机翻拍</th><th>弱光</th><th>拍远 800px</th><th>综合最难</th><th>通过</th><th>平均耗时</th></tr>
+      <tr>
+        <td class="pick">快路 qwen3-vl-flash</td>
+        <td><span class="grade g-yes">✓</span><span class="grade g-yes">✓</span></td>
+        <td><span class="grade g-yes">✓</span><span class="grade g-yes">✓</span></td>
+        <td><span class="grade g-yes">✓</span><span class="grade g-yes">✓</span></td>
+        <td><span class="grade g-yes">✓</span><span class="grade g-yes">✓</span></td>
+        <td><span class="grade g-no">✗</span><span class="grade g-no">✗</span></td>
+        <td class="mono ok">8/10</td><td class="mono">3667ms</td>
+      </tr>
+      <tr>
+        <td>快路 qwen3-vl-flash-2026-01-22</td>
+        <td><span class="grade g-yes">✓</span><span class="grade g-yes">✓</span></td>
+        <td><span class="grade g-yes">✓</span><span class="grade g-yes">✓</span></td>
+        <td><span class="grade g-yes">✓</span><span class="grade g-yes">✓</span></td>
+        <td><span class="grade g-yes">✓</span><span class="grade g-yes">✓</span></td>
+        <td><span class="grade g-no">✗</span><span class="grade g-no">✗</span></td>
+        <td class="mono ok">8/10</td><td class="mono">3638ms</td>
+      </tr>
+      <tr>
+        <td>慢路 qwen3.5-ocr + qwen-flash</td>
+        <td><span class="grade g-yes">✓</span><span class="grade g-yes">✓</span></td>
+        <td><span class="grade g-yes">✓</span><span class="grade g-yes">✓</span></td>
+        <td><span class="grade g-yes">✓</span><span class="grade g-yes">✓</span></td>
+        <td><span class="grade g-no">✗</span><span class="grade g-no">✗</span></td>
+        <td><span class="grade g-no">✗</span><span class="grade g-no">✗</span></td>
+        <td class="mono bad">6/10</td><td class="mono">2732ms</td>
+      </tr>
+    </table>
+    <p style="margin:12px 0 0">「拍远」那档慢路两轮全错，错的是同一个地方：把小字数量 <b>2.5 读成了 2.6</b>。
+    快路两轮全对 —— 通用视觉模型能靠上下文纠正，逐字 OCR 不能。</p>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <div class="panel-t">被淘汰的（单轮只测了干净那一档，就已经不行）</div>
+    <table>
+      <tr><th>模型</th><th>通过</th><th>症状</th></tr>
+      <tr><td class="mono">qwen-vl-ocr-latest <span class="bad">（我上轮选的）</span></td><td class="mono bad">2/5</td><td>换个难度就掉</td></tr>
+      <tr><td class="mono">qwen-vl-ocr-2025-11-20</td><td class="mono bad">1/5</td><td>日期字段总是错</td></tr>
+      <tr><td class="mono">qwen3.5-ocr 直接出 JSON</td><td class="mono bad">0/5</td><td>它能认字，但不会输出结构化</td></tr>
+      <tr><td class="mono">qwen-vl-plus</td><td class="mono bad">0/3</td><td>第 1 行必错</td></tr>
+      <tr><td class="mono">vanchin/deepseek-ocr</td><td class="mono">—</td><td>网关未开通（product not activated）</td></tr>
+    </table>
+  </div>
+
+  <h2>二、纯认字任务的表现（供参考）</h2>
+  <div class="panel">
+    <table>
+      <tr><th>模型</th><th>关键片段命中</th><th>字符相似度</th><th>平均耗时</th></tr>
+      <tr><td class="mono">qwen-vl-max</td><td class="mono">91%</td><td class="mono">98%</td><td class="mono">5844ms</td></tr>
+      <tr><td class="mono pick">qwen3-vl-flash-2026-01-22</td><td class="mono ok">89%</td><td class="mono">97%</td><td class="mono ok">3043ms</td></tr>
+      <tr><td class="mono pick">qwen3-vl-flash</td><td class="mono">85%</td><td class="mono">97%</td><td class="mono">3161ms</td></tr>
+      <tr><td class="mono">qwen3.5-ocr</td><td class="mono">86%</td><td class="mono">90%</td><td class="mono">3655ms</td></tr>
+      <tr><td class="mono">qwen-vl-ocr-latest</td><td class="mono">86%</td><td class="mono">96%</td><td class="mono bad">6139ms</td></tr>
+      <tr><td class="mono">qwen3-vl-plus</td><td class="mono">86%</td><td class="mono">97%</td><td class="mono bad">6924ms</td></tr>
+    </table>
+  </div>
+
+  <h2>三、图片能缩到多小（省上传时间）</h2>
+  <div class="panel">
+    <table>
+      <tr><th>宽度 / 体积</th><th>快路 qwen3-vl-flash</th><th>慢路 OCR+flash</th></tr>
+      <tr><td class="mono">1654px / 57KB</td><td class="ok">✓ ✓</td><td class="ok">✓ ✓</td></tr>
+      <tr><td class="mono">1400px / 44KB</td><td class="ok">✓ ✓</td><td class="ok">✓ ✓</td></tr>
+      <tr><td class="mono">1200px / 34KB</td><td class="ok">✓ ✓</td><td class="bad">✗ ✗</td></tr>
+      <tr><td class="mono">1000px / 24KB</td><td class="ok">✓ ✓</td><td class="ok">✓ ✓</td></tr>
+      <tr><td class="mono">800px / 16KB</td><td class="ok">✓ ✓</td><td class="ok">✓ ✓</td></tr>
+    </table>
+    <p style="margin:12px 0 0">快路对缩尺寸不敏感，缩到 800px 还全对 → 缩尺寸是省上传时间的大头
+    （真机 544KB 照片缩到 1600px 只剩 168KB，省 69%）。但这次先不做，原因见下。</p>
+  </div>
+
+  <h2>四、顺手修掉两个真问题</h2>
+  <ul>
+    <li><b>我上一轮关于压缩的说法是错的，已更正。</b>
+    「只降画质」其实只省 <b>24%</b>（实测 544KB → 质量85:504KB / 质量75:412KB / 质量60:312KB），
+    不是我说的"省一半以上"。真机上传 555KB 约 2.4 秒，这么压大概省 0.5 秒。
+    缩尺寸才是大头，但单据上的小字金额靠分辨率认，且 <code>compressedWidth</code> 需要基础库 2.26+（项目是 2.19.4），
+    在开发者工具里验证不了 —— <b>所以暂不做，等能验证时再上</b>。</li>
+    <li><b>模型会把提示词里的示例当正文照抄。</b>
+    你那几张照片里有一张<strong>没有明细</strong>的证明，模型给它编出了一行
+    <code>螺纹钢 / 空规格 / 吨 / 0 × 0 = 0</code> —— 根因是提示词里写了「品名（必填，如「螺纹钢」）」，它照抄了例子。
+    已做两道修法：提示词去掉具体业务名示例并加一句"没有明细就返回空数组"；出口再过滤掉数量/单价/金额全为 0 的行。
+    修完那张图：<b>1 行垃圾 → 0 行</b>，耗时 1816ms → <b>1139ms</b>。</li>
+  </ul>
+
+  <h2>五、线上复验（真实接口）</h2>
+  <div class="panel">
+    <table>
+      <tr><th>输入</th><th>结果</th></tr>
+      <tr><td>标准送货单（干净）</td><td class="ok">3799ms，3 行明细全对，合计 17700 ✓</td></tr>
+      <tr><td>标准送货单（拍远 800px）</td><td class="ok">3540ms，3 行明细全对 ✓　<span class="bad">（慢路这档会错）</span></td></tr>
+      <tr><td>没有明细的那张证明</td><td class="ok">1139ms，0 行，如实提示「换个拍法」✓</td></tr>
+      <tr><td>文字入口（对照）</td><td class="ok">680ms，1 行 ✓</td></tr>
+    </table>
+  </div>
+
+  <div class="note warn">
+    <h3>这次最该记住的不是选了哪个模型</h3>
+    <p>是<b>验证方法错了会得出错的结论</b>。一张干净图跑 3 轮全对，看起来证据很足，其实样本太窄 ——
+    换个难度立刻翻车。以后选模型必须：真值已知的图 + 难度梯度 + 每格至少 2 轮 + 认字和理解结构分开打分。
+    这套方法已经写进项目笔记，下次不用从头摸。</p>
+  </div>
+
+</div>
+</body>
+</html>

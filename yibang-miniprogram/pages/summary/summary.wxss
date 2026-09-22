@@ -1,3 +1,141 @@
+
+/* 分享按钮占满宽度 */
+.action-btn-full {
+  flex: none;
+  width: 100%;
+}
+
+/* 收入支出区域：增加和金额之间的留白，上下对称 */
+.stat-grid {
+  margin-top: 28rpx;
+}
+/* 应收应付卡片：左右排列，大字体 */
+.debt-card {
+  display: flex;
+  flex-direction: row;
+  padding: 40rpx 24rpx;
+}
+.debt-col {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.debt-k {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t2);
+  margin-bottom: 16rpx;
+}
+.debt-v {
+  font-size: 56rpx;
+  font-weight: 700;
+  margin: 0 0 12rpx;
+  letter-spacing: -.5rpx;
+}
+.debt-s {
+  font-size: 26rpx;
+  color: var(--t4);
+}
+.debt-line {
+  width: 2rpx;
+  background: var(--line);
+  margin: 8rpx 16rpx;
+}
+/* 操作按钮区 */
+.action-bar {
+  display: flex;
+  gap: 20rpx;
+  margin: 24rpx 32rpx;
+}
+.action-btn {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+.action-btn:active {
+  opacity: 0.85;
+}
+.action-primary {
+  background: linear-gradient(135deg, #FF6B35 0%, #C9451A 100%);
+  color: #fff;
+}
+.action-secondary {
+  background: #FFF4EE;
+  color: #C9451A;
+  border: 2rpx solid #FFD9C6;
+}
+.action-warn {
+  background: #FFF6E5;
+  color: #B54708;
+  border: 2rpx solid #FDE68A;
+}
+
+/* 功能入口列表 */
+.entry-list {
+  margin: 0 32rpx 24rpx;
+  padding: 0;
+  overflow: hidden;
+}
+.entry-row {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  border-bottom: 2rpx solid #F2F4F7;
+}
+.entry-row:last-child {
+  border-bottom: none;
+}
+.entry-row:active {
+  background: #F9FAFB;
+}
+.entry-ico {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(135deg, #FF6B35 0%, #C9451A 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 53, 0.3);
+}
+.entry-ico-img {
+  width: 48rpx;
+  height: 48rpx;
+  filter: brightness(0) invert(1);
+}
+.entry-main {
+  flex: 1;
+  min-width: 0;
+}
+.entry-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #101828;
+  margin-bottom: 6rpx;
+}
+.entry-desc {
+  font-size: 24rpx;
+  color: #667085;
+}
+.entry-arrow {
+  width: 16rpx;
+  height: 16rpx;
+  border-top: 3rpx solid #98A2B3;
+  border-right: 3rpx solid #98A2B3;
+  transform: rotate(45deg);
+  margin-left: 16rpx;
+  flex-shrink: 0;
+}
 /* pages/summary/summary.wxss */
 
 /* ---------- 顶部标题栏 ---------- */
@@ -124,7 +262,7 @@
 
 /* ---------- 汇总卡 ---------- */
 .sum-card {
-  padding: 32rpx 36rpx 36rpx;
+  padding: 24rpx 36rpx 24rpx;
   position: relative;
   overflow: hidden;
 }
@@ -141,25 +279,30 @@
 }
 .sum-hero {
   text-align: center;
-  padding: 40rpx 0 32rpx;
+  padding: 0;
+  margin-top: 0;
 }
 .sum-hero-k {
   display: block;
   font-size: 25rpx;
   color: var(--t3);
-  margin-bottom: 12rpx;
+  margin-bottom: 0;
+  margin-top: 20rpx;
+  line-height: 1.2;
 }
 .sum-hero-v {
   font-size: 80rpx;
   font-weight: 700;
   letter-spacing: -2rpx;
+  line-height: 1;
+  margin-top: 0;
 }
 .sum-ft {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 28rpx;
-  padding-top: 24rpx;
+  margin-top: 16rpx;
+  padding-top: 16rpx;
   border-top: 1rpx solid var(--line);
 }
 .sum-count {
@@ -504,6 +647,28 @@
 .cal-sel-v {
   font-size: 34rpx;
   font-weight: 700;
+}
+
+.cal-sel-share {
+  margin-top: 20rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, #FF8A3D, #FF6B35);
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 16rpx rgba(255, 107, 53, 0.3);
+}
+.cal-sel-share:active {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+.cal-sel-share-ico {
+  margin-right: 8rpx;
+  font-size: 32rpx;
 }
 .cal-sel-ft {
   margin-top: 8rpx;

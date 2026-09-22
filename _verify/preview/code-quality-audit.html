@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>易帮账本 · 代码质量审查报告</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 24px 80px; background: #F6F7F9; color: #101828;
+    font: 15px/1.75 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .sub { color: #667085; font-size: 14px; margin: 0 0 28px; }
+  h2 {
+    font-size: 18px; margin: 40px 0 14px; padding-bottom: 8px;
+    border-bottom: 2px solid #EDF0F3;
+  }
+  h3 { font-size: 16px; margin: 22px 0 8px; }
+  p { margin: 8px 0; }
+  code {
+    background: #EDF0F3; padding: 1px 6px; border-radius: 4px;
+    font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14px; background: #fff; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #EDF0F3; vertical-align: top; }
+  th { background: #F2F4F7; font-weight: 500; color: #344054; white-space: nowrap; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0 8px; }
+  .stat {
+    flex: 1 1 150px; background: #fff; border-radius: 12px; padding: 16px 18px;
+    border-left: 4px solid #98A2B3;
+  }
+  .stat.p0 { border-left-color: #0B7A43; }
+  .stat.p1 { border-left-color: #B54708; }
+  .stat.p2 { border-left-color: #175CD3; }
+  .stat-v { font-size: 26px; font-weight: 700; line-height: 1.2; }
+  .stat-k { font-size: 13px; color: #667085; margin-top: 4px; }
+
+  .issue { background: #fff; border-radius: 12px; padding: 20px 22px; margin: 16px 0; }
+  .issue-hd { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .tag {
+    font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  .tag.p1 { background: #FFF6E5; color: #B54708; }
+  .tag.p2 { background: #EDF3FF; color: #175CD3; }
+  .tag.ok { background: #E8F5EC; color: #0B7A43; }
+  .issue-t { font-size: 16px; font-weight: 600; }
+  .issue-body { margin-top: 10px; }
+  .kv { margin: 6px 0; }
+  .kv b { color: #344054; font-weight: 500; }
+  .fix {
+    margin-top: 12px; padding: 12px 16px; background: #F6F7F9;
+    border-radius: 8px; border-left: 3px solid #C9451A;
+  }
+  .fix-t { font-size: 13px; font-weight: 600; color: #B93F14; margin-bottom: 4px; }
+  .green { background: #fff; border-radius: 12px; padding: 4px 22px 16px; }
+  .green li { margin: 8px 0; }
+  ul { margin: 8px 0; padding-left: 22px; }
+  li { margin: 5px 0; }
+  .note {
+    margin-top: 22px; padding: 14px 18px; background: #FFF6E5;
+    border-left: 4px solid #B54708; border-radius: 8px; font-size: 14px; color: #7A3D08;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>易帮账本 · 代码质量审查报告</h1>
+  <p class="sub">2026-09-20 · 审查范围为 <code>new-chat-1/</code> 全部前端与后端源码</p>
+
+  <div class="stats">
+    <div class="stat p0"><div class="stat-v">0</div><div class="stat-k">P0 严重缺陷</div></div>
+    <div class="stat p1"><div class="stat-v">3</div><div class="stat-k">P1 该修（已修）</div></div>
+    <div class="stat p2"><div class="stat-v">5</div><div class="stat-k">P2 规范/维护</div></div>
+    <div class="stat"><div class="stat-v">1</div><div class="stat-k">💭 有空再说</div></div>
+    <div class="stat"><div class="stat-v">6</div><div class="stat-k">绿区（已验无问题）</div></div>
+  </div>
+
+  <h2>一、审查范围</h2>
+  <table>
+    <tr><th>模块</th><th class="num">文件</th><th class="num">行数</th><th>说明</th></tr>
+    <tr><td>小程序页面</td><td class="num">17 组</td><td class="num">—</td><td>记账 / 报表 / 查询 / 参谋 / 我的 + 11 个功能页</td></tr>
+    <tr><td>前端 JS</td><td class="num">23</td><td class="num">5,790</td><td>页面逻辑 + utils（api / format / calendar / canvas / keyboard）</td></tr>
+    <tr><td>前端 WXML / WXSS</td><td class="num">35</td><td class="num">6,947</td><td>模板与样式（含全局 app.wxss 781 行）</td></tr>
+    <tr><td>后端 JS</td><td class="num">17</td><td class="num">3,029</td><td>11 个路由文件 / 36 个端点 + db / lib</td></tr>
+    <tr><td>数据库</td><td class="num">—</td><td class="num">—</td><td>建表、索引、迁移（<code>ensureColumn</code> / <code>ensureIndex</code>）</td></tr>
+  </table>
+  <p><b>用了什么手段</b>：① 新写 <code>audit-quality.js</code> 做量化扫描（重复代码 / 硬编码 / 异步兜底 / 死代码）；
+  ② 在服务器上跑已有的接口审计、越权扫描、多租户隔离审计；③ 人工深读 6 个最大的逻辑文件。</p>
+
+  <h2>二、P1 —— 建议尽快修（影响真实使用）</h2>
+
+  <div class="issue" style="border-left:4px solid #B54708">
+    <div class="issue-hd"><span class="tag p1">更正</span><span class="issue-t">⚠️ 初版报告里的「① 重复请求」是我判错了</span></div>
+    <div class="issue-body">
+      <div class="kv"><b>初版结论</b>：「切一次 tab 发 6 个请求，其中 <code>getGroupSummary</code> 完全重复」。<b>这个结论是错的。</b></div>
+      <div class="kv"><b>错在哪</b>：我用脚本 grep 出了 <code>loadData()</code> 里的四个子加载器，但没看到
+        <code>loadCalendar()</code> 是被 <code>if (this.data.calOpen)</code> 包着的 ——
+        而 <code>calOpen</code> 默认 <code>false</code>（日历默认收起）。所以 onShow 时它<b>根本不执行</b>。</div>
+      <div class="kv"><b>实际是</b>：切一次 tab 发 <b>4 个</b>请求
+        （<code>getMonthSummary</code> 或 <code>getDailySummary</code>、<code>getRecords</code>、
+        <code>getContactList</code>、<code>getGroupSummary</code>），<b>没有重复</b>。</div>
+      <div class="kv"><b>唯一的真重复</b>（比初版小得多）：用户<b>首次展开日历</b>时，<code>loadCalendar()</code>
+        会再拉一次 <code>getGroupSummary('day', 本月)</code> —— 而刚才 onShow 里的
+        <code>loadDayTable()</code> 拉的是同一个区间。一次性多花一次往返，之后翻页各自按需取。</div>
+      <div class="kv"><b>教训</b>：grep 能数出"调用了哪些函数"，但数不出"在什么条件下才调用"。
+        <b>报性能问题前，必须先把控制流看一遍</b>，否则会让人去优化一个不存在的问题。</div>
+    </div>
+    <div class="fix">
+      <div class="fix-t">优先级：💭 有空再说</div>
+      展开日历时把 <code>loadDayTable()</code> 已拿到的本月数据复用给日历，省一次往返。
+      不做也不影响正确性。
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-hd"><span class="tag p1">P1 · 已修</span><span class="issue-t">① 切 tab 会闪一下骨架屏</span></div>
+    <div class="issue-body">
+      <div class="kv"><b>实测</b>：<code>summary</code> / <code>advisor</code> / <code>search</code> 三个 tab 页的
+        <code>onShow</code> 都会重载，而重载第一件事就是 <code>setData({ loading: true })</code>。
+        （<code>record</code> 页<b>不受影响</b> —— 它只在结束时收尾，开头不设 true，这条初版报告写多了。）</div>
+      <div class="kv"><b>影响</b>：老板在 tab 之间来回切（这是最常见的操作），每次都看到内容先变成灰条再变回来 ——
+        数据其实没变，纯粹是视觉抖动，也让人以为"卡了一下"。</div>
+    </div>
+    <div class="fix">
+      <div class="fix-t">优化措施（已实施）</div>
+      改成「有数据就不显示骨架屏」：<code>if (!this._loaded) this.setData({ loading: true })</code>。
+      <code>search</code> 页再细一层：<b>切 tab 回来 / 下拉刷新</b>走静默（数据范围没变），
+      <b>换筛选条件</b>仍然给加载态（结果本来就要变）；静默期间同时挡住上拉加载，
+      避免新旧条件的数据串在一起。回归见 <code>_verify/ux-fixes.test.js</code>。
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-hd"><span class="tag p1">P1 · 部分完成</span><span class="issue-t">② 跨页面重复的样式类：24 个里<b>只有 7 个是真重复</b></span></div>
+    <div class="issue-body">
+      <div class="kv"><b>先纠正初版结论</b>：初版写「24 个类都该提升到 app.wxss」。逐字比对定义体之后发现
+        <b>不成立</b> —— 24 个里只有 <b>7 个</b>定义完全相同；另外 17 个是「同名但定义不同」，
+        其中还有 8 个是<b>同名不同义</b>（同一个类名在两个页面指的是完全不同的东西）。
+        <b>无脑提升会把其中一个页面的样子改掉。</b></div>
+      <div class="kv"><b>逐字比对结果</b>（<code>_verify/dup-classes.js</code>）：</div>
+      <table>
+        <tr><th>档位</th><th class="num">个数</th><th>处理</th></tr>
+        <tr style="background:#E8F5EC"><td>定义完全相同</td><td class="num">7</td>
+          <td><b>已提升</b>（<code>.mk</code> <code>.f-block</code> <code>.f-label</code>
+            <code>.po-name</code> <code>.po-tail</code> <code>.debt-s</code> <code>.day-sum</code>），
+            7 个页面共减 88 行</td></tr>
+        <tr><td>只差一点（重合 ≥60%）</td><td class="num">9</td>
+          <td>同一组件的两种规格（<code>.ct-avatar</code> 96 vs 76rpx、<code>.po-no</code> 40 vs 36rpx…）。
+            多数是有意的；其中 <b>几处像无意不一致</b>（<code>.day-label</code> 字重 500 vs 600、
+            <code>.sum-hero-k</code> 间距 8 vs 10rpx），需要你定夺</td></tr>
+        <tr><td>明显不同</td><td class="num">8</td>
+          <td><b>⚠️ 同名不同义，不能合并。</b>最典型是 <code>.me-name</code> ——
+            在「我的」页是<b>白色大字</b>（压在深色头部上）、在「员工」页是<b>深色字</b>，
+            重合度 <b>0%</b>。建议改名区分，而不是合并</td></tr>
+      </table>
+      <div class="kv"><b>方向修正</b>：这件事的性质从「重复代码」变成了「<b>同一个名字在不同地方指不同东西</b>」——
+        后者比重复更危险：将来谁把定义补全、或把 <code>@import</code> 打通，布局会突然错乱，而代码里看不出异常。
+        （项目里已经有 <code>.debt-card</code> 这个先例。）</div>
+      <div class="kv"><b>顺带核实了一处"疑似 bug"，结论是虚惊</b>：<code>.rec-name</code> 在查询页有
+        <code>flex:1; min-width:0</code>、在记账页没有 —— 看着像"记账页的长事由会溢出"。
+        实测确认：<code>.ellipsis</code> 里的 <code>overflow:hidden</code> 会让 flex 子项的
+        <code>min-width:auto</code> 解析为 <code>0</code>，所以记账页照样能正确截断。
+        <b>两页都能工作，只是写法不同</b>（查询页更显式、不依赖这条冷门规则）。</div>
+    </div>
+    <div class="fix">
+      <div class="fix-t">优化措施</div>
+      <b>已完成</b>：7 个逐字相同的类提升到 <code>app.wxss</code> 并删掉页面副本（7 个文件共减 88 行），
+      用 <code>_verify/dedupe-styles.js</code> 执行 —— 它带四道校验（app 里有 / 页面里有 / 删后没有 /
+      <b>类名集合只少了目标那几个</b>），任一道不过就一个字节都不写，改前自动备份。<br>
+      <b>待你定夺的 17 个</b>：9 个"微差"要不要统一（<code>.day-label</code> 字重、<code>.sum-hero-k</code> 间距
+      这两处像无意不一致）；8 个"同名不同义"建议<b>改名</b>而不是合并，优先 <code>.me-name</code>。
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-hd"><span class="tag p1">P1 · 已修</span><span class="issue-t">③ 一个月超过 500 笔时，报表会"说错数"（三处数字互相打架）</span></div>
+    <div class="issue-body">
+      <div class="kv"><b>实测</b>：明细接口一次最多取 500 条，而页面里有三处数字都拿"取回来几条"当成了"一共有几条"：</div>
+      <ul>
+        <li>分享按钮：「带 500 笔明细」—— 而同一页汇总卡写着「共 520 笔」</li>
+        <li>分享图：图上写「另有 480 笔未列出」（500 − 20），<b>真实答案是 500 笔</b></li>
+        <li>文字版：括号里承诺"其余两条给全量"，但实际最多只带得走 500 条</li>
+      </ul>
+      <div class="kv"><b>影响</b>：这是<b>拿出去对账</b>的东西 —— 数字对不上，老板会以为账记漏了。
+        （初版报告只说到了第一处，改的时候才发现后两处同一个根因。）</div>
+    </div>
+    <div class="fix">
+      <div class="fix-t">优化措施（已实施）</div>
+      <code>rowCount</code> 两处改用接口返回的真实笔数；<code>buildReport()</code> 的 <code>hidden</code>
+      改用 <code>stat.count − 图上行数</code>；同时给分享文案加了一档说明
+      （超过 500 时写明「文字版列最近 500 笔」，不再承诺"给全量"）。
+      回归见 <code>_verify/ux-fixes.test.js</code>（含 520 笔的真实场景断言）。
+    </div>
+  </div>
+
+  <h2>三、P2 —— 规范与维护成本（不急着改，但该排上）</h2>
+  <table>
+    <tr><th>问题</th><th class="num">实测</th><th>说明与措施</th></tr>
+    <tr>
+      <td>页面里手写了全局令牌已有的颜色</td><td class="num">25 处 / 11 个文件</td>
+      <td>例如 <code>#C9451A</code> 在 6 个页面里又写了一遍，而 <code>app.wxss</code> 里已经有 <code>--brand-btn</code>。
+          改主题色时会漏改。<b>措施</b>：换成 <code>var(--xx)</code>，从改动最频繁的品牌色开始。</td>
+    </tr>
+    <tr>
+      <td>字号小于项目自定的下限</td><td class="num">12 处 / 5 个文件</td>
+      <td>最低到 22rpx（11px），分布在 profile、purchase、purchase-list、record、report-view。
+          项目规范写的是「下限 24rpx」，而目标用户是 40-60 岁、店内光线复杂的老板。
+          <b>措施</b>：统一提到 24rpx。</td>
+    </tr>
+    <tr>
+      <td>utils 里导出了但全项目没人用</td><td class="num">5 个</td>
+      <td><code>saveRecord</code>、<code>daysInMonth</code>、<code>MAX_PIXELS</code>、<code>signedMoney</code>、<code>toTime</code>。
+          <b>措施</b>：确认后删除。留着会被下一个人当成"可用能力"直接调用。</td>
+    </tr>
+    <tr>
+      <td>单个页面文件职责过载</td><td class="num">record.js 1126 行 / 66 个方法 / 70 次 setData</td>
+      <td>一个文件同时管记账、语音、拍照识别、采购核对、左滑改删、分享、纠错面板。
+          改任何一处都要在千行里找位置。<b>措施</b>：把「左滑改删」「录入结果条」「加号面板」三块抽成
+          <code>behaviors</code> 或独立模块 —— 不是急着拆，但下次动它之前先拆。</td>
+    </tr>
+    <tr>
+      <td>调试日志残留</td><td class="num">8 处</td>
+      <td>其中 5 处在后端 <code>db/init.js</code>（建表/加索引的进度输出，属于<b>该保留</b>的）。
+          其余 3 处建议清掉或降级为 <code>console.warn</code>。</td>
+    </tr>
+  </table>
+
+  <h2>四、绿区 —— 查过、确认没问题（别重复排查）</h2>
+  <div class="green">
+    <ul>
+      <li><span class="tag ok">安全</span> <b>SQL 注入 0 处</b> —— 全项目 36 个端点，没有一处把变量拼进 SQL 模板串。</li>
+      <li><span class="tag ok">鉴权</span> <b>29 个需登录接口，0 个可未授权访问</b>（逐个打了一遍）。</li>
+      <li><span class="tag ok">隔离</span> <b>多租户隔离 9/9 通过</b> —— 换个账号读不到别人的账。</li>
+      <li><span class="tag ok">接口</span> <b>39/39 端点正常</b>，且审计跑完没有产生任何脏数据（数据基线核对过）。</li>
+      <li><span class="tag ok">死接口</span> <b>0 个</b> —— 后端每个路由都有前端调用方。</li>
+      <li><span class="tag ok">异步兜底</span> <b>22 处 "await 没被 try 包住" 全部安全</b> ——
+          它们走的都是 <code>api.safe()</code> / <code>api.call()</code>（内部已 catch），
+          或页面内部方法自带 try。这条第一版脚本误报了 18 处，人工逐个核过。</li>
+    </ul>
+  </div>
+
+  <h2>五、建议的修复顺序</h2>
+  <table>
+    <tr><th>批次</th><th>做什么</th><th>风险</th></tr>
+    <tr style="background:#E8F5EC"><td>✅ 已完成</td><td>① 切 tab 不闪骨架屏（3 个页面）· ③ 报表"说错数"（3 处数字 + 1 处文案）</td>
+      <td>已改完，<code>ux-fixes.test.js</code> 25 项回归全绿</td></tr>
+    <tr><td>第二批</td><td>② 提升 24 个重复样式类（建议分 2-3 批）</td><td>中，纯样式调整，靠静态自检 + 截图兜底</td></tr>
+    <tr><td>第三批</td><td>P2 各项（颜色令牌化 / 字号 / 删死代码）</td><td>低，可随时穿插</td></tr>
+    <tr><td>💭 有空再说</td><td>展开日历时复用本月汇总（省一次往返）</td><td>——</td></tr>
+    <tr><td>不排期</td><td>拆分 <code>record.js</code></td><td>—— 下次要大改它之前先拆，单独做没有收益</td></tr>
+  </table>
+
+  <div class="note">
+    <b>一句话结论</b>：这个项目的<b>底子是干净的</b> —— 没有安全漏洞、没有越权、没有死代码，
+    这两天的真机问题都出在"交互细节"上。上面 4 条 P1 里，真正值得马上动手的是
+    <b>④（说错数）和 ②（闪一下）</b>：前者是一行改动就能消除的信任问题，后者是每天都在发生的体验损耗。
+  </div>
+
+</div>
+</body>
+</html>

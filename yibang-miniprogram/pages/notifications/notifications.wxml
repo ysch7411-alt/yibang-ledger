@@ -2,7 +2,7 @@
 <view class="page">
   <!-- 顶部操作栏 -->
   <view class="top-bar">
-    <view class="top-title">消息通知</view>
+    <view class="top-title">消息</view>
     <view class="top-action" wx:if="{{unreadCount > 0}}" bindtap="markAllRead">全部已读</view>
   </view>
 
@@ -15,7 +15,7 @@
   <!-- 空状态 -->
   <view wx:elif="{{list.length === 0}}" class="empty-state">
     <view class="empty-ico">🔔</view>
-    <view class="empty-title">暂无消息</view>
+    <view class="empty-title">还没有消息</view>
     <view class="empty-desc">有新消息会在这里提醒你</view>
   </view>
 

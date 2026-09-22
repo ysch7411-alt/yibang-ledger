@@ -1,0 +1,337 @@
+<title>易帮账本 - 技术开发文档</title>
+
+<h1>一、技术架构总览</h1>
+
+<h2>1.1 整体架构</h2>
+<p>采用前后端分离架构，前端为微信小程序，后端为Node.js服务，数据存储在MySQL，文件存储在对象存储。</p>
+
+<table>
+<colgroup><col width="150"/><col width="250"/><col width="300"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>层级</p></th><th background-color="light-gray"><p>技术选型</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p><b>前端</b></p></td><td><p>微信小程序原生 + WeUI</p></td><td><p>不用跨端框架，原生性能最好，包体积小</p></td></tr>
+<tr><td><p><b>后端</b></p></td><td><p>Node.js + Express</p></td><td><p>轻量快速，适合MVP阶段</p></td></tr>
+<tr><td><p><b>数据库</b></p></td><td><p>MySQL 8.0 + Redis</p></td><td><p>MySQL存业务数据，Redis做缓存和会话</p></td></tr>
+<tr><td><p><b>文件存储</b></p></td><td><p>腾讯云COS</p></td><td><p>存用户上传的单据图片、PDF等附件</p></td></tr>
+<tr><td><p><b>AI服务</b></p></td><td><p>调用第三方大模型API</p></td><td><p>语音识别 + OCR + 大语言模型，不自研</p></td></tr>
+<tr><td><p><b>部署</b></p></td><td><p>云服务器 + Nginx</p></td><td><p>初期单机部署，后续可平滑扩展</p></td></tr>
+</tbody>
+</table>
+
+<h2>1.2 系统分层</h2>
+<ol>
+<li><b>客户端层</b>：微信小程序（用户端 + 店员端 + 对账分享端）</li>
+<li><b>网关层</b>：Nginx反向代理 + HTTPS + 请求限流</li>
+<li><b>业务层</b>：Node.js API服务（用户/记账/往来/文件/分享模块）</li>
+<li><b>数据层</b>：MySQL业务库 + Redis缓存 + COS对象存储</li>
+<li><b>AI服务层</b>：语音识别、OCR识别、大语言模型（第三方API）</li>
+</ol>
+
+<h1>二、前端技术方案（微信小程序）</h1>
+
+<h2>2.1 页面结构</h2>
+
+<table>
+<colgroup><col width="120"/><col width="180"/><col width="400"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>Tab</p></th><th background-color="light-gray"><p>页面</p></th><th background-color="light-gray"><p>核心功能</p></th></tr></thead>
+<tbody>
+<tr><td><p><b>记</b>（首页）</p></td><td><p>pages/record/index</p></td><td><p>底部输入条（加号+输入框+麦克风），AI识别，确认提交</p></td></tr>
+<tr><td><p><b>算</b></p></td><td><p>pages/dashboard/index</p></td><td><p>欠款总览看板、客户应收、供应商应付、每日流水</p></td></tr>
+<tr><td><p><b>查</b></p></td><td><p>pages/search/index</p></td><td><p>全局搜索、AI问答、历史记录筛选</p></td></tr>
+<tr><td><p><b>谋</b></p></td><td><p>pages/insight/index</p></td><td><p>生意分析、客户画像、风险预警（后续迭代）</p></td></tr>
+</tbody>
+</table>
+
+<h2>2.2 核心页面清单</h2>
+<ul>
+<li><b>记账相关</b>：语音识别页、拍照识别页、文件上传页、AI预填确认页</li>
+<li><b>往来管理</b>：客户详情页、供应商详情页、往来明细页、对账分享页</li>
+<li><b>权限管理</b>：店员管理页、待审核列表页、审核操作页</li>
+<li><b>分享相关</b>：每日收支汇总页（分享卡片打开）、客户对账页（只读）</li>
+<li><b>其他</b>：个人中心、套餐购买、推广中心、设置页</li>
+</ul>
+
+<h2>2.3 底部输入条设计（记页核心）</h2>
+<p>采用微信聊天式输入条布局，和用户操作微信的习惯一致：</p>
+<ul>
+<li><b>左侧</b>：圆形加号按钮，点开弹出扩展面板（拍照/相册/文件）</li>
+<li><b>中间</b>：文本输入框，点击直接打字</li>
+<li><b>右侧</b>：麦克风按钮，长按说话，松开自动识别</li>
+</ul>
+<callout emoji="💡" background-color="light-blue"><p>设计原则：和微信聊天界面操作习惯完全一致，用户零学习成本。</p></callout>
+
+<h1>三、后端API设计</h1>
+
+<h2>3.1 API规范</h2>
+<ul>
+<li>RESTful风格，JSON格式</li>
+<li>认证方式：微信登录态（session_key + token）</li>
+<li>基础URL：<code>https://api.yibangzhangben.com/v1/</code></li>
+<li>统一返回格式：<code>{ code: 0, msg: "success", data: {} }</code></li>
+</ul>
+
+<h2>3.2 用户模块</h2>
+<table>
+<colgroup><col width="80"/><col width="200"/><col width="420"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>方法</p></th><th background-color="light-gray"><p>路径</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p>POST</p></td><td><p>/user/login</p></td><td><p>微信登录，code换openid，返回token</p></td></tr>
+<tr><td><p>GET</p></td><td><p>/user/profile</p></td><td><p>获取用户信息、套餐状态、存储空间</p></td></tr>
+<tr><td><p>PUT</p></td><td><p>/user/profile</p></td><td><p>更新用户信息（昵称、店铺名）</p></td></tr>
+<tr><td><p>POST</p></td><td><p>/user/upgrade</p></td><td><p>升级套餐（19.9终身版等）</p></td></tr>
+</tbody>
+</table>
+
+<h2>3.3 记账模块</h2>
+<table>
+<colgroup><col width="80"/><col width="220"/><col width="400"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>方法</p></th><th background-color="light-gray"><p>路径</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p>POST</p></td><td><p>/record/voice</p></td><td><p>上传语音文件，返回识别后的文本</p></td></tr>
+<tr><td><p>POST</p></td><td><p>/record/parse</p></td><td><p>AI解析自然语言，返回结构化预填数据</p></td></tr>
+<tr><td><p>POST</p></td><td><p>/record/upload-image</p></td><td><p>上传单据图片，OCR识别后返回结构化数据</p></td></tr>
+<tr><td><p>POST</p></td><td><p>/record/save</p></td><td><p>保存记账记录（用户确认后调用）</p></td></tr>
+<tr><td><p>GET</p></td><td><p>/record/list</p></td><td><p>查询记账记录列表（按日期/客户/类型筛选）</p></td></tr>
+<tr><td><p>GET</p></td><td><p>/record/daily-summary</p></td><td><p>获取每日收支汇总数据</p></td></tr>
+</tbody>
+</table>
+
+<h2>3.4 往来（客户/供应商）模块</h2>
+<table>
+<colgroup><col width="80"/><col width="220"/><col width="400"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>方法</p></th><th background-color="light-gray"><p>路径</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p>GET</p></td><td><p>/contact/list</p></td><td><p>获取客户/供应商列表（带欠款汇总）</p></td></tr>
+<tr><td><p>POST</p></td><td><p>/contact/create</p></td><td><p>新建客户/供应商</p></td></tr>
+<tr><td><p>GET</p></td><td><p>/contact/:id/detail</p></td><td><p>获取单个往来对象详情和明细</p></td></tr>
+<tr><td><p>PUT</p></td><td><p>/contact/:id</p></td><td><p>更新往来对象信息</p></td></tr>
+<tr><td><p>POST</p></td><td><p>/share/reconcile</p></td><td><p>生成客户对账分享链接</p></td></tr>
+<tr><td><p>GET</p></td><td><p>/share/:token</p></td><td><p>分享页读取（无需登录，只读）</p></td></tr>
+</tbody>
+</table>
+
+<h2>3.5 权限与审核模块</h2>
+<table>
+<colgroup><col width="80"/><col width="220"/><col width="400"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>方法</p></th><th background-color="light-gray"><p>路径</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p>POST</p></td><td><p>/staff/invite</p></td><td><p>邀请店员（生成邀请码/链接）</p></td></tr>
+<tr><td><p>GET</p></td><td><p>/staff/list</p></td><td><p>店员列表</p></td></tr>
+<tr><td><p>GET</p></td><td><p>/approval/pending</p></td><td><p>待审核记录列表（老板看）</p></td></tr>
+<tr><td><p>POST</p></td><td><p>/approval/:id/approve</p></td><td><p>老板审核通过</p></td></tr>
+<tr><td><p>POST</p></td><td><p>/approval/:id/reject</p></td><td><p>老板驳回</p></td></tr>
+</tbody>
+</table>
+
+<h2>3.6 文件模块</h2>
+<table>
+<colgroup><col width="80"/><col width="220"/><col width="400"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>方法</p></th><th background-color="light-gray"><p>路径</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p>POST</p></td><td><p>/file/upload</p></td><td><p>获取上传签名（直传COS）</p></td></tr>
+<tr><td><p>GET</p></td><td><p>/file/list</p></td><td><p>获取用户文件列表</p></td></tr>
+<tr><td><p>GET</p></td><td><p>/file/:id/download</p></td><td><p>下载文件（带权限校验）</p></td></tr>
+</tbody>
+</table>
+
+<h1>四、数据库设计</h1>
+
+<h2>4.1 核心表结构</h2>
+
+<h3>users（用户表）</h3>
+<table>
+<colgroup><col width="150"/><col width="120"/><col width="430"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>字段名</p></th><th background-color="light-gray"><p>类型</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p>id</p></td><td><p>BIGINT PK</p></td><td><p>用户ID，自增主键</p></td></tr>
+<tr><td><p>openid</p></td><td><p>VARCHAR(64)</p></td><td><p>微信openid，唯一索引</p></td></tr>
+<tr><td><p>nickname</p></td><td><p>VARCHAR(100)</p></td><td><p>昵称</p></td></tr>
+<tr><td><p>shop_name</p></td><td><p>VARCHAR(100)</p></td><td><p>店铺名/公司名</p></td></tr>
+<tr><td><p>role</p></td><td><p>TINYINT</p></td><td><p>角色：1=老板，2=店员</p></td></tr>
+<tr><td><p>boss_id</p></td><td><p>BIGINT</p></td><td><p>所属老板ID（店员才有）</p></td></tr>
+<tr><td><p>plan_type</p></td><td><p>TINYINT</p></td><td><p>套餐：0=免费版，1=19.9终身版，2=399年费版</p></td></tr>
+<tr><td><p>storage_used</p></td><td><p>BIGINT</p></td><td><p>已用存储空间（字节）</p></td></tr>
+<tr><td><p>storage_limit</p></td><td><p>BIGINT</p></td><td><p>存储空间上限（字节），免费版5G</p></td></tr>
+<tr><td><p>created_at</p></td><td><p>DATETIME</p></td><td><p>注册时间</p></td></tr>
+</tbody>
+</table>
+
+<h3>contacts（往来对象表：客户/供应商）</h3>
+<table>
+<colgroup><col width="150"/><col width="120"/><col width="430"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>字段名</p></th><th background-color="light-gray"><p>类型</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p>id</p></td><td><p>BIGINT PK</p></td><td><p>往来对象ID</p></td></tr>
+<tr><td><p>user_id</p></td><td><p>BIGINT</p></td><td><p>所属老板ID</p></td></tr>
+<tr><td><p>name</p></td><td><p>VARCHAR(100)</p></td><td><p>姓名/公司名</p></td></tr>
+<tr><td><p>type</p></td><td><p>TINYINT</p></td><td><p>类型：1=客户（应收），2=供应商（应付），3=两者都是</p></td></tr>
+<tr><td><p>phone</p></td><td><p>VARCHAR(20)</p></td><td><p>联系电话</p></td></tr>
+<tr><td><p>remark</p></td><td><p>TEXT</p></td><td><p>备注</p></td></tr>
+<tr><td><p>balance</p></td><td><p>DECIMAL(12,2)</p></td><td><p>当前欠款余额（正数=对方欠我，负数=我欠对方）</p></td></tr>
+<tr><td><p>created_at</p></td><td><p>DATETIME</p></td><td><p>创建时间</p></td></tr>
+</tbody>
+</table>
+
+<h3>transactions（交易记录表）</h3>
+<table>
+<colgroup><col width="150"/><col width="120"/><col width="430"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>字段名</p></th><th background-color="light-gray"><p>类型</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p>id</p></td><td><p>BIGINT PK</p></td><td><p>记录ID</p></td></tr>
+<tr><td><p>user_id</p></td><td><p>BIGINT</p></td><td><p>所属老板ID</p></td></tr>
+<tr><td><p>contact_id</p></td><td><p>BIGINT</p></td><td><p>往来对象ID（可空，如日常收支）</p></td></tr>
+<tr><td><p>type</p></td><td><p>TINYINT</p></td><td><p>类型：1=收入，2=支出，3=应收（赊账），4=应付（赊购），5=回款，6=付款</p></td></tr>
+<tr><td><p>amount</p></td><td><p>DECIMAL(12,2)</p></td><td><p>金额</p></td></tr>
+<tr><td><p>content</p></td><td><p>VARCHAR(255)</p></td><td><p>事由描述</p></td></tr>
+<tr><td><p>record_date</p></td><td><p>DATE</p></td><td><p>发生日期</p></td></tr>
+<tr><td><p>status</p></td><td><p>TINYINT</p></td><td><p>状态：0=待审核，1=已入账，2=已驳回</p></td></tr>
+<tr><td><p>created_by</p></td><td><p>BIGINT</p></td><td><p>录入人ID</p></td></tr>
+<tr><td><p>created_at</p></td><td><p>DATETIME</p></td><td><p>创建时间</p></td></tr>
+</tbody>
+</table>
+
+<h3>files（文件附件表）</h3>
+<table>
+<colgroup><col width="150"/><col width="120"/><col width="430"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>字段名</p></th><th background-color="light-gray"><p>类型</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p>id</p></td><td><p>BIGINT PK</p></td><td><p>文件ID</p></td></tr>
+<tr><td><p>user_id</p></td><td><p>BIGINT</p></td><td><p>所属用户ID</p></td></tr>
+<tr><td><p>transaction_id</p></td><td><p>BIGINT</p></td><td><p>关联的交易记录ID（可空）</p></td></tr>
+<tr><td><p>file_url</p></td><td><p>VARCHAR(500)</p></td><td><p>COS文件地址</p></td></tr>
+<tr><td><p>file_type</p></td><td><p>VARCHAR(20)</p></td><td><p>文件类型：image/pdf/excel/word等</p></td></tr>
+<tr><td><p>file_size</p></td><td><p>BIGINT</p></td><td><p>文件大小（字节）</p></td></tr>
+<tr><td><p>ocr_result</p></td><td><p>TEXT</p></td><td><p>OCR识别结果（JSON）</p></td></tr>
+<tr><td><p>created_at</p></td><td><p>DATETIME</p></td><td><p>上传时间</p></td></tr>
+</tbody>
+</table>
+
+<h3>shares（分享记录表）</h3>
+<table>
+<colgroup><col width="150"/><col width="120"/><col width="430"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>字段名</p></th><th background-color="light-gray"><p>类型</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead>
+<tbody>
+<tr><td><p>id</p></td><td><p>BIGINT PK</p></td><td><p>分享ID</p></td></tr>
+<tr><td><p>token</p></td><td><p>VARCHAR(64)</p></td><td><p>分享token，唯一索引</p></td></tr>
+<tr><td><p>user_id</p></td><td><p>BIGINT</p></td><td><p>分享人ID</p></td></tr>
+<tr><td><p>type</p></td><td><p>TINYINT</p></td><td><p>类型：1=每日收支汇总，2=客户对账</p></td></tr>
+<tr><td><p>contact_id</p></td><td><p>BIGINT</p></td><td><p>关联往来对象（对账分享用）</p></td></tr>
+<tr><td><p>data_date</p></td><td><p>DATE</p></td><td><p>数据日期（每日汇总用）</p></td></tr>
+<tr><td><p>expire_at</p></td><td><p>DATETIME</p></td><td><p>过期时间</p></td></tr>
+<tr><td><p>is_valid</p></td><td><p>TINYINT</p></td><td><p>是否有效（老板可主动作废）</p></td></tr>
+<tr><td><p>view_count</p></td><td><p>INT</p></td><td><p>浏览次数</p></td></tr>
+<tr><td><p>created_at</p></td><td><p>DATETIME</p></td><td><p>创建时间</p></td></tr>
+</tbody>
+</table>
+
+<h1>五、AI能力集成方案</h1>
+
+<h2>5.1 语音识别（ASR）</h2>
+<ul>
+<li><b>方案</b>：调用微信小程序自带的同声传译插件，或接入讯飞/阿里云语音识别</li>
+<li><b>流程</b>：用户长按录音 → 前端采集音频 → 上传后端 → 后端调ASR API → 返回文本</li>
+<li><b>成本估算</b>：约0.003元/次（按10秒语音算）</li>
+</ul>
+
+<h2>5.2 OCR文字识别</h2>
+<ul>
+<li><b>方案</b>：接入腾讯云/百度云OCR API，支持通用票据识别</li>
+<li><b>流程</b>：用户拍照/上传图片 → 上传后端 → 调OCR API提取文字 → 再交大模型解析</li>
+<li><b>成本估算</b>：约0.01元/次（通用文字识别）</li>
+</ul>
+
+<h2>5.3 大语言模型（NLU意图理解）</h2>
+<ul>
+<li><b>方案</b>：调用DeepSeek/通义千问等开源大模型API</li>
+<li><b>流程</b>：拿到文本后，用Prompt工程让模型输出结构化JSON</li>
+<li><b>Prompt设计</b>：
+  <ul>
+    <li>角色：生意人记账助手</li>
+    <li>任务：从用户输入中提取金额、往来对象、类型、事由</li>
+    <li>输出格式：固定JSON Schema</li>
+  </ul>
+</li>
+<li><b>成本估算</b>：约0.001元/次（按几百token算）</li>
+</ul>
+
+<h2>5.4 单次记账AI成本</h2>
+<table>
+<colgroup><col width="200"/><col width="150"/><col width="350"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>环节</p></th><th background-color="light-gray"><p>成本</p></th><th background-color="light-gray"><p>备注</p></th></tr></thead>
+<tbody>
+<tr><td><p>语音识别ASR</p></td><td><p>0.003元</p></td><td><p>10秒语音</p></td></tr>
+<tr><td><p>大模型NLU</p></td><td><p>0.001元</p></td><td><p>约500 token</p></td></tr>
+<tr><td><p><b>合计</b></p></td><td><p><b>约0.004元/次</b></p></td><td><p>1000次记账约4元</p></td></tr>
+</tbody>
+</table>
+
+<h1>六、核心业务流程</h1>
+
+<h2>6.1 AI记账流程</h2>
+<ol>
+<li>用户在记页按住麦克风说话，或打字输入，或拍照/上传文件</li>
+<li>前端调用 <code>/record/voice</code> 或 <code>/record/upload-image</code> 接口</li>
+<li>后端调用ASR/OCR + 大模型，返回结构化预填数据</li>
+<li>前端展示预填表单（用户只需核对，不用手动填）</li>
+<li>用户点确认，调用 <code>/record/save</code> 保存</li>
+<li>如果是店员角色，记录进入待审核状态，老板审核后才入账</li>
+<li>保存成功后，自动弹出每日收支汇总</li>
+</ol>
+
+<h2>6.2 对账分享流程</h2>
+<ol>
+<li>老板在「算」Tab 点进某个客户详情</li>
+<li>点【一键对账分享】，后端生成分享token</li>
+<li>前端调起微信分享，发送小程序卡片给客户</li>
+<li>客户点开卡片，进入只读对账页（无需登录）</li>
+<li>后端通过token识别分享类型，返回对应数据</li>
+<li>客户只能看自己的欠款明细，不能编辑</li>
+</ol>
+
+<h1>七、部署与运维方案</h1>
+
+<h2>7.1 服务器配置（初期）</h2>
+<table>
+<colgroup><col width="150"/><col width="200"/><col width="350"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>服务</p></th><th background-color="light-gray"><p>配置</p></th><th background-color="light-gray"><p>月成本估算</p></th></tr></thead>
+<tbody>
+<tr><td><p>云服务器</p></td><td><p>2核4G，5M带宽</p></td><td><p>约100元/月</p></td></tr>
+<tr><td><p>MySQL数据库</p></td><td><p>2核4G，100G云盘</p></td><td><p>约150元/月</p></td></tr>
+<tr><td><p>Redis</p></td><td><p>1G内存</p></td><td><p>约50元/月</p></td></tr>
+<tr><td><p>对象存储COS</p></td><td><p>100G存储 + 流量</p></td><td><p>约30元/月</p></td></tr>
+<tr><td><p><b>合计</b></p></td><td><p></p></td><td><p><b>约330元/月</b></p></td></tr>
+</tbody>
+</table>
+
+<h2>7.2 安全与合规</h2>
+<ul>
+<li>所有API走HTTPS，微信小程序强制要求</li>
+<li>用户数据加密存储，敏感信息（手机号等）脱敏显示</li>
+<li>分享链接带token，设置有效期，老板可主动作废</li>
+<li>定期数据库备份，每日自动备份到COS</li>
+<li>用户协议和隐私政策（微信小程序上架必须）</li>
+</ul>
+
+<h2>7.3 上线检查清单</h2>
+<checkbox done="false">微信小程序注册 + 企业认证</checkbox>
+<checkbox done="false">服务器 + 数据库 + 域名 + SSL证书</checkbox>
+<checkbox done="false">AI服务API申请（语音识别/OCR/大模型）</checkbox>
+<checkbox done="false">支付接口申请（微信支付）</checkbox>
+<checkbox done="false">用户协议 + 隐私政策页面</checkbox>
+<checkbox done="false">微信小程序审核提审</checkbox>
+<checkbox done="false">正式版上线 + 推广</checkbox>
+
+<h1>八、开发排期建议</h1>
+
+<table>
+<colgroup><col width="120"/><col width="150"/><col width="430"/></colgroup>
+<thead><tr><th background-color="light-gray"><p>阶段</p></th><th background-color="light-gray"><p>时间</p></th><th background-color="light-gray"><p>交付内容</p></th></tr></thead>
+<tbody>
+<tr><td><p><b>第1-2周</b></p></td><td><p>基础架构搭建</p></td><td><p>项目初始化、数据库设计、用户登录、基础框架</p></td></tr>
+<tr><td><p><b>第3-4周</b></p></td><td><p>核心记账功能</p></td><td><p>记页输入条、AI识别、保存记录、算页看板</p></td></tr>
+<tr><td><p><b>第5-6周</b></p></td><td><p>往来管理</p></td><td><p>客户/供应商台账、应收应付明细、一键对账分享</p></td></tr>
+<tr><td><p><b>第7-8周</b></p></td><td><p>打磨+上线</p></td><td><p>UI优化、测试、小程序审核、正式上线</p></td></tr>
+</tbody>
+</table>
+
+<callout emoji="📌" background-color="light-orange"><p>本开发文档基于《易帮账本产品PRD》编写，技术方案可根据实际开发情况调整。MVP阶段优先保证核心功能可用，不追求技术完美。</p></callout>

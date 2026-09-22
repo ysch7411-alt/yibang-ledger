@@ -39,68 +39,46 @@
     </view>
   </view>
 
-  <!-- ========== 数据管理 ========== -->
-  <view class="section-title">数据管理</view>
   <view class="card card-flush">
     <view class="row row-tap" bindtap="openDataManage">
       <view class="row-ico"><image class="row-ico-img" src="/images/ic-folder-d.svg" mode="aspectFit" /></view>
       <view class="row-main">
         <view class="row-title">导出与备份</view>
-        <view class="row-sub">导出Excel对账 · 数据备份恢复</view>
+        <view class="row-sub">导出数据 · 备份账单</view>
       </view>
       <view class="row-arrow"></view>
     </view>
   </view>
 
-  <!-- ========== 经营工具 ========== -->
-  <view class="section-title">经营工具</view>
+
   <view class="card card-flush">
     <view class="row row-tap" bindtap="goRoleManage">
       <view class="row-ico"><image class="row-ico-img" src="/images/ic-people.svg" mode="aspectFit" /></view>
       <view class="row-main">
         <view class="row-title">成员管理</view>
-        <view class="row-sub">老板/经理/员工角色权限</view>
+        <view class="row-sub">团队成员管理</view>
       </view>
       <view wx:if="{{pendingCount > 0}}" class="tag tag-warn">{{pendingCount}} 条待审</view>
       <view class="row-arrow"></view>
     </view>
-    <view class="row row-tap" bindtap="goPurchase">
-      <view class="row-ico"><image class="row-ico-img" src="/images/ic-gear.svg" mode="aspectFit" /></view>
-      <view class="row-main">
-        <view class="row-title">采购单管理</view>
-        <view class="row-sub">拍过的送货单都在这儿</view>
-      </view>
-      <view class="row-arrow"></view>
-    </view>
-    <view class="row row-tap" bindtap="goAdvisor">
-      <view class="row-ico"><image class="row-ico-img" src="/images/ic-info.svg" mode="aspectFit" /></view>
-      <view class="row-main">
-        <view class="row-title">生意参谋</view>
-        <view class="row-sub">AI自动分析你的经营状况</view>
-      </view>
-      <view class="tag tag-brand">AI</view>
-      <view class="row-arrow"></view>
-    </view>
   </view>
 
-  <!-- ========== 其他 ========== -->
-  <view class="section-title">其他</view>
   <view class="card card-flush">
     <view class="row row-tap" bindtap="goToPlan">
       <view class="row-ico"><image class="row-ico-img" src="/images/ic-card.svg" mode="aspectFit" /></view>
-      <view class="row-main"><view class="row-title">我的套餐</view></view>
+      <view class="row-main"><view class="row-title">会员套餐</view></view>
       <view class="row-arrow"></view>
     </view>
     <view class="row row-tap" wx:if="{{_f && _f.promote}}" bindtap="goToPromote">
       <view class="row-ico"><image class="row-ico-img" src="/images/ic-megaphone.svg" mode="aspectFit" /></view>
-      <view class="row-main"><view class="row-title">推广赚钱</view></view>
+      <view class="row-main"><view class="row-title">推荐赚钱</view></view>
       <view class="tag tag-brand">推荐奖励</view>
       <view class="row-arrow"></view>
     </view>
     <view class="row row-tap" bindtap="goToAccount">
       <view class="row-ico"><image class="row-ico-img" src="/images/ic-gear.svg" mode="aspectFit" /></view>
       <view class="row-main">
-        <view class="row-title">账号与安全</view>
+        <view class="row-title">账号设置</view>
         <view class="row-sub">{{phone ? '手机号 ' + phone : '绑定手机号 · 退出 · 注销'}}</view>
       </view>
       <view class="row-arrow"></view>

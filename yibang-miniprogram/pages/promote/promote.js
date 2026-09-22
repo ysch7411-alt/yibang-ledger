@@ -248,7 +248,7 @@ Page({
     ctx.font = FONT('', 23);
     ctx.fillText('易帮账本', PPAD, y);
     ctx.textAlign = 'right';
-    ctx.fillText('说一句话就记账', PW - PPAD, y);
+    ctx.fillText('说一声话就记账', PW - PPAD, y);
     ctx.textAlign = 'left';
     y += 30;
 

@@ -30,7 +30,7 @@ Page(Object.assign({
   onShow() {
     this.loadData();
     const tb = typeof this.getTabBar === 'function' && this.getTabBar();
-    if (tb) tb.setData({ selected: 3 });
+    if (tb) tb.setData({ selected: 2 });
   },
 
   async loadData() {

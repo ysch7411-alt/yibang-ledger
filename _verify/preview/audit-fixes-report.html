@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>易帮账本 · 审计建议落实（4/5）</title>
+<style>
+  :root{
+    --ink:#101828; --ink2:#344054; --ink3:#667085; --line:#EDF0F3; --fill:#F6F7F9;
+    --brand:#C9451A; --brand-weak:#FFF4EE; --expense:#D92D20; --income:#0B7A43;
+    --warn:#B54708; --warn-weak:#FFF6E5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 20px 80px;background:#F6F7F9;color:var(--ink);
+    font:15px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:940px;margin:0 auto}
+  h1{font-size:25px;margin:0 0 6px;letter-spacing:-.3px}
+  .sub{color:var(--ink3);font-size:14px;margin-bottom:30px}
+  h2{font-size:18px;margin:40px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .card{background:#fff;border-radius:14px;padding:20px 22px;margin-bottom:14px;
+    box-shadow:0 2px 6px rgba(16,24,40,.03),0 12px 32px -14px rgba(16,24,40,.12)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--ink3);font-weight:500;font-size:13px;background:var(--fill)}
+  tr:last-child td{border-bottom:none}
+  code{background:var(--fill);padding:1px 6px;border-radius:5px;font-size:13px;
+    font-family:ui-monospace,Consolas,monospace}
+  pre{background:#0F172A;color:#E2E8F0;padding:14px 16px;border-radius:10px;overflow:auto;
+    font-size:12.5px;line-height:1.6;font-family:ui-monospace,Consolas,monospace}
+  .ok{color:var(--income);font-weight:600}
+  .bad{color:var(--expense);font-weight:600}
+  .warnbox{background:var(--warn-weak);border:1px solid #F5D9A8;border-radius:12px;padding:15px 18px;margin:14px 0}
+  .warnbox .t{color:var(--warn);font-weight:600;margin-bottom:6px}
+  .notebox{background:var(--brand-weak);border-left:4px solid var(--brand);border-radius:8px;padding:13px 17px;margin:14px 0}
+  .skip{background:var(--fill);border-left:4px solid var(--ink3);border-radius:8px;padding:13px 17px;margin:14px 0;color:var(--ink2)}
+  .done{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;
+    background:var(--income);color:#fff;font-size:13px;margin-right:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>审计建议落实</h1>
+  <div class="sub">4 条已改 · h5 那条按你说的不动 · 2026-09-20</div>
+
+  <h2><span class="done">1</span>清掉两个没人用的接口</h2>
+  <div class="card">
+    <table>
+      <tr><th style="width:34%">接口</th><th>为什么要删</th></tr>
+      <tr>
+        <td><code>POST /ai/ocr-parse</code></td>
+        <td>已被更准更快的单据识别接口取代，但它<b>还连着 AI 网关</b> ——
+          留着等于开了一个能被误调、要花钱的口子</td>
+      </tr>
+      <tr>
+        <td><code>GET /share/mine</code></td>
+        <td>给「我分享过哪些」页面预留的，那个页面一直没做</td>
+      </tr>
+    </table>
+    <div style="margin-top:12px">
+      <b>删之前先扫了一遍全项目 + 文档 + 脚本</b>确认没人调用，顺手清掉两个早期诊断脚本
+      （已被更完善的审计取代，而且它们会引用刚删掉的接口）。
+      <br>删完两个接口都返回 404 ✓
+    </div>
+    <div class="notebox" style="margin-bottom:0">
+      <b>配套做了两件事，比删接口本身更重要：</b>
+      ① 把引用它们的审计脚本一起改了 —— 检查项从 40 / 30 / 33 变成 <b>39 / 29 / 31</b>，
+      <b>跟删掉的数量完全对得上</b>（不能悄悄少测）；
+      ② 新增一个能在本地跑的死接口扫描，<b>现在结果是 0 个</b>，以后随时能复查。
+    </div>
+  </div>
+
+  <h2><span class="done">2</span>服务能自己好，而且事后查得到</h2>
+  <div class="card">
+    原来最大的问题不是"没有告警"，而是 <b>健康检查是假的</b> ——
+    <code>/api/health</code> 无条件返回 ok，<b>数据库挂了它也说一切正常</b>，那这个接口就没有意义。
+    <table style="margin-top:12px">
+      <tr><th style="width:32%">改动</th><th>效果</th></tr>
+      <tr><td>健康检查真的连一次数据库</td><td>连不上返回 <b>503</b>（调用方靠状态码就能判断，不用猜文案）；
+        顺带报数据库耗时、运行时长、内存</td></tr>
+      <tr><td>新增值守脚本，每 2 分钟探一次</td><td>连续失败 3 次 → <b>自动重启</b>并记日志</td></tr>
+      <tr><td>重启后仍不通 → 进 30 分钟冷却</td><td>避免陷进"重启—失败—重启"的循环</td></tr>
+      <tr><td>日志超过 2000 行自动截断</td><td>值守日志不会吃满磁盘</td></tr>
+    </table>
+
+    <div style="margin-top:14px">
+      <b>一个设计取舍：</b>没有现成的通知渠道，所以我优先做
+      <b>「能自己好 + 事后查得到」</b>，而不是发一条没人会看的通知。
+      真要通知，得先有个能用的通道（邮件/短信/微信），你定。
+    </div>
+
+    <div class="notebox">
+      <b>值守脚本是实测过的</b>（用一个死端口模拟"服务挂了"），完整走了一遍生命周期：
+      <pre>健康检查失败（第 1 次）
+健康检查失败（第 2 次）
+健康检查失败（第 3 次）
+连续 3 次失败 → 重启 yibang-server
+重启命令已执行
+重启后仍不通 —— 需要人工介入（查数据库 / 磁盘 / 内存）
+健康检查失败（第 4 次）          ← 冷却期内，不再反复重启
+恢复：健康检查通过（此前连续失败 4 次）</pre>
+      顺手修了日志里一个缺口：冷却期原本把失败计数清零，导致服务恢复时 <b>写不出「恢复」那一行</b> ——
+      而那正是查日志最想知道的（它几点好的）。
+    </div>
+
+    <div class="notebox" style="margin-bottom:0">
+      <b>另外两件顺带的事：</b>
+      <br>· <b>确认了新设的定时任务真的会跑</b>（系统日志显示每 2 分钟一次，时间戳对得上）——
+      今天刚好发现过一条<b>失效的定时任务</b>（指向一个不存在的目录），所以这条必须验。
+      <br>· <b>删掉那条失效的</b>。
+      <br>· 查了一下服务开机自启：<b>已经是配好的</b>，服务器重启后会自动起来 ✓ 比预想的好。
+    </div>
+  </div>
+
+  <h2><span class="done">3</span>修掉"审计脚本自己会骗人"</h2>
+  <div class="card">
+    审计里打印的表行数用的是数据库的<b>估算值</b> —— 实测它显示"流水 1 行"而实际有 12 行。
+    <b>审计输出骗人比不输出更糟</b>（会让人以为数据丢了）。已改成真实统计。
+    <br><br>
+    <b>⚠️ 顺便更正我自己一条说错的结论：</b>我上一份报告里写"单据识别里的
+    <code>OCR_MODEL</code> 已是死常量"——<b>错了</b>。它是快速通道失败时的<b>兜底路径</b>，还在用，得留着。
+    只有被删掉那个接口里的一份随它一起消失。
+    <br><span style="color:var(--ink3);font-size:13px">
+    （教训：删任何东西之前先查引用，别信自己上一轮写的结论。）</span>
+  </div>
+
+  <h2><span class="done">4</span>查询页每页 200 → 50</h2>
+  <div class="card">
+    一次渲染 200 行，长列表首屏会明显顿一下。现在有上拉加载了，一页 50 更顺：首屏快，想看更早的往下拉。
+    <br><br>
+    <b>验证：</b>专门造了 210 条数据把多页加载逼出来 ——
+    <code>50 → 100 → 150 → 200 → 210（到底）</code>，<b>重复 0、漏行 0</b>。验完立即清理。
+  </div>
+
+  <h2>🐛 顺手抓到一个我自己的问题</h2>
+  <div class="warnbox">
+    <div class="t">时区测试依赖"今天是几号" —— 过了午夜自己就红了</div>
+    改完跑全量回归时它突然报 <b>2 项失败</b>。当时正好跨过午夜（00:33，已经是 09-20）。
+    原因：测试把日期写死成 09-19 并断言标签是「今天」——<b>那只在 09-19 当天成立</b>。
+    <br><br>
+    这类断言有两种坏法：① <b>半夜突然报假警</b>，让人白白排查代码；
+    ② <b>换个日期又悄悄放过真问题</b>。
+    <br><br>
+    已改成围绕"今天"动态构造：取本地今天 00:00 转成 UTC 形式（会得到前一天 16:00Z，
+    正是数据库返回日期时的那种形状），再断言它必须还原成本地今天 —— 任何一天都成立。
+    <b>而且比原来更强</b>：新增了「昨天」的断言，能抓住"标签永远返回今天"这种退化。
+    <br><br>
+    顺手扫了其余脚本：其他命中都是<b>测试输入</b>（比如「今天收现金1265元」这句话）
+    或<b>标签名</b>（<code>今日报表</code>），不依赖当天日期 ✓
+  </div>
+
+  <h2>h5 那条：按你说的不动</h2>
+  <div class="skip">
+    <code>h5.dtzai.cn</code> 指向一个不存在的目录，访问会 404。
+    你说 h5 先不用，所以我<b>只做了记录，没有动配置</b> ——
+    现在没人访问它，挂着不影响；也不趁机删掉那个配置，免得以后想捡起来时才发现没了。
+    <br><br>
+    <span style="color:var(--ink3);font-size:13px">
+      真要收拾的时候两个选择：补一个占位页，或者摘掉它。
+    </span>
+  </div>
+
+  <h2>全量验证</h2>
+  <table>
+    <tr><th style="width:56%">检查项</th><th>结果</th></tr>
+    <tr><td>接口端点（删了 1 个，所以 40 → 39）</td><td class="ok">39 / 39</td></tr>
+    <tr><td>越权扫描（30 → 29）</td><td class="ok">29 / 29，可未授权访问 0 个</td></tr>
+    <tr><td>多租户隔离</td><td class="ok">9 / 9</td></tr>
+    <tr><td>死接口扫描</td><td class="ok">0 个</td></tr>
+    <tr><td>分享 / 分组汇总 / 语音归类 / 分类统计</td><td class="ok">31 · 15 · 54 · 13 全过</td></tr>
+    <tr><td>前端审计 / 静态自检 + 自测</td><td class="ok">全通过 · 9 / 9</td></tr>
+    <tr><td>时区口径（已改成不依赖当天）</td><td class="ok">全部正确</td></tr>
+    <tr><td>日历日期算术</td><td class="ok">25 / 25</td></tr>
+    <tr><td>数据基线</td><td class="ok">1 号测试账号 7 条 / 4 个往来 / 0 分享；<b>你的真实数据一条没动</b></td></tr>
+  </table>
+
+  <div class="notebox">
+    <b>下一步只有一件事，而它卡在你手上：</b>
+    小程序还没发布 —— 分享出去的卡片只有"体验版成员"能打开，发给客户打不开。
+    要走完 <b>ICP 备案 → 服务类目（工具→记账）→ 隐私指引 → 提交审核 → 发布</b>。
+    这几件必须你操作，材料我可以逐条给你准备好。
+  </div>
+
+</div>
+</body>
+</html>

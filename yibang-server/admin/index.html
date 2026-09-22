@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>易帮账本 - 管理后台</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #1a1a1a; }
+
+/* 登录页 */
+.login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.login-box { background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 360px; }
+.login-box h1 { font-size: 24px; margin-bottom: 8px; color: #C9451A; }
+.login-box p { color: #666; margin-bottom: 24px; font-size: 14px; }
+.login-box input { width: 100%; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
+.login-box input:focus { outline: none; border-color: #C9451A; }
+.login-box button { width: 100%; padding: 12px; background: linear-gradient(135deg, #FF6B35, #C9451A); color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600; }
+.login-box button:hover { opacity: 0.9; }
+.login-error { color: #e74c3c; font-size: 13px; margin-top: 12px; display: none; }
+
+/* 主布局 */
+.main-layout { display: none; min-height: 100vh; }
+.sidebar { width: 220px; background: #1a1a2e; color: #fff; position: fixed; top: 0; left: 0; bottom: 0; padding-top: 20px; }
+.sidebar-logo { padding: 0 20px 20px; font-size: 18px; font-weight: 700; color: #FF6B35; border-bottom: 1px solid #2a2a4a; margin-bottom: 10px; }
+.sidebar-menu { list-style: none; }
+.sidebar-menu li { padding: 14px 20px; cursor: pointer; transition: all 0.2s; font-size: 14px; }
+.sidebar-menu li:hover { background: #2a2a4a; }
+.sidebar-menu li.active { background: #C9451A; border-left: 3px solid #FF6B35; }
+.main-content { margin-left: 220px; padding: 24px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.page-header h2 { font-size: 22px; }
+.logout-btn { padding: 8px 16px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+
+/* 卡片 */
+.card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.card h3 { font-size: 16px; margin-bottom: 16px; color: #333; }
+
+/* 统计卡片 */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.stat-card .label { font-size: 13px; color: #888; margin-bottom: 8px; }
+.stat-card .value { font-size: 28px; font-weight: 700; color: #333; }
+.stat-card.income .value { color: #0B7A43; }
+.stat-card.expense .value { color: #D92D20; }
+
+/* 表单 */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 500; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #C9451A; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-section { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+.form-section:last-child { border-bottom: none; }
+.form-section h4 { font-size: 15px; color: #C9451A; margin-bottom: 16px; }
+
+/* 按钮 */
+.btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+.btn-primary { background: linear-gradient(135deg, #FF6B35, #C9451A); color: #fff; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-secondary { background: #f0f0f0; color: #333; }
+.btn-secondary:hover { background: #e0e0e0; }
+.btn-success { background: #0B7A43; color: #fff; }
+.btn-danger { background: #e74c3c; color: #fff; }
+
+/* 表格 */
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+th { background: #f8f9fa; font-weight: 600; color: #555; }
+tr:hover { background: #f8f9fa; }
+
+/* 开关 */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: #C9451A; }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* 分页 */
+.pagination { display: flex; justify-content: center; margin-top: 20px; gap: 8px; }
+.pagination button { padding: 8px 14px; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer; }
+.pagination button.active { background: #C9451A; color: #fff; border-color: #C9451A; }
+.pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 标签 */
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.tag-owner { background: #FFF4EE; color: #C9451A; }
+.tag-partner { background: #E8F5EC; color: #0B7A43; }
+.tag-manager { background: #EDF3FF; color: #175CD3; }
+.tag-staff { background: #F2F4F7; color: #667085; }
+.tag-income { background: #E8F5EC; color: #0B7A43; }
+.tag-expense { background: #FDECEA; color: #D92D20; }
+
+/* Toast */
+.toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: #fff; font-size: 14px; z-index: 9999; display: none; }
+.toast.success { background: #0B7A43; }
+.toast.error { background: #e74c3c; }
+
+/* 配置JSON编辑器 */
+.json-editor { width: 100%; height: 400px; font-family: 'Courier New', monospace; font-size: 13px; padding: 12px; border: 1px solid #ddd; border-radius: 6px; resize: vertical; }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- 登录页 -->
+<div class="login-page" id="loginPage">
+  <div class="login-box">
+    <h1>易帮账本</h1>
+    <p>管理后台 - 请输入管理员Token</p>
+    <input type="password" id="tokenInput" placeholder="请输入管理员Token" onkeypress="if(event.key==='Enter')login()">
+    <button onclick="login()">登录</button>
+    <div class="login-error" id="loginError">Token错误，请重试</div>
+  </div>
+</div>
+
+<!-- 主布局 -->
+<div class="main-layout" id="mainLayout">
+  <div class="sidebar">
+    <div class="sidebar-logo">易帮账本管理</div>
+    <ul class="sidebar-menu">
+      <li class="active" onclick="showPage('dashboard')">📊 数据概览</li>
+      <li onclick="showPage('config')">⚙️ 小程序配置</li>
+      <li onclick="showPage('users')">👥 用户管理</li>
+      <li onclick="showPage('records')">📝 账目记录</li>
+      <li onclick="showPage('rawConfig')">🔧 原始JSON配置</li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h2 id="pageTitle">数据概览</h2>
+      <button class="logout-btn" onclick="logout()">退出登录</button>
+    </div>
+
+    <!-- 数据概览 -->
+    <div id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="label">总用户数</div><div class="value" id="statUsers">-</div></div>
+        <div class="stat-card"><div class="label">总账目数</div><div class="value" id="statRecords">-</div></div>
+        <div class="stat-card income"><div class="label">今日收入</div><div class="value" id="statIncome">-</div></div>
+        <div class="stat-card expense"><div class="label">今日支出</div><div class="value" id="statExpense">-</div></div>
+      </div>
+      <div class="card">
+        <h3>今日记账笔数</h3>
+        <div style="font-size: 36px; font-weight: 700; color: #C9451A;" id="statTodayRecords">-</div>
+      </div>
+    </div>
+
+    <!-- 小程序配置 -->
+    <div id="page-config" class="hidden">
+      <div class="card">
+        <h3>导航栏文案</h3>
+        <div class="form-row">
+          <div class="form-group"><label>记账页标题</label><input id="cfgNavRecord"></div>
+          <div class="form-group"><label>报表页标题</label><input id="cfgNavSummary"></div>
+          <div class="form-group"><label>我的页标题</label><input id="cfgNavProfile"></div>
+          <div class="form-group"><label>搜索页标题</label><input id="cfgNavSearch"></div>
+          <div class="form-group"><label>参谋页标题</label><input id="cfgNavAdvisor"></div>
+          <div class="form-group"><label>往来页标题</label><input id="cfgNavContacts"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>品牌信息</h3>
+        <div class="form-row">
+          <div class="form-group"><label>品牌名称</label><input id="cfgBrandName"></div>
+          <div class="form-group"><label>品牌Slogan</label><input id="cfgBrandSlogan"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>记账页文案</h3>
+        <div class="form-row">
+          <div class="form-group"><label>输入框占位符</label><input id="cfgRecordPlaceholder"></div>
+          <div class="form-group"><label>空状态标题</label><input id="cfgRecordEmptyTitle"></div>
+          <div class="form-group"><label>空状态描述</label><input id="cfgRecordEmptyText"></div>
+          <div class="form-group"><label>语音提示</label><input id="cfgRecordMicHint"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>报表页文案</h3>
+        <div class="form-row">
+          <div class="form-group"><label>分享按钮文字</label><input id="cfgSummaryShareBtn"></div>
+          <div class="form-group"><label>欠款标题</label><input id="cfgSummaryDebtTitle"></div>
+          <div class="form-group"><label>日历入口文字</label><input id="cfgSummaryCalendarEntry"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>搜索页 & 参谋页</h3>
+        <div class="form-row">
+          <div class="form-group"><label>搜索占位符</label><input id="cfgSearchPlaceholder"></div>
+          <div class="form-group"><label>参谋占位符</label><input id="cfgAdvisorPlaceholder"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>功能开关</h3>
+        <div class="form-row" id="featuresContainer"></div>
+      </div>
+
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="btn btn-primary" onclick="saveConfig()" style="padding: 14px 40px; font-size: 16px;">💾 保存配置</button>
+      </div>
+    </div>
+
+    <!-- 用户管理 -->
+    <div id="page-users" class="hidden">
+      <div class="card">
+        <table>
+          <thead><tr><th>ID</th><th>昵称</th><th>手机号</th><th>角色</th><th>注册时间</th></tr></thead>
+          <tbody id="usersTable"></tbody>
+        </table>
+        <div class="pagination" id="usersPagination"></div>
+      </div>
+    </div>
+
+    <!-- 账目记录 -->
+    <div id="page-records" class="hidden">
+      <div class="card">
+        <table>
+          <thead><tr><th>ID</th><th>用户</th><th>类型</th><th>金额</th><th>事由</th><th>往来对象</th><th>时间</th></tr></thead>
+          <tbody id="recordsTable"></tbody>
+        </table>
+        <div class="pagination" id="recordsPagination"></div>
+      </div>
+    </div>
+
+    <!-- 原始JSON配置 -->
+    <div id="page-rawConfig" class="hidden">
+      <div class="card">
+        <h3>原始JSON配置（高级用户使用）</h3>
+        <p style="color: #888; font-size: 13px; margin-bottom: 12px;">直接编辑完整的配置JSON，修改后点击保存。版本号会自动+1，前端会自动更新。</p>
+        <textarea class="json-editor" id="rawJsonEditor"></textarea>
+        <div style="text-align: center; margin-top: 16px;">
+          <button class="btn btn-primary" onclick="saveRawConfig()">💾 保存JSON配置</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = '/api/admin';
+let adminToken = localStorage.getItem('adminToken') || '';
+let currentConfig = null;
+let currentPage = 'dashboard';
+let usersPage = 1;
+let recordsPage = 1;
+
+// 登录
+function login() {
+  const token = document.getElementById('tokenInput').value.trim();
+  if (!token) { showToast('请输入Token', 'error'); return; }
+  adminToken = token;
+  // 验证token
+  fetch(API_BASE + '/stats', { headers: { 'x-admin-token': token } })
+    .then(r => r.json())
+    .then(data => {
+      if (data.code === 0) {
+        localStorage.setItem('adminToken', token);
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('mainLayout').style.display = 'block';
+        loadDashboard();
+        showToast('登录成功', 'success');
+      } else {
+        document.getElementById('loginError').style.display = 'block';
+      }
+    })
+    .catch(() => { document.getElementById('loginError').style.display = 'block'; });
+}
+
+// 退出
+function logout() {
+  localStorage.removeItem('adminToken');
+  adminToken = '';
+  location.reload();
+}
+
+// 显示页面
+function showPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.sidebar-menu li').forEach((li, i) => {
+    li.classList.toggle('active', ['dashboard','config','users','records','rawConfig'][i] === page);
+  });
+  document.querySelectorAll('[id^="page-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('page-' + page).classList.remove('hidden');
+  const titles = { dashboard: '数据概览', config: '小程序配置', users: '用户管理', records: '账目记录', rawConfig: '原始JSON配置' };
+  document.getElementById('pageTitle').textContent = titles[page];
+
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'config') loadConfig();
+  if (page === 'users') loadUsers();
+  if (page === 'records') loadRecords();
+  if (page === 'rawConfig') loadRawConfig();
+}
+
+// API请求
+function api(url, options = {}) {
+  return fetch(API_BASE + url, {
+    ...options,
+    headers: { 'x-admin-token': adminToken, 'Content-Type': 'application/json', ...options.headers }
+  }).then(r => r.json());
+}
+
+// 加载仪表盘
+function loadDashboard() {
+  api('/stats').then(data => {
+    if (data.code === 0) {
+      document.getElementById('statUsers').textContent = data.data.totalUsers;
+      document.getElementById('statRecords').textContent = data.data.totalRecords;
+      document.getElementById('statIncome').textContent = '¥' + Number(data.data.todayIncome).toFixed(2);
+      document.getElementById('statExpense').textContent = '¥' + Number(data.data.todayExpense).toFixed(2);
+      document.getElementById('statTodayRecords').textContent = data.data.todayRecords + ' 笔';
+    }
+  });
+}
+
+// 加载配置
+function loadConfig() {
+  api('/config').then(data => {
+    if (data.code === 0) {
+      currentConfig = data.data.config;
+      const c = currentConfig;
+      // 导航栏
+      document.getElementById('cfgNavRecord').value = (c.copy && c.copy.nav && c.copy.nav.record) || '';
+      document.getElementById('cfgNavSummary').value = (c.copy && c.copy.nav && c.copy.nav.summary) || '';
+      document.getElementById('cfgNavProfile').value = (c.copy && c.copy.nav && c.copy.nav.profile) || '';
+      document.getElementById('cfgNavSearch').value = (c.copy && c.copy.nav && c.copy.nav.search) || '';
+      document.getElementById('cfgNavAdvisor').value = (c.copy && c.copy.nav && c.copy.nav.advisor) || '';
+      document.getElementById('cfgNavContacts').value = (c.copy && c.copy.nav && c.copy.nav.contacts) || '';
+      // 品牌
+      document.getElementById('cfgBrandName').value = (c.copy && c.copy.brand && c.copy.brand.name) || '';
+      document.getElementById('cfgBrandSlogan').value = (c.copy && c.copy.brand && c.copy.brand.slogan) || '';
+      // 记账页
+      document.getElementById('cfgRecordPlaceholder').value = (c.copy && c.copy.record && c.copy.record.placeholder) || '';
+      document.getElementById('cfgRecordEmptyTitle').value = (c.copy && c.copy.record && c.copy.record.emptyTitle) || '';
+      document.getElementById('cfgRecordEmptyText').value = (c.copy && c.copy.record && c.copy.record.emptyText) || '';
+      document.getElementById('cfgRecordMicHint').value = (c.copy && c.copy.record && c.copy.record.micHint) || '';
+      // 报表页
+      document.getElementById('cfgSummaryShareBtn').value = (c.copy && c.copy.summary && c.copy.summary.shareBtn) || '';
+      document.getElementById('cfgSummaryDebtTitle').value = (c.copy && c.copy.summary && c.copy.summary.debtTitle) || '';
+      document.getElementById('cfgSummaryCalendarEntry').value = (c.copy && c.copy.summary && c.copy.summary.calendarEntry) || '';
+      // 搜索&参谋
+      document.getElementById('cfgSearchPlaceholder').value = (c.copy && c.copy.search && c.copy.search.placeholder) || '';
+      document.getElementById('cfgAdvisorPlaceholder').value = (c.copy && c.copy.advisor && c.copy.advisor.placeholder) || '';
+      // 功能开关
+      renderFeatures(c.features || {});
+    }
+  });
+}
+
+// 渲染功能开关
+function renderFeatures(features) {
+  const container = document.getElementById('featuresContainer');
+  const featureList = [
+    { key: 'staff', label: '团队成员管理' },
+    { key: 'advisor', label: '经营小参谋(AI)' },
+    { key: 'promote', label: '推荐赚钱' },
+    { key: 'calendar', label: '按日查询日历' },
+    { key: 'purchase', label: '采购单管理' },
+    { key: 'photoEntry', label: '拍照记账' },
+    { key: 'smartLearn', label: '智能学习' },
+    { key: 'voiceEntry', label: '语音记账' },
+    { key: 'shareReport', label: '分享报表' },
+    { key: 'purchaseStats', label: '采购统计' }
+  ];
+  container.innerHTML = featureList.map(f => `
+    <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
+      <label style="margin:0;">${f.label}</label>
+      <label class="switch">
+        <input type="checkbox" id="feat_${f.key}" ${features[f.key] ? 'checked' : ''}>
+        <span class="slider"></span>
+      </label>
+    </div>
+  `).join('');
+}
+
+// 保存配置
+function saveConfig() {
+  if (!currentConfig) currentConfig = {};
+  if (!currentConfig.copy) currentConfig.copy = {};
+  if (!currentConfig.copy.nav) currentConfig.copy.nav = {};
+  if (!currentConfig.copy.brand) currentConfig.copy.brand = {};
+  if (!currentConfig.copy.record) currentConfig.copy.record = {};
+  if (!currentConfig.copy.summary) currentConfig.copy.summary = {};
+  if (!currentConfig.copy.search) currentConfig.copy.search = {};
+  if (!currentConfig.copy.advisor) currentConfig.copy.advisor = {};
+  if (!currentConfig.features) currentConfig.features = {};
+
+  // 导航栏
+  currentConfig.copy.nav.record = document.getElementById('cfgNavRecord').value;
+  currentConfig.copy.nav.summary = document.getElementById('cfgNavSummary').value;
+  currentConfig.copy.nav.profile = document.getElementById('cfgNavProfile').value;
+  currentConfig.copy.nav.search = document.getElementById('cfgNavSearch').value;
+  currentConfig.copy.nav.advisor = document.getElementById('cfgNavAdvisor').value;
+  currentConfig.copy.nav.contacts = document.getElementById('cfgNavContacts').value;
+  // 品牌
+  currentConfig.copy.brand.name = document.getElementById('cfgBrandName').value;
+  currentConfig.copy.brand.slogan = document.getElementById('cfgBrandSlogan').value;
+  // 记账页
+  currentConfig.copy.record.placeholder = document.getElementById('cfgRecordPlaceholder').value;
+  currentConfig.copy.record.emptyTitle = document.getElementById('cfgRecordEmptyTitle').value;
+  currentConfig.copy.record.emptyText = document.getElementById('cfgRecordEmptyText').value;
+  currentConfig.copy.record.micHint = document.getElementById('cfgRecordMicHint').value;
+  // 报表页
+  currentConfig.copy.summary.shareBtn = document.getElementById('cfgSummaryShareBtn').value;
+  currentConfig.copy.summary.debtTitle = document.getElementById('cfgSummaryDebtTitle').value;
+  currentConfig.copy.summary.calendarEntry = document.getElementById('cfgSummaryCalendarEntry').value;
+  // 搜索&参谋
+  currentConfig.copy.search.placeholder = document.getElementById('cfgSearchPlaceholder').value;
+  currentConfig.copy.advisor.placeholder = document.getElementById('cfgAdvisorPlaceholder').value;
+  // 功能开关
+  ['staff','advisor','promote','calendar','purchase','photoEntry','smartLearn','voiceEntry','shareReport','purchaseStats'].forEach(key => {
+    currentConfig.features[key] = document.getElementById('feat_' + key).checked;
+  });
+
+  api('/config', { method: 'POST', body: JSON.stringify({ config: currentConfig }) })
+    .then(data => {
+      if (data.code === 0) {
+        showToast('保存成功！版本号: ' + data.data.version, 'success');
+      } else {
+        showToast('保存失败: ' + data.msg, 'error');
+      }
+    });
+}
+
+// 加载原始JSON配置
+function loadRawConfig() {
+  api('/config').then(data => {
+    if (data.code === 0) {
+      currentConfig = data.data.config;
+      document.getElementById('rawJsonEditor').value = JSON.stringify(currentConfig, null, 2);
+    }
+  });
+}
+
+// 保存原始JSON配置
+function saveRawConfig() {
+  try {
+    const config = JSON.parse(document.getElementById('rawJsonEditor').value);
+    api('/config', { method: 'POST', body: JSON.stringify({ config }) })
+      .then(data => {
+        if (data.code === 0) {
+          showToast('保存成功！版本号: ' + data.data.version, 'success');
+        } else {
+          showToast('保存失败: ' + data.msg, 'error');
+        }
+      });
+  } catch (e) {
+    showToast('JSON格式错误: ' + e.message, 'error');
+  }
+}
+
+// 加载用户
+function loadUsers(page = 1) {
+  usersPage = page;
+  api('/users?page=' + page + '&pageSize=20').then(data => {
+    if (data.code === 0) {
+      const roleMap = { 1: '店主', 2: '合伙人', 3: '经理', 4: '员工' };
+      const roleClass = { 1: 'tag-owner', 2: 'tag-partner', 3: 'tag-manager', 4: 'tag-staff' };
+      document.getElementById('usersTable').innerHTML = data.data.list.map(u => `
+        <tr>
+          <td>${u.id}</td>
+          <td>${u.nickname || '-'}</td>
+          <td>${u.phone || '-'}</td>
+          <td><span class="tag ${roleClass[u.role] || 'tag-staff'}">${roleMap[u.role] || '未知'}</span></td>
+          <td>${u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>
+        </tr>
+      `).join('');
+      renderPagination('usersPagination', data.data.total, usersPage, loadUsers);
+    }
+  });
+}
+
+// 加载账目记录
+function loadRecords(page = 1) {
+  recordsPage = page;
+  api('/records?page=' + page + '&pageSize=20').then(data => {
+    if (data.code === 0) {
+      document.getElementById('recordsTable').innerHTML = data.data.list.map(r => `
+        <tr>
+          <td>${r.id}</td>
+          <td>${r.nickname || '-'}</td>
+          <td><span class="tag ${r.type === 1 ? 'tag-income' : 'tag-expense'}">${r.type === 1 ? '收入' : '支出'}</span></td>
+          <td>¥${Number(r.amount).toFixed(2)}</td>
+          <td>${r.title || '-'}</td>
+          <td>${r.contact || '-'}</td>
+          <td>${r.created_at ? new Date(r.created_at).toLocaleString() : '-'}</td>
+        </tr>
+      `).join('');
+      renderPagination('recordsPagination', data.data.total, recordsPage, loadRecords);
+    }
+  });
+}
+
+// 渲染分页
+function renderPagination(containerId, total, currentPage, callback) {
+  const totalPages = Math.ceil(total / 20);
+  let html = `<button ${currentPage <= 1 ? 'disabled' : ''} onclick="${callback.name}(${currentPage - 1})">上一页</button>`;
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+      html += `<button class="${i === currentPage ? 'active' : ''}" onclick="${callback.name}(${i})">${i}</button>`;
+    } else if (i === currentPage - 3 || i === currentPage + 3) {
+      html += '<span style="padding: 8px;">...</span>';
+    }
+  }
+  html += `<button ${currentPage >= totalPages ? 'disabled' : ''} onclick="${callback.name}(${currentPage + 1})">下一页</button>`;
+  document.getElementById(containerId).innerHTML = html;
+}
+
+// Toast
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast ' + type;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+
+// 自动登录
+if (adminToken) {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('mainLayout').style.display = 'block';
+  loadDashboard();
+}
+</script>
+</body>
+</html>

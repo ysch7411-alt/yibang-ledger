@@ -1,6 +1,6 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "查询",
+  "navigationBarTitleText": "找一找",
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark"
 }

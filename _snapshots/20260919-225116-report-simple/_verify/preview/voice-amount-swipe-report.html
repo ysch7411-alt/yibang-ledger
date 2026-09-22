@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>易帮账本 · 语音记账三处修正</title>
+<style>
+  :root{
+    --ink:#101828; --ink2:#344054; --ink3:#667085; --line:#EDF0F3; --fill:#F6F7F9;
+    --brand:#C9451A; --brand-weak:#FFF4EE; --expense:#D92D20; --income:#0B7A43;
+    --warn:#B54708; --warn-weak:#FFF6E5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 20px 80px;background:#F6F7F9;color:var(--ink);
+    font:15px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:-.3px}
+  .sub{color:var(--ink3);font-size:14px;margin-bottom:32px}
+  h2{font-size:19px;margin:44px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  h3{font-size:16px;margin:26px 0 10px}
+  .card{background:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px;
+    box-shadow:0 2px 6px rgba(16,24,40,.03),0 12px 32px -14px rgba(16,24,40,.12)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--ink3);font-weight:500;font-size:13px;background:var(--fill)}
+  tr:last-child td{border-bottom:none}
+  code{background:var(--fill);padding:1px 6px;border-radius:5px;font-size:13px;
+    font-family:ui-monospace,Consolas,monospace}
+  .ok{color:var(--income);font-weight:600}
+  .bad{color:var(--expense);font-weight:600}
+  .warnbox{background:var(--warn-weak);border:1px solid #F5D9A8;border-radius:12px;padding:16px 20px;margin:16px 0}
+  .warnbox .t{color:var(--warn);font-weight:600;margin-bottom:6px}
+  .notebox{background:var(--brand-weak);border-left:4px solid var(--brand);border-radius:8px;padding:14px 18px;margin:16px 0}
+  .shots{display:flex;gap:16px;flex-wrap:wrap}
+  .shot{width:206px}
+  .shot img{width:100%;border-radius:10px;border:1px solid var(--line);display:block}
+  .shot span{display:block;font-size:12px;color:var(--ink3);margin-top:8px;text-align:center;line-height:1.5}
+  .now{font-family:ui-monospace,Consolas,monospace;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>易帮账本 · 语音记账三处修正</h1>
+  <div class="sub">「辣椒3白，5块钱一斤」不算总额 · 「今天收现金1265元」归错 · 已入账记录不能改删 · 2026-09-19</div>
+
+  <h2>一、先复现，结果比你说的更严重</h2>
+  <div class="card">
+    把三句话原样打给 <code>/record/ai-parse</code>：
+    <table style="margin-top:12px">
+      <tr><th style="width:40%">原话</th><th>AI 当时给的</th><th style="width:24%">问题</th></tr>
+      <tr>
+        <td>辣椒3白，5块钱一斤</td>
+        <td class="now">amount=<b class="bad">5</b>，qty/price 都没有</td>
+        <td class="bad">把"5块钱一斤"当成总额，<b>账少记 10 元</b></td>
+      </tr>
+      <tr>
+        <td>辣椒3包，5块钱一斤</td>
+        <td class="now">records 为空</td>
+        <td class="bad">只能追问金额，你只好自己填</td>
+      </tr>
+      <tr>
+        <td>辣椒300斤，5块钱一斤</td>
+        <td class="now">amount=1500 <span class="ok">✓</span></td>
+        <td class="ok">它算得对</td>
+      </tr>
+      <tr>
+        <td>今天收现金1265元</td>
+        <td class="now">contact=""、content=""</td>
+        <td class="bad">列表显示「未填写事由」</td>
+      </tr>
+    </table>
+    <div style="margin-top:14px;color:var(--ink2)">
+      三条合起来说明了根因：<b>提示词里压根没有「数量 / 单价」这个概念</b>，
+      模型只能在「3白」和「5块」里瞎猜哪个是总额 —— 它不是不会算，是不稳定。
+      而钱的事不能"大多数时候对"。
+    </div>
+  </div>
+
+  <h2>二、怎么修的：理解交给模型，算数拿回服务端</h2>
+  <table>
+    <tr><th style="width:32%">做法</th><th>为什么</th></tr>
+    <tr>
+      <td>提示词要求模型把 <code>qty / unit / unit_price</code> 都输出</td>
+      <td>只给一个 amount，服务端就没有任何依据去核对对错。</td>
+    </tr>
+    <tr>
+      <td>服务端 <code>reconcileAmount()</code> <b>只在能证明模型漏乘时</b>才改</td>
+      <td>三种可证伪的形状：amount 缺失/为 0；amount 正好等于单价且数量≠1；amount 正好等于数量。
+      <b>刻意不做"和 数量×单价 差得远就覆盖"</b>——你可能给了折后总价（「3 斤 5 块一斤，一共给了 14」），那样改就是把对的改错。</td>
+    </tr>
+    <tr>
+      <td>收付方式用<b>确定性词表</b>兜底，不问模型</td>
+      <td>现金/微信/支付宝/银行/转账/扫码/赊账 是封闭集合，一个正则比模型稳，还省钱。模型给了就用模型的。</td>
+    </tr>
+    <tr>
+      <td>明确禁止把方式填进往来对象</td>
+      <td>否则会凭空建出一个叫「现金」的客户。清理数据时核对过：<b class="ok">没有生成</b>。</td>
+    </tr>
+    <tr>
+      <td>存下 <code>qty / unit / unit_price / pay_method</code> 四个字段</td>
+      <td>只存一个算出来的金额，事后谁也不知道这钱怎么来的。数量和单价留下来，列表才能把算式摆出来。</td>
+    </tr>
+  </table>
+
+  <div class="warnbox">
+    <div class="t">⚠️ 同一天第二次踩「提示词示例被照抄」，而且是新变种</div>
+    <b>变种一（我自己写进去的）</b>：格式骨架写成 <code>{"amount":0,"qty":0,…}</code>，
+    模型拿不准时就<b>原样吐回来</b> —— 不报错、也不返回空数组，而是给一条"字段齐全但全是 0"的记录。
+    改成中文占位符 <code>{"amount":金额,"qty":数量,…}</code> 就好了。<br><br>
+    <b>变种二（更阴）</b>：收入示例里写了 <code>"method":"现金"</code>，结果
+    「卖废铁收款300元」这种<b>压根没提方式</b>的也被冠上 method=现金。
+    修法是示例里"本例确实没有"的字段一律留空，需要演示时用散文写，不要写进 JSON 行。<br><br>
+    回归里补了 3 条<b>反例</b>：「今天天气不错」这类必须返回 0 笔。
+    <b>只测正例的提示词改动，早晚会被照抄咬一口。</b>
+  </div>
+
+  <h2>三、界面上看到的变化</h2>
+  <div class="shots">
+    <div class="shot">
+      <img src="../shots/rec-list.jpg" alt="列表显示算式">
+      <span>金额下面多了一行算式<br>「3 斤 × ¥5.00」<br>收现金那条标题就是「现金」</span>
+    </div>
+    <div class="shot">
+      <img src="../shots/rec-swipe.jpg" alt="左滑露出修改删除">
+      <span>左滑露出<br>「修改 / 删除」</span>
+    </div>
+    <div class="shot">
+      <img src="../shots/rec-fixshoe.jpg" alt="修改面板">
+      <span>修改面板带算式提示<br>收付方式可改<br>（AI 归错时唯一的修正口）</span>
+    </div>
+    <div class="shot">
+      <img src="../shots/rec-del.jpg" alt="删除确认">
+      <span>删除前把这条摘要<br>摆出来，防删错</span>
+    </div>
+  </div>
+
+  <div class="notebox" style="margin-top:20px">
+    <b>算式为什么要显示出来：</b>你说「辣椒3斤，5块一斤」，心里本来就有个 3×5=15。
+    只显示一个「15.00」，你没法核对它是怎么来的，就会怀疑账本算错。
+    把算式摆出来，一眼就能确认。<br>
+    <b>顺带一条纪律：</b>如果你手改了金额，那个算式就<b>自动清掉</b>——
+    留着它会显示一个对不上的算式，比没有算式更糟。
+  </div>
+
+  <h2>四、左滑修改 / 删除</h2>
+  <div class="card">
+    最近记录列表，每行左滑露出「修改」「删除」。
+    <ul style="margin:12px 0 0;padding-left:20px">
+      <li><b>修改</b>复用现有的纠错面板，金额、类型、往来对象、事由、收付方式都能改。
+        从列表进来的修改<b>不喂给「越用越懂」</b>——历史记录没有"你当时说的那句话"，
+        喂空的会让它学出错的东西。</li>
+      <li><b>删除</b>走底部确认弹层，先把这条的摘要摆出来，并说明"删掉就找不回来了"。
+        账本数字和日报会一起变。</li>
+      <li>只允许一行处于滑开状态；点别处或翻页会自动收起。竖着划仍然是翻页，不会又滚又滑。</li>
+    </ul>
+  </div>
+
+  <div class="warnbox">
+    <div class="t">🐛 测试过程中逼出一个真 bug（已修）</div>
+    左滑原本用<b>下标</b>记录"手指按的是第几行"。自动化测试时有一次收尾事件没送达（工具链崩溃），
+    手势悬在半空；等下一次触摸来收尾时，列表早已刷新过（刚记完一笔就会重新拉数据），
+    <b>结果把刚记的那笔滑开了</b>。<br><br>
+    改成<b>按记录 id 定位</b>，找不到就什么都不做。
+    这个场景等价于「你滑到一半接了个电话」——比顺顺利利滑一次有价值得多，
+    所以专门测了「手势中途刷新列表」，修复后不再误开任何行。
+  </div>
+
+  <h2>五、验证结果</h2>
+  <table>
+    <tr><th style="width:44%">项目</th><th>结果</th></tr>
+    <tr><td>语音归类回归（含 3 条防照抄反例）</td><td class="ok">54 / 54</td></tr>
+    <tr><td>端到端：「辣椒3白，5块钱一斤」</td><td class="ok">回执「支出 ¥15.00 · 3 白 × ¥5.00 · 辣椒」</td></tr>
+    <tr><td>端到端：「今天收现金1265元」</td><td class="ok">回执「收入 ¥1,265.00 · 现金」</td></tr>
+    <tr><td>落库核对</td><td class="ok">¥15.00 / qty=3 / unit=白 / price=5 / content=辣椒；¥1265 / method=现金</td></tr>
+    <tr><td>左滑 → 修改 → 删除</td><td class="ok">模拟触摸全流程走通，删除后数据库确认已删</td></tr>
+    <tr><td>手势中途刷新列表（中断场景）</td><td class="ok">不再误开任何行（修复前会）</td></tr>
+    <tr><td>采购统计回归（确认没被改坏）</td><td class="ok">13 / 13</td></tr>
+    <tr><td>静态自检 / WXML 配对 / 指令 / 样式括号</td><td class="ok">15 wxml 全过 · 16 wxss 配平 · 模拟器 console 无报错</td></tr>
+  </table>
+  <div class="card" style="margin-top:16px">
+    <span style="color:var(--ink3);font-size:13px">
+      测试数据已全部清理，账本回到你的真实基线（7 条流水、4 个往来对象）。
+      顺手修了一个小毛病：同一秒连着记的几笔排序不稳定（出现过"刚记的那笔排在刚记的另一笔后面"），
+      已在排序里补上 id 兜底。
+    </span>
+  </div>
+
+  <h2>六、还剩一件事要你拿主意</h2>
+  <div class="notebox">
+    那条历史记录「<b>猪肉三斤 ¥1.00</b>」很可能也是同一个问题的产物（数量被当成了金额）。
+    你现在可以<b>直接左滑它 → 修改</b>，把金额改成对的 —— 要不要我顺手帮你改，还是你自己核一下再改？
+  </div>
+
+</div>
+</body>
+</html>

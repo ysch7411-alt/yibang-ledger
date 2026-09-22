@@ -1,11 +1,11 @@
-<!--pages/record/record.wxml-->
+﻿<!--pages/record/record.wxml-->
 <view class="container rec {{shots.length ? 'has-shots' : ''}}" style="{{_cv}}">
   <!-- 自定义公告条：后台「自定义参数」里加了 notice 才显示（见 utils/config.js 的 getCustom） -->
   <view wx:if="{{_notice}}" class="notice-bar">{{_notice}}</view>
 
   <view class="page-head">
     <view class="page-head-left">
-      <view class="page-title">记账</view>
+      <view class="page-title">记账啦</view>
       <view class="page-sub">{{todayLabel}} · 今天已记 {{daily.count}} 笔</view>
     </view>
     <view class="page-head-right">
@@ -16,35 +16,20 @@
     </view>
   </view>
 
-  <!-- 今日收支：从原来藏在弹窗里提到首屏，打开就知道今天收了多少钱 -->
-  <view class="card today-card" bindtap="openDaily" hover-class="card-hover" hover-stay-time="60">
+  <!-- 今日进账：打开就知道今天收了多少钱 -->
+  <view class="card today-card">
     <view class="today-hd">
-      <text class="today-cap">今日收入</text>
-      <text class="card-more">看明细 ›</text>
+      <text class="today-cap">今日进账</text>
     </view>
     <view class="today-hero num c-income">+¥{{daily.incomeText}}</view>
-    <view class="today-ft">
-      <text>支出 ¥{{daily.expenseText}}</text>
-      <text class="dot">·</text>
-      <text>{{daily.count}} 笔</text>
-      <text class="dot">·</text>
-      <text>结余 ¥{{daily.netText}}</text>
-    </view>
   </view>
 
-  <!-- 欠款概况：一行摘要，主战场在「报表」 -->
-  <view class="card debt-card">
-    <view class="debt-col" bindtap="goSummary">
-      <view class="debt-k">别人欠我</view>
-      <view class="debt-v num c-income">¥{{receivable}}</view>
-      <view class="debt-s">{{receivableCount}} 位往来 ›</view>
+  <!-- 今日支出：让用户一眼看到今天花了多少钱 -->
+  <view class="card today-card today-card-expense">
+    <view class="today-hd">
+      <text class="today-cap">今日支出</text>
     </view>
-    <view class="debt-line"></view>
-    <view class="debt-col" bindtap="goSummary">
-      <view class="debt-k">我欠别人</view>
-      <view class="debt-v num c-expense">¥{{payable}}</view>
-      <view class="debt-s">{{payableCount}} 位往来 ›</view>
-    </view>
+    <view class="today-hero num c-expense">-¥{{daily.expenseText}}</view>
   </view>
 
   <!-- 最近记录 -->
@@ -64,7 +49,7 @@
 
   <view wx:elif="{{sections.length === 0}}" class="card first-card">
     <view class="first-name">{{_t.emptyText || '会思考，越用越懂你的账本'}}</view>
-    <view class="first-sub">说一句话就记账 · 拍一张单子就入库</view>
+    <view class="first-sub">说一声就记账 · 拍一张单子就入库</view>
     <block wx:for="{{firstTips}}" wx:key="text" wx:for-item="t">
       <view class="first-row">
         <view class="first-ico">
@@ -212,7 +197,7 @@
     <input
       class="ibar-input"
       value="{{draft}}"
-      placeholder="{{recording ? '正在听，松开就记…' : (working ? workingText : (_t.placeholder || '说一句，自动记账'))}}"
+      placeholder="{{recording ? '正在听，松开就记…' : (working ? workingText : (_t.placeholder || '说一声，自动记账'))}}"
       placeholder-class="ph"
       confirm-type="send"
       focus="{{focusDraft}}"

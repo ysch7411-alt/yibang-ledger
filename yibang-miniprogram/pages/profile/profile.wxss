@@ -1,3 +1,32 @@
+/* 消息通知铃铛 */
+.me-notify {
+  position: relative;
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.me-notify-ico {
+  width: 40rpx;
+  height: 40rpx;
+}
+.me-notify-badge {
+  position: absolute;
+  top: -4rpx;
+  right: -4rpx;
+  min-width: 28rpx;
+  height: 28rpx;
+  padding: 0 8rpx;
+  border-radius: 14rpx;
+  background: #FF3B30;
+  color: #fff;
+  font-size: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* pages/profile/profile.wxss */
 
 /* ---------- 分类标题 ---------- */

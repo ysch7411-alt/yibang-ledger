@@ -34,7 +34,7 @@ Page(Object.assign({
     // 空账本时第一眼看到的东西：讲清"这是什么、替我干什么"。
     // 原来这段在注册页，但注册页已经不再是门槛，新用户其实落在这里。
     firstTips: [
-      { icon: '/images/ic-say.svg', text: '不用打字、不用选类别，按住说一句就自动归类入账' },
+      { icon: '/images/ic-say.svg', text: '不用打字、不用选类别，按住说一声就自动归类入账' },
       { icon: '/images/ic-scan.svg', text: '不用月底翻箱倒柜找单据，拍一张就把明细拆好' },
       { icon: '/images/ic-learn.svg', text: '不用每次都重教一遍，你怎么叫客户它就怎么记' }
     ],
@@ -1137,6 +1137,6 @@ Page(Object.assign({
   },
 
   onShareAppMessage() {
-    return { title: '易帮账本 · 说一句话就把账记了', path: '/pages/record/record' };
+    return { title: '易帮账本 · 说一声话就把账记了', path: '/pages/record/record' };
   }
 }, kb.methods));   // 键盘避让：onKbFocus / onKbBlur / onKbHeight / setKb

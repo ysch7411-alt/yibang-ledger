@@ -4,7 +4,7 @@
   <!-- 顶部标题栏 -->
   <view class="page-head">
     <view class="page-head-left">
-      <view class="page-title">往来</view>
+      <view class="page-title">应收应付</view>
       <view class="page-sub">谁欠我钱，我欠谁钱，一眼看清</view>
     </view>
     <view class="page-head-right">
@@ -27,6 +27,18 @@
       <view class="sum-v num c-expense">¥{{summary.payableText}}</view>
       <view class="sum-s">{{payableCount}} 位 ›</view>
     </view>
+  </view>
+
+  <!-- 采购单管理入口 -->
+  <view class="card entry-card" bindtap="goPurchase">
+    <view class="entry-icon">
+      <image class="entry-icon-img" src="/images/ic-gear.svg" mode="aspectFit" />
+    </view>
+    <view class="entry-info">
+      <view class="entry-title">采购单管理</view>
+      <view class="entry-desc">拍过的送货单都在这儿</view>
+    </view>
+    <view class="entry-arrow"></view>
   </view>
 
   <!-- 筛选标签 -->

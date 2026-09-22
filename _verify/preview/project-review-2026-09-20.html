@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>易帮账本 · 全项目深度复盘（2026-09-20）</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 40px 24px 80px; background: #F6F7F9; color: #101828;
+    font: 15px/1.75 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .sub { color: #667085; font-size: 14px; margin: 0 0 26px; }
+  h2 { font-size: 19px; margin: 42px 0 14px; padding-bottom: 8px; border-bottom: 2px solid #EDF0F3; }
+  p { margin: 8px 0; }
+  code { background: #EDF0F3; padding: 1px 6px; border-radius: 4px;
+    font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14px; background: #fff; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #EDF0F3; vertical-align: top; }
+  th { background: #F2F4F7; font-weight: 500; color: #344054; white-space: nowrap; }
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0 6px; }
+  .stat { flex: 1 1 130px; background: #fff; border-radius: 12px; padding: 16px 18px; border-left: 4px solid #98A2B3; }
+  .stat.ok { border-left-color: #0B7A43; } .stat.w1 { border-left-color: #B54708; } .stat.w2 { border-left-color: #175CD3; }
+  .stat-v { font-size: 26px; font-weight: 700; line-height: 1.2; }
+  .stat-k { font-size: 13px; color: #667085; margin-top: 4px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px 22px; margin: 16px 0; }
+  .tag { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 20px; white-space: nowrap; }
+  .tag.p1 { background: #FFF6E5; color: #B54708; } .tag.p2 { background: #EDF3FF; color: #175CD3; }
+  .tag.ask { background: #F5EFFE; color: #6941C6; } .tag.ok { background: #E8F5EC; color: #0B7A43; }
+  .card-t { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .kv { margin: 6px 0; } .kv b { color: #344054; font-weight: 500; }
+  .fix { margin-top: 12px; padding: 12px 16px; background: #F6F7F9; border-radius: 8px; border-left: 3px solid #C9451A; }
+  .fix-t { font-size: 13px; font-weight: 600; color: #B93F14; margin-bottom: 4px; }
+  .green { background: #fff; border-radius: 12px; padding: 4px 22px 16px; }
+  .green li { margin: 8px 0; }
+  ul { margin: 8px 0; padding-left: 22px; } li { margin: 5px 0; }
+  .note { margin-top: 24px; padding: 14px 18px; background: #FFF6E5; border-left: 4px solid #B54708;
+    border-radius: 8px; font-size: 14px; color: #7A3D08; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>易帮账本 · 全项目深度复盘报告</h1>
+  <p class="sub">2026-09-20 · 覆盖本地开发 / 阿里云部署 / 数据库 / 接口链路 / 小程序编译五个环节 ·
+     全部结论来自实测命令与脚本，不是读代码推断</p>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-v">5</div><div class="stat-k">审查环节</div></div>
+    <div class="stat ok"><div class="stat-v">0</div><div class="stat-k">P0 严重</div></div>
+    <div class="stat w1"><div class="stat-v">1</div><div class="stat-k">P1 该修</div></div>
+    <div class="stat w2"><div class="stat-v">3</div><div class="stat-k">P2 建议</div></div>
+    <div class="stat"><div class="stat-v">1</div><div class="stat-k">待你确认</div></div>
+  </div>
+
+  <h2>一、各环节完成状态</h2>
+  <table>
+    <tr><th>环节</th><th>状态</th><th>关键实测结果</th></tr>
+    <tr><td>本地开发与编译配置</td><td>✅ 通过（1 个 P1）</td>
+      <td>16 个页面四件套齐全、无重复注册；tabBar 5 项 + 图标 + 自定义 tabBar 4 文件都在；
+          30 个图片引用全部存在；appid / 基础库 2.19.4 正常</td></tr>
+    <tr><td>阿里云部署</td><td>✅ 健康</td>
+      <td>PM2 online·uptime 11h·<b>unstable=0</b>（重启 42 次全是手动，无崩溃循环）；守护进程自启已配；
+          nginx 配置校验通过；<code>/api/health</code> 200（28ms）；
+          SSL 证书 11-18 / 12-04 到期，<b>certbot 定时续期 enabled+active 且 8、9 月都成功续过</b></td></tr>
+    <tr><td>代码一致性</td><td>✅ 完全同步</td>
+      <td><b>后端 17 个文件本地 vs 线上 md5 逐一比对，全部一致</b> —— 不存在"改了本地忘了传"</td></tr>
+    <tr><td>数据库</td><td>✅ 全部通过</td>
+      <td>10 张表；索引齐全（含 4 个复合索引）；<b>utf8mb4</b>；
+          <b>余额 vs 流水对账 0 笔不符</b>；孤儿流水 0 / 重名往来 0 / 无归属流水 0</td></tr>
+    <tr><td>接口与安全</td><td>✅ 基本通过（2 个 P2）</td>
+      <td>39/39 端点通过；29 个需登录接口 0 个可越权；多租户隔离 9/9；死接口 0；
+          未登录调 AI 正确返回 <code>{"code":401}</code>；已删接口返回明确 404；
+          目录穿越全被拒（404/400）；<code>.env</code> 与 <code>/etc/passwd</code> 外网不可达</td></tr>
+  </table>
+
+  <h2>二、发现的问题</h2>
+
+  <div class="card">
+    <div class="card-t">🟡 P1 · 本地缺 <code>package-lock.json</code>，依赖版本无法复现</div>
+    <div class="kv"><b>实测</b>：本地 <code>yibang-server/</code> 没有 lock 文件；线上有（57KB）。
+      生产依赖 8 个（express / mysql2 / redis / jsonwebtoken / dotenv / axios / multer / cors）。</div>
+    <div class="kv"><b>根因</b>：部署方式是人工 scp 单个文件，lock 从没回传过本地。</div>
+    <div class="kv"><b>影响</b>：换一台机器重装依赖，装到的是"最新兼容版"而不是线上版本。
+      小版本差异在 express/mysql2 上有实际的兼容性问题先例。此时<b>无法复现线上环境</b>，
+      排查问题会多绕弯。</div>
+    <div class="fix">
+      <div class="fix-t">修复建议</div>
+      从线上把 lock 拉回本地（<code>scp root@101.201.79.119:/www/wwwroot/yibang-server/package-lock.json
+      ./yibang-server/</code>），之后「本地与线上装同一套」就有依据了。前提是线上这份确实是当前依赖状态 ——
+      拉回来后建议在本地 <code>npm ci</code> 试装一次确认能装上。一条命令的事。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-t">🔵 P2 · <code>.env</code> 权限 644，所有本地用户都能读</div>
+    <div class="kv"><b>实测</b>：<code>-rw-r--r-- root:root</code>，other 有读权限。里面是
+      JWT_SECRET、数据库密码、DASHSCOPE（百炼）API Key。</div>
+    <div class="kv"><b>影响评级说明</b>：<b>外网访问是 404，没有泄露到互联网</b>，所以这不是紧急事故。
+      但服务器上只要以后多了任何一个以非 root 用户运行的进程（比如新人装个服务、被入侵者拿到低权限 shell），
+      密钥就一并交代了。属于"现在没事、但边界不该这么宽"。</div>
+    <div class="fix">
+      <div class="fix-t">修复建议</div>
+      <code>chmod 600 /www/wwwroot/yibang-server/.env</code>。改完 PM2 里的进程以 root 运行，不受影响。
+      一行命令，没有副作用。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-t">🔵 P2 · 登录接口没有限流</div>
+    <div class="kv"><b>实测</b>：连发 30 次 <code>POST /api/user/login</code>，30 次全部正常受理（无 429）。</div>
+    <div class="kv"><b>影响</b>：拿不到 token（wx.login 的 code 一次性，伪造的会直接被微信拒），
+      所以<b>不是账号安全问题</b>；但会被当成免费请求出口刷 —— 每发一次后端就真的去请求一次微信接口，
+      既消耗微信侧的配额，也让服务器空转。</div>
+    <div class="fix">
+      <div class="fix-t">修复建议</div>
+      加最简单的同 IP 限流（如每分钟 20 次），超了返回 429。
+      项目里已经有 <code>express-rate-limit</code> 的话直接用，没有就用 redis 记一个计数器（redis 已经在用了）。
+      <b>不着急</b> —— 当前没有真实滥用迹象。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-t">🔵 P2 · 数据库里有个今天注册的空账号（id=14）</div>
+    <div class="kv"><b>实测</b>：users 表现在有 3 个 —— id=1（我的测试账号）、id=2（你本人）、
+      <b>id=14（2026-09-20 注册，无昵称、未绑手机号、0 笔流水）</b>。
+      流水分布：user 1 → 7 笔、user 2 → 5 笔，id=14 是空的。</div>
+    <div class="kv"><b>可能来源</b>：今天真机测试时用另一个微信登录过一次（换微信号 / 清了缓存重进），
+      或者是测试新用户注册流程时产生的。</div>
+    <div class="kv"><b>影响</b>：没有功能问题。只是"账本里躺着一条查不到来源的记录"，
+      以后统计"有多少用户"时它会被算进去。</div>
+    <div class="fix">
+      <div class="fix-t">处理建议</div>
+      <b>先问你</b>：这个号是不是你今天试出来的？如果是测试残留，我可以删掉（它的 0 笔流水，删了不影响任何人）；
+      如果是你的第二个微信号，那就留着 —— 那种情况下也建议去「我的」把手机号绑上（目前你和 id=1 都没绑，
+      换手机就找不回账本了）。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-t">⚪ 待你确认 · 小程序后台的 request 合法域名</div>
+    <div class="kv"><b>为什么列出来</b>：这一项我在服务器和小程序代码侧都验不了 —— 它配置在
+      微信公众平台后台（mp.weixin.qq.com → 开发管理 → 服务器域名）。
+      本地 <code>project.config.json</code> 的 <code>setting.urlCheck=false</code> 只影响开发者工具，
+      <b>真机上以后台配置为准</b>。</div>
+    <div class="kv"><b>需要确认的域名</b>：<code>https://api.dtzai.cn</code>
+      （request 必须配；<code>uploadFile</code> / <code>downloadFile</code> 如果也上传过照片或存过海报，同样要配）。</div>
+    <div class="fix">
+      <div class="fix-t">怎么验</div>
+      用你自己的微信打开小程序 → 点「记一笔」→ 打一句话 → 看能不能正常入账并出现在列表里。
+      <b>能入账 = 域名配好了</b>。如果提示"不在以下 request 合法域名列表中"，就是这条。
+    </div>
+  </div>
+
+  <h2>三、已验证、确认没有问题（别重复排查）</h2>
+  <div class="green">
+    <ul>
+      <li><b>代码一致性</b> —— 后端 17 个文件 md5 逐一比对，本地与线上<b>完全一致</b></li>
+      <li><b>进程稳定性</b> —— <code>unstable restarts: 0</code>。日志里那 42 次重启<b>全是我今天手动改代码重启的</b>，
+        不是崩溃循环（前几天刚修过 reconcile 崩溃循环，那条没复发）</li>
+      <li><b>日志里 26 次 <code>"null" is not valid JSON</code></b> —— 是我自己的审计脚本故意发的（<code>audit-api.js:123</code>）
+        测试容错，后端正确返回 <code>400 请求体不是合法 JSON</code>。<b>不是产品缺陷</b></li>
+      <li><b>日志里 1 次 <code>prompt is not defined</code></b> —— 旧 bug，代码里 <code>tryVisionDoc(filePath, format, prompt, today)</code>
+        的参数是有的，当前版本不会复现</li>
+      <li><b>SSL 续期</b> —— certbot 定时器 enabled + active，且 8、9 月都自动签发/续期过（到期日在滚动）</li>
+      <li><b>安全边界</b> —— 目录穿越（含 URL 编码）全被拒、<code>.env</code> 与 <code>/etc/passwd</code> 外网 404、
+        未登录调 AI 返回 401、已删接口返回明确 404</li>
+      <li><b>数据一致性</b> —— 余额与流水<b>零偏差</b>（这是最容易错又最难发现的一类问题，因为"账面数字"和"流水"分属两张表）</li>
+      <li><b>接口与隔离</b> —— 39/39 端点、29/29 越权、9/9 多租户、0 死接口，审计跑完无脏数据</li>
+      <li><b>前端</b> —— 静态自检 17 个 wxml 全过；8 套回归（登录流程/键盘避让/AI 入口迁移/报表版式/版式尺寸/日历/时区/格式）全绿</li>
+    </ul>
+  </div>
+
+  <h2>四、复盘后的一句话结论</h2>
+  <div class="note">
+    <b>这个项目可以继续往下做，五个环节没有一处"带病运行"。</b>
+    唯一算得上"会咬人"的是那个空账号（id=14）—— 但说到底也只是数据卫生，不影响功能。<br><br>
+    真正值得你现在就做的是两件事，都不超过 5 分钟：
+    <b>①</b> 回答那个 id=14 是不是你测试出来的；
+    <b>②</b> 用自己的微信在小程序里记一笔，确认服务器域名配好了（这是唯一一个我在代码侧验不了的环节）。<br><br>
+    另外提醒一句和代码质量无关但更要紧的：<b>你和测试账号都没绑手机号</b>。
+    手机号绑定页底部那条「先不绑，直接用」是合规要求（不能强制），但对你个人来说，
+    绑上之后换手机才能把账本找回来 —— 建议你在「我的 → 账号与安全」里把它绑了。
+  </div>
+
+</div>
+</body>
+</html>

@@ -27,15 +27,15 @@ const MASK = (p) => (p && p.length >= 7 ? p.slice(0, 3) + '****' + p.slice(-4) :
 const COPY = {
   welcome: {
     title: '易帮账本',
-    slogan: '会思考，越用越懂你的账本',
-    sub: '说一句话、拍一张单子，账就记好了',
+    slogan: '会记账的小帮手，越用越懂你',
+    sub: '说一声话、拍一张单子，账就记好了',
     cardTitle: '为什么值得注册',
     btn: '一键注册，马上开始',
     btnBusy: '正在注册…',
     skip: '先进入看看'
   },
   bind: {
-    title: '绑定手机号',
+    title: '绑定手机',
     slogan: '换手机也能把账本找回来',
     sub: '不绑也能用，这一步只是为了以后更方便',
     cardTitle: '为什么值得绑一下',

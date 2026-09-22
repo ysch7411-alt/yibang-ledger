@@ -29,7 +29,7 @@
   </view>
 
   <!-- 往来记录 -->
-  <view class="section-title">往来记录</view>
+  <view class="section-title">交易记录</view>
 
   <view wx:if="{{records.length}}" class="record-list">
     <view class="record-item" wx:for="{{records}}" wx:key="id">

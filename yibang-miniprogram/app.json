@@ -46,10 +46,6 @@
         "text": "报表"
       },
       {
-        "pagePath": "pages/contacts/contacts",
-        "text": "往来"
-      },
-      {
         "pagePath": "pages/profile/profile",
         "text": "我的"
       }

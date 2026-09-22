@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const pool = require('../db/config');
 const jwt = require('jsonwebtoken');
@@ -298,9 +298,17 @@ router.get('/export-excel', auth, async (req, res) => {
     };
 
     // ========== Sheet1: 交易记录 ==========
+    // 支持按日期范围导出（报表页用），不传就导出全部（我的页面用）
+    const { from, to } = req.query;
+    let whereSql = 'WHERE t.user_id = ? AND t.status = 1';
+    let params = [req.userId];
+    if (from && to) {
+      whereSql += ' AND t.record_date >= ? AND t.record_date <= ?';
+      params.push(from, to);
+    }
     const [rows] = await pool.query(
-      'SELECT t.type, t.amount, t.content, t.record_date, t.created_at, c.name AS contact_name FROM transactions t LEFT JOIN contacts c ON t.contact_id = c.id WHERE t.user_id = ? AND t.status = 1 ORDER BY t.record_date DESC, t.id DESC LIMIT 5000',
-      [req.userId]
+      `SELECT t.type, t.amount, t.content, t.record_date, t.created_at, c.name AS contact_name FROM transactions t LEFT JOIN contacts c ON t.contact_id = c.id ${whereSql} ORDER BY t.record_date DESC, t.id DESC LIMIT 5000`,
+      params
     );
 
     const sheet1 = workbook.addWorksheet('交易记录', { views: [{ state: 'frozen', ySplit: 1 }] });

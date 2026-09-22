@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -64,7 +64,15 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
+// 管理后台静态文件
+const ADMIN_DIR = path.join(__dirname, 'admin');
+if (fs.existsSync(ADMIN_DIR)) {
+  app.use('/admin', express.static(ADMIN_DIR));
+}
+
 // 路由模块
+app.use('/api/config', require('./routes/config'));
+app.use('/api/admin', require('./routes/admin'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/record', require('./routes/record'));
 app.use('/api/contact', require('./routes/contact'));

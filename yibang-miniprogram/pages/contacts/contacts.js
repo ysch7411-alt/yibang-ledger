@@ -129,6 +129,15 @@ Page({
   },
 
   /**
+   * 跳转采购单管理
+   */
+  goPurchase() {
+    wx.navigateTo({
+      url: '/pages/purchase-list/purchase-list'
+    });
+  },
+
+  /**
    * 打开添加弹层
    */
   openAdd() {

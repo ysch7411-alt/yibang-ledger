@@ -1,8 +1,8 @@
 <!--pages/advisor/advisor.wxml-->
 <view class="container" style="{{_cv}}">
   <view class="page-head">
-    <view class="page-title">生意参谋</view>
-    <view class="page-sub">根据你的账目自动分析</view>
+    <view class="page-title">经营小参谋</view>
+    <view class="page-sub">看看你的生意做得怎么样</view>
   </view>
 
   <!-- 洞察卡：全站唯一的深色卡，专门承载「结论」，与操作型白卡拉开层级 -->
@@ -81,7 +81,7 @@
   <scroll-view scroll-y class="chat-body" scroll-into-view="{{scrollTo}}" scroll-with-animation>
     <view wx:if="{{aiHistory.length === 0}}" class="chat-hello">
       <image class="empty-ico" src="/images/ic-sparkle.svg" mode="aspectFit" />
-      <view class="empty-title">可以这样问我</view>
+      <view class="empty-title">你可以这样问我</view>
       <view class="chat-asks">
         <view wx:for="{{quickAsks}}" wx:key="*this" class="chat-ask" data-q="{{item}}" bindtap="askQuick">{{item}}</view>
       </view>

@@ -1,7 +1,7 @@
 <!--pages/account/account.wxml-->
 <view class="container container-page" style="{{_cv}}">
   <view class="page-head">
-    <view class="page-title">账号与安全</view>
+    <view class="page-title">账号设置</view>
     <view class="page-sub">你的账号绑在微信上，这里管手机号和退出</view>
   </view>
 

@@ -1,3 +1,48 @@
+/* 采购单入口卡片 */
+.entry-card {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  margin-bottom: 24rpx;
+}
+.entry-card:active {
+  opacity: 0.85;
+}
+.entry-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 20rpx;
+  background: var(--brand-weak);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+}
+.entry-icon-img {
+  width: 44rpx;
+  height: 44rpx;
+}
+.entry-info {
+  flex: 1;
+}
+.entry-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--t1);
+  margin-bottom: 6rpx;
+}
+.entry-desc {
+  font-size: 24rpx;
+  color: var(--t3);
+}
+.entry-arrow {
+  width: 16rpx;
+  height: 16rpx;
+  border-top: 2rpx solid var(--t4);
+  border-right: 2rpx solid var(--t4);
+  transform: rotate(45deg);
+}
+
 /* pages/contacts/contacts.wxss */
 
 /* ---------- 顶部标题栏 ---------- */

@@ -1,7 +1,7 @@
 <!--pages/promote/promote.wxml-->
 <view class="container container-page container-cta" style="{{_cv}}">
   <view class="page-head">
-    <view class="page-title">推广赚钱</view>
+    <view class="page-title">推荐赚钱</view>
     <view class="page-sub">邀请 2 位好友，免费解锁终身版</view>
   </view>
 

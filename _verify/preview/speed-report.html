@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OCR / ASR 提速实测 + 真机失败根因</title>
+<style>
+  :root {
+    --bg:#0F1216; --card:#171B21; --line:#262C34; --t1:#E8ECF1; --t2:#A9B4C0; --t3:#6B7784;
+    --ok:#3FB950; --bad:#F85149; --warn:#D29922; --brand:#FF8A5B; --info:#58A6FF;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:40px 28px 72px; background:var(--bg); color:var(--t1);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1120px; margin:0 auto; }
+  h1 { margin:0 0 12px; font-size:25px; font-weight:700; letter-spacing:-.4px; }
+  h2 { margin:44px 0 12px; font-size:16px; font-weight:700; }
+  p { margin:0 0 10px; font-size:13.5px; line-height:1.85; color:var(--t2); }
+  b { color:var(--t1); font-weight:600; }
+  code { background:#0C0F13; border:1px solid var(--line); border-radius:4px; padding:1px 5px;
+    font-size:12px; color:var(--brand); font-family:ui-monospace,Menlo,Consolas,monospace; }
+  .hero { margin-top:22px; padding:20px 22px; border-radius:14px;
+    background:linear-gradient(160deg,#20180F 0%,#14181D 100%); border:1px solid #40301C; }
+  .hero .tag { display:inline-block; margin-bottom:10px; padding:3px 10px; border-radius:999px;
+    background:rgba(210,153,34,.16); color:var(--warn); font-size:11.5px; font-weight:700; }
+  .hero p { color:var(--t1); font-size:14px; margin:0; }
+  .hero p + p { margin-top:8px; color:var(--t2); font-size:13.5px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--line); }
+  th { font-size:11.5px; color:var(--t3); letter-spacing:.4px; }
+  td { color:var(--t2); }
+  tr:last-child td { border-bottom:none; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:4px 18px 12px; }
+  .panel-t { padding:14px 0 4px; font-size:13px; font-weight:700; color:var(--t1); }
+  .ok { color:var(--ok); font-weight:600; } .bad { color:var(--bad); font-weight:600; }
+  .pick { color:var(--brand); font-weight:700; }
+  .mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; }
+  .bar { display:inline-block; height:8px; border-radius:4px; background:var(--info); opacity:.55; vertical-align:middle; margin-right:8px; }
+  .shots { display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start; margin-top:10px; }
+  .shot { margin:0; }
+  .shot img { width:300px; border-radius:12px; border:1px solid var(--line); display:block; }
+  .shot figcaption { margin-top:8px; font-size:12.5px; color:var(--t3); line-height:1.7; width:300px; }
+  ul { margin:0; padding-left:20px; } li { font-size:13.5px; line-height:1.9; color:var(--t2); margin-bottom:6px; }
+  .note { margin-top:14px; padding:18px 20px; border-radius:14px; background:#131A22; border:1px solid #1E3550; }
+  .note h3 { margin:0 0 8px; font-size:14px; color:var(--info); }
+  .note p { color:var(--t1); font-size:13.5px; margin:0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>OCR / ASR 提速实测，以及真机失败的真正根因</h1>
+  <p>2026-09-19 · 易帮账本 · 全部数据来自线上服务器实测，不是估算</p>
+
+  <div class="hero">
+    <span class="tag">先说最重要的</span>
+    <p><b>上一个问题「图片识别和语音转写没成功」的根因找到了：客户端 15 秒超时被掐断。</b></p>
+    <p>不是算法问题、不是接口问题、不是域名问题。代码里 <code>wx.request</code> 写死 <code>timeout: 15000</code>，
+    而识别这条链在服务端要串起「OCR/语音 + 大模型」，网关实测有明显尖峰（单个模型调用就出现过 18 秒）。
+    <b>一旦超过 15 秒，客户端直接把连接断掉</b> —— 服务端却可能一切正常，所以日志里什么都看不出来。</p>
+    <p>你的手机在 17:18~17:19 拍了 3 次照：<b>2 次成功（各 3 项明细）、1 次超时失败</b>。
+    这就是「有时行有时不行」的真相。已经修好：AI 类接口超时改成 60 秒，同时把模型换成快的，把典型耗时压到 3 秒以内。</p>
+  </div>
+
+  <h2>一、每个环节到底慢在哪（实测）</h2>
+  <div class="panel">
+    <table>
+      <tr><th>环节</th><th>耗时</th><th>判断</th></tr>
+      <tr><td>读文件 + 转 base64（音频 38K / 图片 555K）</td><td class="mono">0 ~ 1ms</td><td>完全不是瓶颈</td></tr>
+      <tr><td>语音转写 <code>qwen3-asr-flash</code></td><td class="mono">465ms</td><td class="ok">已经很快，模型侧没什么可优化</td></tr>
+      <tr><td>图片取文 <code>qwen3.5-ocr</code>（555K 照片）</td><td class="mono">3757ms</td><td>偏慢，且随图片变大变慢</td></tr>
+      <tr><td>结构化 <code>qwen-plus</code></td><td class="mono">3946 ~ 6348ms</td><td class="bad">最大的那块，占了图片链路一多半</td></tr>
+      <tr><td>结构化 <code>qwen-flash</code></td><td class="mono">1728 ~ 2064ms</td><td class="ok">同样输入，准确率一样</td></tr>
+    </table>
+    <p style="margin:12px 0 0">结论很直白：<b>语音慢不在语音，在它后面的「归类」；图片慢在「取文 + 结构化」串了两次模型。</b></p>
+  </div>
+
+  <h2>二、换模型：快了多少，准没准掉</h2>
+  <p>用线上真实的归类提示词 + 7 个用例（含一句话多笔、昨天/前天换算、回款、应收、没提金额）逐个跑：</p>
+  <div class="panel">
+    <div class="panel-t">归类（语音链路的第二段）</div>
+    <table>
+      <tr><th>模型</th><th>正确率</th><th>中位耗时</th><th></th></tr>
+      <tr><td class="mono">qwen-plus（原来用的）</td><td>7 / 7</td><td class="mono">1042ms</td><td><span class="bar" style="width:104px"></span></td></tr>
+      <tr><td class="mono pick">qwen-flash ← 换成这个</td><td class="ok">7 / 7</td><td class="mono ok">513ms</td><td><span class="bar" style="width:51px;background:var(--brand)"></span>快 2 倍</td></tr>
+      <tr><td class="mono">qwen-turbo</td><td class="bad">6 / 7</td><td class="mono">526ms</td><td class="bad">算错 2.5吨×3800=7600，淘汰</td></tr>
+    </table>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <div class="panel-t">图片识别：一条路 vs 两条路</div>
+    <table>
+      <tr><th>路径</th><th>耗时</th><th>准确率</th></tr>
+      <tr><td>老路：取文 + <code>qwen-plus</code> 结构化（两次模型）</td><td class="mono">7784ms</td><td>全对</td></tr>
+      <tr><td>慢路：取文 + <code>qwen-flash</code> 结构化</td><td class="mono">2974ms</td><td>全对</td></tr>
+      <tr><td class="pick">快路：<code>qwen-vl-ocr-latest</code> 一次看图出结果</td><td class="mono ok">2506ms（最快 1928ms）</td><td class="ok">3 轮 3/3 全对</td></tr>
+      <tr><td><code>qwen3-vl-flash</code> 一次看图</td><td class="mono">3479ms</td><td>3 轮 3/3 全对</td></tr>
+      <tr><td><code>qwen-vl-plus</code> 一次看图</td><td class="mono">3680ms</td><td class="bad">0/3，第 1 行必错，淘汰</td></tr>
+    </table>
+    <p style="margin:12px 0 0">图片识别整体<b>快了约 3 倍</b>；在真实手机拍的模糊照片上差距更大（实测 0.7~1.5 秒 vs 原来约 10 秒）。
+    而且快路拿不到明细时会自动退回老路兜底 ——「模型没认出来」和「这张单子本来就没明细」是两件事，不能混。</p>
+  </div>
+
+  <h2>三、用什么标准判对错</h2>
+  <p>光靠随手拍的照片比不出结论 —— 那张图本身字迹有歧义时，每个模型给出的供应商名都不一样。所以我造了一张<b>真值已知的标准送货单</b>：</p>
+  <div class="shots">
+    <figure class="shot">
+      <img src="note-shot.png" alt="标准送货单测试图" />
+      <figcaption>测试用单据：3 行明细、合计 17,700、供应商重庆鑫达钢材有限公司。每个字段都有标准答案，可以逐条打分。</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="purchase-shot.jpg" alt="核对页实拍" />
+      <figcaption>把上面的单据从「拍照」这条路走一遍，识别结果落到核对页 —— 这是模拟器里的真实截图，前端一个输入框都没有。</figcaption>
+    </figure>
+  </div>
+
+  <h2>四、这一轮改了什么</h2>
+  <ul>
+    <li><b>修了超时</b>：AI 类接口（语音转写 / 单据识别 / 归类）显式用 60 秒超时，普通接口保持 15 秒（早失败早提示）。</li>
+    <li><b>归类换成 <code>qwen-flash</code></b>：语音链路的第二段快一倍，准确率不变。</li>
+    <li><b>图片改成一次调用出结果</b>（<code>qwen-vl-ocr-latest</code>），拿不到明细再退回原来两次串行的路。</li>
+    <li><b>拍照上传前压缩</b>：只降画质、不缩分辨率（单据上的小字金额靠分辨率认，缩了会认错）。真机 555KB 上传约 2.4 秒。</li>
+    <li><b>语音改成三段进度</b>：正在上传录音… → 正在听写… → 听到「xxx」再把结果摆出来，归类那一下有字可看，不是干转圈。</li>
+    <li><b>超时和连不上分开说</b>：处理办法不同，不能再糊成一句「暂时不可用」。</li>
+  </ul>
+
+  <h2>五、语音还能再快一档（还没做，等你定）</h2>
+  <div class="panel">
+    <table>
+      <tr><th>方案</th><th>效果</th><th>代价</th></tr>
+      <tr>
+        <td><b>微信同声传译插件</b></td>
+        <td class="ok">边说边出字，几乎零等待，还免费</td>
+        <td>要先去小程序后台添加这个插件；会换掉现在自研的语音转写</td>
+      </tr>
+      <tr>
+        <td><code>qwen3-asr-flash-realtime</code> 流式</td>
+        <td>边说边出字</td>
+        <td>要改成 WebSocket 长连接，改造量明显更大</td>
+      </tr>
+      <tr>
+        <td>再压录音体积</td>
+        <td class="bad">几乎没用</td>
+        <td>录音已经只有 24~38KB，不是瓶颈，不建议动</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="note">
+    <h3>一句话总结</h3>
+    <p>语音转写本身只用 465 毫秒，快的空间在它后面的归类 —— 已经快了一倍。图片原来要串两次模型（约 8 秒），现在一次调用出结果（约 2.5 秒）。而真正让你看到「没成功」的，是那个 15 秒的客户端超时，已经修掉了。</p>
+  </div>
+
+</div>
+</body>
+</html>

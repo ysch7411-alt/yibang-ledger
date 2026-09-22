@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>易帮账本 · 报表页</title>
+<style>
+  :root{
+    --ink:#101828; --ink2:#344054; --ink3:#667085; --line:#EDF0F3; --fill:#F6F7F9;
+    --brand:#C9451A; --brand-weak:#FFF4EE; --expense:#D92D20; --income:#0B7A43;
+    --warn:#B54708; --warn-weak:#FFF6E5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 20px 80px;background:#F6F7F9;color:var(--ink);
+    font:15px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:940px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:-.3px}
+  .sub{color:var(--ink3);font-size:14px;margin-bottom:32px}
+  h2{font-size:19px;margin:44px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .card{background:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px;
+    box-shadow:0 2px 6px rgba(16,24,40,.03),0 12px 32px -14px rgba(16,24,40,.12)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--ink3);font-weight:500;font-size:13px;background:var(--fill)}
+  tr:last-child td{border-bottom:none}
+  code{background:var(--fill);padding:1px 6px;border-radius:5px;font-size:13px;
+    font-family:ui-monospace,Consolas,monospace}
+  .ok{color:var(--income);font-weight:600}
+  .bad{color:var(--expense);font-weight:600}
+  .warnbox{background:var(--warn-weak);border:1px solid #F5D9A8;border-radius:12px;padding:16px 20px;margin:16px 0}
+  .warnbox .t{color:var(--warn);font-weight:600;margin-bottom:6px}
+  .notebox{background:var(--brand-weak);border-left:4px solid var(--brand);border-radius:8px;padding:14px 18px;margin:16px 0}
+  .shots{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+  .shot img{border-radius:10px;border:1px solid var(--line);display:block;width:236px}
+  .shot span{display:block;font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.55;width:236px}
+  .hl{background:#FFF1E8;border-radius:4px;padding:0 4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>报表页</h1>
+  <div class="sub">两个汇总表 + 一行小字进去的日历 · 2026-09-19</div>
+
+  <h2>一、页面回到简洁的样子</h2>
+  <div class="card">
+    日历<b>不在页面上</b>。整页从上到下就是：结余卡 → 每日汇总表 → 每月汇总表 → 往来。
+    唯一的入口是结余卡页脚那一行灰字 <span class="hl">按日查询 ›</span>，挨着原来的「分享报表」。
+    <br><br>
+    <b>你不点，页面上就没有日历，也不会为它发一次请求。</b>点了才在结余卡下面就地展开，
+    再点「收起日历」就收回去，下次点开还停在你上次看的那一个月。
+  </div>
+
+  <div class="shots" style="margin-top:20px">
+    <div class="shot">
+      <img src="../shots/simple-top.jpg" alt="默认">
+      <span><b>默认：页面上看不到日历</b><br>
+        只有「按日查询 ›」这一行小字。<br>整页结构跟你原来批的方案一致。</span>
+    </div>
+    <div class="shot">
+      <img src="../shots/simple-open.jpg" alt="点开后">
+      <span><b>点一下：就地展开</b><br>
+        那行小字变成「收起日历」，<br>日历出现在结余卡正下方。</span>
+    </div>
+  </div>
+
+  <h2>二、日历里三种看法</h2>
+  <div class="shots">
+    <div class="shot">
+      <img src="../shots/cal-open.jpg" alt="按日">
+      <span><b>按日</b> · 一个月的日历<br>
+        19 号是今天（高亮）。格底<br>绿条＝有进账、红条＝有支出</span>
+    </div>
+    <div class="shot">
+      <img src="../shots/cal-month.jpg" alt="按月">
+      <span><b>按月</b> · 一年 12 格<br>
+        有账的直接写收支，<br>没记账的显示「—」</span>
+    </div>
+    <div class="shot">
+      <img src="../shots/cal-sel.jpg" alt="点选与两张表">
+      <span><b>点某天 + 两张汇总表</b><br>
+        选中区给大字汇总；<br>下面两张表只有数字、无明细</span>
+    </div>
+  </div>
+
+  <h2>三、几个刻意的地方</h2>
+  <table>
+    <tr><th style="width:32%">做法</th><th>为什么</th></tr>
+    <tr>
+      <td>日历格子里<b>不放金额</b>，只放日期 + 一条彩色小条</td>
+      <td>一个月的日历分 7 列，每格只有 96rpx（约 48px 宽）—— 金额塞进去只能写成 10px 上下的小字，
+        <b>而你根本看不清小字</b>。所以格子里只说"这天有没有进账/支出"，金额放到下面用大字给。</td>
+    </tr>
+    <tr>
+      <td>点一格<b>只给汇总，不列每笔</b></td>
+      <td>这正是你要的「不需要展示明细」—— 你要的是"这天收了多少支了多少"，不是再翻一遍流水。</td>
+    </tr>
+    <tr>
+      <td><b>不能翻到未来</b>，翻不动时箭头是灰的</td>
+      <td>未来的账还没发生，翻过去只看到一片空白，然后你会怀疑"是不是数据丢了"。
+        灰箭头是明明白白告诉你"到头了"，而不是点了没反应。</td>
+    </tr>
+    <tr>
+      <td>三种粒度走<b>同一个接口</b></td>
+      <td>按日、按月、按年如果各写一套查询，迟早出现"日历上按天加起来"和"表格里按月"对不上。
+        现在有一道自动检查专门盯这条：<b>三种粒度的合计必须完全相等</b>。</td>
+    </tr>
+    <tr>
+      <td>应收应付<b>不算进收支</b></td>
+      <td>「别人欠我」是还没到手的钱，算进收入会让结余跟实际现金对不上。这条和日报完全一致。</td>
+    </tr>
+    <tr>
+      <td>只给「结余」一列上色</td>
+      <td>收入、支出的表头已经写着字了，再上色只是花；结余有正负，颜色在这里才真的有用。</td>
+    </tr>
+  </table>
+
+  <h2>四、验证</h2>
+  <table>
+    <tr><th style="width:52%">项目</th><th>结果</th></tr>
+    <tr><td>默认状态：页面上没有日历，也没有为它发请求</td><td class="ok">通过</td></tr>
+    <tr><td>点「按日查询」就地展开 / 点「收起日历」收起 / 再点游标保留</td><td class="ok">通过</td></tr>
+    <tr><td>核心不变量：按日 / 按月 / 按年的合计完全一致</td><td class="ok">通过</td></tr>
+    <tr><td>日历日期算术（跨年、闰年、网格补齐、往返一致）</td><td class="ok">25 / 25</td></tr>
+    <tr><td>分组汇总接口（空区间 / 脏日期 / 越权 / 未登录）</td><td class="ok">15 / 15</td></tr>
+    <tr><td>回归：分享 / 语音归类 / 分类统计</td><td class="ok">33 / 33 · 54 / 54 · 13 / 13</td></tr>
+    <tr><td>静态自检 / WXML / 样式 / 控制台</td><td class="ok">16 wxml · 17 wxss 全过 · 无报错</td></tr>
+  </table>
+
+  <div class="notebox">
+    <b>这一版我把"简洁"往回收了一刀</b>，顺便把上一版那套「收起状态仍占一张卡片」的样式全删了 ——
+    留着死样式比没有更糟，后人会以为它还有用。
+  </div>
+
+  <div class="warnbox">
+    <div class="t">⚠️ 有一条验证第一次是"假通过"，我把它挑出来了</div>
+    「应收应付不计入收支」这条，第一次跑的时候报告是绿的 —— 但我去看了一眼，
+    <b>库里压根没有应收应付的数据，那个分支根本没跑到</b>。
+    于是补造了两笔（应收 ¥9,999 + 应付 ¥8,888）进库，确认汇总里一分没算进去，才算是真验过。
+    <br><br>
+    <b>绿色的测试不等于测到了东西。</b>
+  </div>
+
+  <h2>五、顺手修的两个东西</h2>
+  <div class="card">
+    <ul style="margin:0;padding-left:20px">
+      <li><b>同一个页面上两个"今日/本月"式的开关用了两套样式</b>（一新一旧）。
+        已统一，顺手把开关高度从 36px 提到 44px —— 原来低于触控下限，容易点不中。</li>
+      <li><b>空状态里的按钮也是 38px 高</b>（比如"去记一笔"），同样提到 44px。
+        那个按钮往往是空状态下唯一的出路，点不中最要命。</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

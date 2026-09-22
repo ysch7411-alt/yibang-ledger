@@ -1,4 +1,4 @@
-// pages/summary/summary.js
+﻿// pages/summary/summary.js
 //
 // 「分享报表」这一块的设计口径（2026-09-19 用户明确要求「分享带明细的报表」）：
 //
@@ -739,6 +739,29 @@ Page({
 
   /* ================= 分享报表 ================= */
 
+  /**
+   * 日历选中某一天后，分享这天的报表。
+   * 切换到custom周期，加载完数据后自动打开分享面板。
+   */
+  async shareSelectedDay() {
+    const date = this.data.calSelKey;
+    if (!date) {
+      wx.showToast({ title: '请先选择日期', icon: 'none' });
+      return;
+    }
+    wx.showLoading({ title: '正在生成报表...' });
+    try {
+      this.setData({ period: 'custom', customDate: date });
+      await this.loadStat();
+      wx.hideLoading();
+      this.openShare();
+    } catch (err) {
+      wx.hideLoading();
+      wx.showToast({ title: '生成报表失败', icon: 'none' });
+      console.error('分享选中日期报表失败:', err);
+    }
+  },
+
   openShare() {
     if (!this._rows) this._rows = [];
     this.setData({ shareSheet: true });
@@ -817,7 +840,7 @@ Page({
     const t = this.data.shareToken;
     if (!t) {
       // 兜底：宁可分享主页，也不要分享一个打不开的链接
-      return { title: '易帮账本 · 说一句话就记账', path: '/pages/record/record' };
+      return { title: '易帮账本 · 说一声话就记账', path: '/pages/record/record' };
     }
     return {
       title: '易帮账本 · ' + this.data.periodLabel + '报表',
@@ -1020,7 +1043,7 @@ Page({
     ctx.fillText('易帮账本', PAD, y);
     ctx.fillStyle = C.ink3;
     ctx.font = FONT('', 22);
-    ctx.fillText('说一句话就记账', PAD + 132, y);
+    ctx.fillText('说一声话就记账', PAD + 132, y);
     ctx.textAlign = 'right';
     ctx.font = FONT('', 22);
     ctx.fillText(rep.generatedAt, W - PAD, y);
@@ -1101,13 +1124,19 @@ Page({
     }
 
     lines.push('');
-    lines.push('易帮账本 · 说一句话就记账');
+    lines.push('易帮账本 · 说一声话就记账');
     return lines.join('\n');
   },
 
   /**
    * 跳转到生意参谋（AI分析）
    */
+  goContacts() {
+    wx.navigateTo({
+      url: '/pages/contacts/contacts'
+    });
+  },
+
   goAdvisor() {
     wx.navigateTo({ url: '/pages/advisor/advisor' });
   },
@@ -1119,7 +1148,25 @@ Page({
     wx.showLoading({ title: '正在导出...' });
     try {
       const app = getApp();
-      const res = await app.request('/user/export-excel');
+      const { period, customDate } = this.data;
+      const fmt = require('../../utils/format.js');
+      
+      // 根据当前周期计算日期范围
+      let from, to;
+      if (period === 'today') {
+        from = to = fmt.ymd();
+      } else if (period === 'month') {
+        const now = new Date();
+        from = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+        to = fmt.ymd();
+      } else if (period === 'custom') {
+        from = to = customDate;
+      }
+      
+      const res = await app.request('/user/export-excel', {
+        method: 'GET',
+        data: { from, to }
+      });
       if (res.code !== 0) {
         wx.showToast({ title: res.msg || '导出失败', icon: 'none' });
         return;

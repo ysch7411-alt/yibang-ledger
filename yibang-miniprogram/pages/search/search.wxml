@@ -1,8 +1,8 @@
 <!--pages/search/search.wxml-->
 <view class="container" style="{{_cv}}">
   <view class="page-head">
-    <view class="page-title">查询</view>
-    <view class="page-sub">任意查，随便核</view>
+    <view class="page-title">找一找</view>
+    <view class="page-sub">想找什么，搜一下就有</view>
   </view>
 
   <!-- 采购单入口：拍过的送货单不在流水里，得有个地方能翻回来 -->
@@ -23,7 +23,7 @@
     <input
       class="search-input"
       value="{{keyword}}"
-      placeholder="搜人名、事由、金额"
+      placeholder="搜名字、事由、金额都行"
       placeholder-class="ph"
       confirm-type="search"
       bindinput="onInput"
@@ -69,7 +69,7 @@
   <view wx:elif="{{failed}}" class="card">
     <view class="empty">
       <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
-      <view class="empty-title">没能读到记录</view>
+      <view class="empty-title">没加载出来</view>
       <view class="empty-desc">网络不太顺，点下面再试一次。</view>
       <view class="empty-action" bindtap="retry">重新加载</view>
     </view>
@@ -78,7 +78,7 @@
   <view wx:elif="{{total === 0}}" class="card">
     <view class="empty">
       <image class="empty-ico" src="/images/ic-empty.svg" mode="aspectFit" />
-      <view class="empty-title">没有找到符合条件的记录</view>
+      <view class="empty-title">没找到相关的账</view>
       <view class="empty-desc">{{emptyText}}</view>
       <view wx:if="{{hasFilter}}" class="empty-action" bindtap="resetFilter">清除筛选</view>
     </view>

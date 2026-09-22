@@ -751,9 +751,12 @@ button::after {
 }
 .list-hd-hint {
   margin-left: 14rpx;
-  font-size: 24rpx;
-  font-weight: 400;
-  color: var(--t3);
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #fff;
+  background: #FF6B35;
+  padding: 8rpx 20rpx;
+  border-radius: 24rpx;
 }
 /* 右侧的次要动作（「识别有误？改一下」）。上下给足内边距，撑到 88rpx 触控线 */
 .list-hd-reset {
