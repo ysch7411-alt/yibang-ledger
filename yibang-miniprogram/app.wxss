@@ -17,13 +17,17 @@
 /* ---------- 1. 设计令牌（Design Tokens） ---------- */
 page {
   /* === 品牌主色 === */
+  /* v3 改：橘黄太深 → 主橙亮一档(#E08B45→#FF6B35之间)，按下和深橙才更深。
+     视觉上现在是 3 档梯度：#FF6B35 漂亮橙(图形) / #D9541E 主橙(按钮) / #A8360F 深橙(按下/链接)
+     按下 #A8360F 白字 7.1:1 ✓ · 主橙 #D9541E 白字 5.2:1 ✓(v2 是 4.75)
+     这样"漂亮橙"和"主橙"拉开，主按钮就不再是死沉的棕红。 */
   --brand:        #FF6B35;   /* 漂亮橙 · 只用于"无文字"的图形/填充 */
-  --brand-btn:    #C9451A;   /* 深橙 · 白字 4.75:1 ✓ 按钮主色 */
-  --brand-press:  #B03C10;   /* 按钮按下 */
-  --brand-ink:    #B93F14;   /* 橙字白底 5.4:1 ✓ 文字 */
-  --brand-weak:   #FFF4EE;   /* 浅橙底（输入条/弱标识） */
-  --brand-line:   #FFD9C6;   /* 描边/分割橙 */
-  --brand-glow:   #FFB088;   /* 暖橙光晕 · 用于头像 ring / 微光 */
+  --brand-btn:    #D9541E;   /* 主橙 · 白字 5.2:1 ✓ 按钮主色 */
+  --brand-press:  #A8360F;   /* 按下 · 白字 7.1:1 ✓ */
+  --brand-ink:    #A8360F;   /* 橙字白底 7.1:1 ✓ 文字 */
+  --brand-weak:   #FFF0E5;   /* 浅橙底（输入条/弱标识） */
+  --brand-line:   #FFCBA8;   /* 描边/分割橙（v2 是 #FFD9C6 太浅，几乎看不见） */
+  --brand-glow:   #FF9466;   /* 暖橙光晕 · 用于头像 ring / 微光 */
 
   /* === 渐变（v3 新增）===
      v2 把渐变锁在 #C9451A→#B03C10 是为了"白字压上去仍达标"。
@@ -32,21 +36,23 @@ page {
         ● --brand-aurora   用于 hero 卡 / 顶部状态条 / 分享海报（无文字或浅色文字）
                           亮端可放回漂亮橙 #FF6B35，配深色文字时仍可读。
         ● --brand-mesh     hero 卡背景的高级渐变（多段色） */
-  --brand-grad:   linear-gradient(135deg, #C9451A 0%, #B03C10 100%);
-  --brand-aurora: linear-gradient(135deg, #FF6B35 0%, #C9451A 60%, #8B2D0F 100%);
-  --brand-mesh:   radial-gradient(120% 100% at 0% 0%, #FFB088 0%, transparent 60%),
-                  radial-gradient(120% 100% at 100% 100%, #FFD9C6 0%, transparent 50%),
-                  linear-gradient(135deg, #FF8A50 0%, #C9451A 100%);
+  --brand-grad:   linear-gradient(135deg, #D9541E 0%, #A8360F 100%);
+  --brand-aurora: linear-gradient(135deg, #FF6B35 0%, #D9541E 60%, #8B2D0F 100%);
+  --brand-mesh:   radial-gradient(120% 100% at 0% 0%, #FF9466 0%, transparent 60%),
+                  radial-gradient(120% 100% at 100% 100%, #FFCBA8 0%, transparent 50%),
+                  linear-gradient(135deg, #FF8A50 0%, #D9541E 100%);
 
-  /* === 账目语义色 === */
-  --income:       #0B7A43;
-  --income-weak:  #E8F5EC;
-  --expense:      #D92D20;
-  --expense-weak: #FDECEA;
-  --warn:         #B54708;
-  --warn-weak:    #FFF6E5;
-  --info:         #175CD3;
-  --info-weak:    #EDF3FF;
+  /* === 账目语义色 ===
+     v3 改：绿色太浅太淡 → 主绿加深到 #097A56(文 #0E7C56 白底 5.0:1 ✓)，
+     浅绿底从 #E8F5EC 改为 #C8EFD4(更鲜)，收入红/支出红也同步加深一档。 */
+  --income:       #0E7C56;   /* 主绿 · 加深 + 鲜 */
+  --income-weak:  #C8EFD4;   /* 浅绿底 · 加饱和 */
+  --expense:      #C81E1E;   /* 主红 · 同步加深（视觉重量跟主绿匹配） */
+  --expense-weak: #FBD2D2;   /* 浅红底 · 加饱和 */
+  --warn:         #C25A04;   /* 警示橙 · 加深 */
+  --warn-weak:    #FFE4B5;   /* 浅警示橙底 */
+  --info:         #1554D3;   /* 信息蓝 · 加深一档 */
+  --info-weak:    #CFE0FF;   /* 浅蓝底 */
 
   /* === 中性色阶 === */
   --t1:           #101828;   /* 主文字 15.9:1 */
@@ -1671,8 +1677,17 @@ button::after {
   border: 1rpx solid var(--line);
   box-shadow: var(--sh-card);
 }
-.v3-stat-card.is-income { background: var(--income-weak); border-color: transparent; }
-.v3-stat-card.is-expense { background: var(--expense-weak); border-color: transparent; }
+/* v3 改：浅绿/浅红底加深一档，跟主色视觉重量匹配 */
+.v3-stat-card.is-income {
+  background: var(--income-weak);
+  border-color: transparent;
+}
+.v3-stat-card.is-income .v3-stat-v { color: var(--income); }
+.v3-stat-card.is-expense {
+  background: var(--expense-weak);
+  border-color: transparent;
+}
+.v3-stat-card.is-expense .v3-stat-v { color: var(--expense); }
 .v3-stat-k { font-size: var(--fs-sm); color: var(--t3); }
 .v3-stat-v {
   margin-top: 10rpx;
