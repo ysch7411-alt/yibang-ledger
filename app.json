@@ -1,0 +1,26 @@
+{
+  "pages": [
+    "pages/chat/chat",
+    "pages/memory/memory",
+    "pages/today/today",
+    "pages/report-view/report-view",
+    "pages/team/team",
+    "pages/plan/plan",
+    "pages/help/help",
+    "pages/profile/profile",
+    "pages/automations/automations",
+    "pages/connectors/connectors",
+    "pages/notifications/notifications",
+    "pages/experts/experts"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#FAF8F4",
+    "navigationBarTitleText": "易帮AI",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FAF8F4"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

@@ -1,0 +1,71 @@
+/* 分享报表查看页 */
+.pg{min-height:100vh;background:#FAF8F4;padding:24rpx;padding-bottom:80rpx}
+
+.loading{padding:120rpx 30rpx;text-align:center}
+.ld-t{font-size:28rpx;color:#8A7F76}
+
+.err{padding:120rpx 30rpx;text-align:center}
+.err-t{display:block;font-size:32rpx;color:#C9451A;margin-bottom:12rpx;font-weight:600}
+.err-s{display:block;font-size:24rpx;color:#8A7F76}
+
+/* 头部：店名 + 报表标题 + 区间 */
+.hdr{background:#fff;border-radius:20rpx;padding:28rpx 30rpx;
+  margin-bottom:24rpx;box-shadow:0 2rpx 12rpx rgba(120,60,30,.04)}
+.hdr-shop{font-size:24rpx;color:#8A7F76;margin-bottom:8rpx}
+.hdr-label{display:block;font-size:40rpx;font-weight:600;color:#2A2522;margin-bottom:6rpx}
+.hdr-range{display:block;font-size:26rpx;color:#5C5048;margin-bottom:14rpx}
+.hdr-meta{display:flex;flex-wrap:wrap;gap:10rpx}
+.m-pill{font-size:22rpx;color:#8A7F76;background:#FAF8F4;
+  padding:6rpx 14rpx;border-radius:999rpx;border:1rpx solid #F0EBE5}
+
+/* 报表三卡：收入/支出/结余 */
+.summary{display:flex;gap:14rpx;margin-bottom:24rpx}
+.sum-card{flex:1;background:#fff;border-radius:16rpx;padding:24rpx 18rpx;
+  text-align:center;box-shadow:0 2rpx 12rpx rgba(120,60,30,.04)}
+.sum-card-net{background:linear-gradient(135deg,#C9451A 0%,#E26B45 100%)}
+.sum-l{display:block;font-size:24rpx;color:#8A7F76;margin-bottom:8rpx}
+.sum-card-net .sum-l{color:rgba(255,255,255,.85)}
+.sum-v{display:block;font-size:36rpx;font-weight:600}
+.sum-v-inc{color:#1F8B4C}
+.sum-v-exp{color:#C9451A}
+.sum-v-net{color:#fff;font-size:40rpx}
+
+/* 客户对账：4 个分项 + 余额 */
+.contact{background:#fff;border-radius:16rpx;padding:24rpx 30rpx;margin-bottom:24rpx;
+  box-shadow:0 2rpx 12rpx rgba(120,60,30,.04)}
+.ct-name{font-size:30rpx;font-weight:600;color:#2A2522;margin-bottom:16rpx;
+  padding-bottom:14rpx;border-bottom:1rpx solid #F0EBE5}
+.ct-row{display:flex;justify-content:space-between;align-items:center;
+  padding:12rpx 0}
+.ct-l{font-size:26rpx;color:#5C5048}
+.ct-v{font-size:28rpx;color:#2A2522;font-weight:500}
+.ct-row-net{margin-top:10rpx;padding-top:18rpx;border-top:2rpx solid #F0EBE5}
+.ct-v-net{color:#C9451A;font-size:36rpx;font-weight:600}
+
+/* 明细列表 */
+.list-hd{display:flex;justify-content:space-between;align-items:center;
+  padding:0 6rpx;margin-bottom:12rpx}
+.lh-t{font-size:26rpx;color:#2A2522;font-weight:600}
+.lh-n{font-size:24rpx;color:#8A7F76}
+
+.txn{background:#fff;border-radius:12rpx;padding:18rpx 24rpx;margin-bottom:10rpx;
+  box-shadow:0 1rpx 6rpx rgba(120,60,30,.03)}
+.t-row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:6rpx}
+.t-type{font-size:22rpx;padding:3rpx 12rpx;border-radius:6rpx;font-weight:500}
+.t-in{color:#1F8B4C;background:#E8F4EC}
+.t-out{color:#C9451A;background:#F9EAE4}
+.t-amt{font-size:30rpx;font-weight:600;color:#2A2522}
+.t-row2{display:flex;justify-content:space-between;align-items:center}
+.t-content{flex:1;font-size:26rpx;color:#5C5048;margin-right:12rpx}
+.t-date{font-size:22rpx;color:#A79C92;flex-shrink:0}
+.t-row3{margin-top:4rpx}
+.t-contact{font-size:22rpx;color:#8A7F76;background:#FAF8F4;
+  padding:2rpx 10rpx;border-radius:4rpx}
+
+.truncated{background:#FFF4EE;border-radius:8rpx;padding:14rpx 24rpx;
+  margin-top:14rpx;font-size:22rpx;color:#C9451A;text-align:center;
+  border:1rpx solid #F2D9C8}
+
+.wm{padding:40rpx 30rpx 0;text-align:center}
+.wm-t{display:block;font-size:22rpx;color:#A79C92;margin-bottom:4rpx}
+.wm-s{display:block;font-size:20rpx;color:#C9C0B8}

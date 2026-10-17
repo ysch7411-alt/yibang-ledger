@@ -1,0 +1,22 @@
+<view class="pg">
+  <view class="hint">连接器让账本接入外部能力（票据识别、进货单识别等）。开通后，对应能力在记账时自动可用。</view>
+
+  <view class="loading" wx:if="{{loading}}">加载中…</view>
+
+  <view class="empty" wx:elif="{{!list.length}}">
+    <text>暂无连接器。</text>
+  </view>
+
+  <view class="list" wx:else>
+    <view class="card" wx:for="{{list}}" wx:key="code">
+      <view class="ico"><view class="ic ic-d-trend"></view></view>
+      <view class="bd">
+        <text class="nm">{{item.name}}</text>
+        <text class="meta">{{item.desc}}</text>
+        <text class="meta" wx:if="{{item.needsConsent}}">需授权后可用</text>
+      </view>
+      <switch checked="{{item.opened}}" disabled="{{busyCode === item.code}}" color="#C9451A"
+        data-code="{{item.code}}" bindchange="onToggle" />
+    </view>
+  </view>
+</view>

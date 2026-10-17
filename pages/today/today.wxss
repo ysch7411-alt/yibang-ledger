@@ -1,0 +1,66 @@
+/* 今天页 —— 配色沿用赭红 #C9451A + 米白 #FAF8F4 */
+.pg{min-height:100vh;background:#FAF8F4;padding:24rpx 24rpx 60rpx;box-sizing:border-box}
+
+/* 骨架屏：比转圈更能表达"正在加载内容" */
+.skel{padding:20rpx 0}
+.sk{background:#EFEAE3;border-radius:14rpx;margin-bottom:20rpx}
+.sk-1{height:200rpx}
+.sk-2{height:120rpx}
+.sk-3{height:280rpx}
+
+.err{padding:120rpx 40rpx;text-align:center}
+.err-t{display:block;font-size:30rpx;color:#2A2522;font-weight:500}
+.err-s{display:block;font-size:24rpx;color:#8A7F76;margin-top:14rpx}
+.err-btn{display:inline-block;margin-top:40rpx;background:#C9451A;color:#fff;
+  font-size:28rpx;padding:18rpx 56rpx;border-radius:999rpx}
+
+/* 今日概况 */
+.card-sum{background:#fff;border-radius:20rpx;padding:32rpx 24rpx;margin-bottom:24rpx;
+  box-shadow:0 4rpx 20rpx rgba(120,60,30,.06)}
+.row3{display:flex}
+.col{flex:1;text-align:center}
+.lb{display:block;font-size:24rpx;color:#8A7F76}
+.nm{display:block;font-size:44rpx;font-weight:600;margin-top:6rpx;color:#2A2522}
+.nm.green{color:#2E7D5B}
+.nm.red{color:#C9451A}
+.net{margin-top:28rpx;padding-top:24rpx;border-top:1rpx solid #F0EBE5;
+  display:flex;align-items:baseline;justify-content:center;gap:16rpx}
+.net-lb{font-size:26rpx;color:#8A7F76}
+.net-nm{font-size:52rpx;font-weight:700;color:#C9451A}
+
+/* 要你管的 */
+.todo{background:#FDF3EF;border:2rpx solid #F3D9CE;border-radius:20rpx;
+  padding:26rpx 24rpx;margin-bottom:24rpx}
+.todo-hd{display:flex;align-items:center;gap:12rpx;margin-bottom:16rpx}
+.todo-t{font-size:30rpx;font-weight:600;color:#C9451A}
+.todo-n{font-size:26rpx;background:#C9451A;color:#fff;border-radius:999rpx;
+  min-width:40rpx;text-align:center;padding:2rpx 12rpx}
+.todo-list{display:flex;flex-direction:column;gap:12rpx}
+.todo-i{background:#fff;border-radius:14rpx;padding:22rpx 24rpx;
+  display:flex;align-items:center;justify-content:space-between}
+.todo-i-t{font-size:28rpx;color:#2A2522}
+.todo-i-g{font-size:32rpx;color:#C9451A}
+
+/* 卡片 */
+.card{background:#fff;border-radius:20rpx;padding:28rpx 24rpx;margin-bottom:24rpx}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:24rpx}
+.card-t{font-size:30rpx;font-weight:600;color:#2A2522}
+.card-s{font-size:24rpx;color:#C9451A}
+
+/* 柱状图 */
+.bars{display:flex;align-items:flex-end;justify-content:space-between;height:280rpx}
+.bar-i{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-end;height:100%}
+.bar-v{font-size:20rpx;color:#8A7F76;margin-bottom:8rpx}
+/* 柱子的最小高度给 4%：数据很小时也要看得见一条线，不然像"没有数据" */
+.bar-col{width:36rpx;background:linear-gradient(180deg,#E2703B,#C9451A);
+  border-radius:8rpx;min-height:4rpx}
+.bar-d{font-size:20rpx;color:#A79C92;margin-top:12rpx}
+
+/* 快捷提问 */
+.qs{display:flex;flex-wrap:wrap;gap:14rpx}
+.q{background:#F9EAE4;color:#C9451A;font-size:26rpx;padding:16rpx 26rpx;border-radius:999rpx}
+
+.tip{background:#fff;border-radius:18rpx;padding:26rpx;margin-top:8rpx}
+.tip-t{display:block;font-size:26rpx;font-weight:600;color:#2E7D5B;margin-bottom:8rpx}
+.tip-s{display:block;font-size:24rpx;color:#8A7F76;line-height:1.6}

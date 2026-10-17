@@ -1,0 +1,29 @@
+/* pages/help/help.wxss —— 与 preview-demo.html 主色对齐 */
+.pg { min-height: 100vh; background: #FAF8F4; padding: 24rpx; }
+
+.hero { background: linear-gradient(135deg, #FF6B35 0%, #F45B22 100%); border-radius: 20rpx;
+  padding: 60rpx 32rpx; color: #fff; text-align: center; margin-bottom: 24rpx; }
+.hero-emoji { width: 96rpx; height: 96rpx; margin: 0 auto 16rpx; display: block; }
+.hero-t { display: block; font-size: 36rpx; font-weight: 700; }
+.hero-s { display: block; font-size: 26rpx; opacity: 0.9; margin-top: 8rpx; }
+
+.faq { background: #fff; border-radius: 24rpx; padding: 28rpx;
+  margin-bottom: 20rpx; box-shadow: 0 4rpx 16rpx rgba(0,0,0,.06);
+  border: 1rpx solid #f0f0eb; }
+.faq-h { font-size: 28rpx; font-weight: 600; color: #2A2522; margin-bottom: 20rpx; }
+.faq-i { display: flex; justify-content: space-between; align-items: center; padding: 20rpx 0;
+  border-top: 1rpx solid #F5F0EB; }
+.faq-q { font-size: 28rpx; color: #2A2522; }
+.faq-arrow { color: #888; font-size: 26rpx; }
+.faq-a { background: #F5F0EB; border-radius: 12rpx; padding: 20rpx 24rpx; margin-top: 12rpx;
+  font-size: 26rpx; color: #5C5048; line-height: 1.6; }
+
+.contact { background: #fff; border-radius: 24rpx; padding: 28rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,.06);
+  border: 1rpx solid #f0f0eb; }
+.contact-h { font-size: 28rpx; font-weight: 600; color: #2A2522; margin-bottom: 20rpx; }
+.contact-btn { display: flex; align-items: center; gap: 20rpx; padding: 24rpx 0;
+  border-top: 1rpx solid #F5F0EB; }
+.contact-btn:first-of-type { border-top: none; }
+.contact-ic { width: 44rpx; height: 44rpx; }
+.contact-t { font-size: 28rpx; color: #2A2522; }

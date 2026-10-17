@@ -1,0 +1,83 @@
+<!--pages/memory/memory.wxml-->
+<view class="pg">
+  <!-- 顶部"AI 学会了什么"摘要（workbuddy 风格的"越用越懂"可见账本） -->
+  <view wx:if="{{info}}" class="learned">
+    <view class="l-t">AI 学会了 {{info.nameCount}} 个叫法</view>
+    <view class="l-meta">
+      <text class="m-pill">共 {{info.termCount}} 条记忆</text>
+      <text wx:if="{{info.learnedFromUser > 0}}" class="m-pill m-pill-ok">{{info.learnedFromUser}} 条是你纠正的</text>
+      <text wx:if="{{info.correctionCount > 0}}" class="m-pill m-pill-ok">纠正过 {{info.correctionCount}} 次</text>
+    </view>
+
+    <!-- nameMap：人名/店名 alias → canonical -->
+    <view wx:if="{{info.nameMap.length > 0}}" class="l-block">
+      <text class="l-h">学会了这些叫法</text>
+      <view class="l-name">
+        <view wx:for="{{info.nameMap}}" wx:key="to" wx:for-item="n" class="name-card">
+          <view class="from">{{n.from}}</view>
+          <view class="arrow">→</view>
+          <view class="to">{{n.to}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- reasons：老板提过的原因 -->
+    <view wx:if="{{info.reasons.length > 0}}" class="l-block">
+      <text class="l-h">你常提这些原因</text>
+      <view class="l-reasons">
+        <view wx:for="{{info.reasons}}" wx:key="text" wx:for-item="r" class="r-card">{{r.text}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 顶部说明：让老板知道这是 AI 自动记的 -->
+  <view class="hdr">
+    <text class="hdr-t">共 {{total}} 条记忆</text>
+    <text class="hdr-s">点单条可删；点「全部清空」一键抹除。AI 之后会重新记。</text>
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="skel">
+    <view class="sk sk-1"></view>
+    <view class="sk sk-2"></view>
+    <view class="sk sk-3"></view>
+  </view>
+
+  <!-- 错误状态 -->
+  <view wx:elif="{{err}}" class="err">
+    <text class="err-t">{{err}}</text>
+    <text class="err-s">检查网络或稍后再试</text>
+    <view class="err-btn" bindtap="retry">重试</view>
+  </view>
+
+  <!-- 空状态：引导老板告诉 AI 一些事 -->
+  <view wx:elif="{{empty}}" class="empty">
+    <text class="e-t">还没有记忆</text>
+    <text class="e-s">试着跟 AI 说："我开的是老李水果店"、"老板娘叫张姐"、"习惯下午 5 点对账"，它就会记住。</text>
+  </view>
+
+  <!-- 列表 -->
+  <block wx:else>
+    <block wx:for="{{grouped}}" wx:key="type" wx:for-item="g">
+      <view class="grp">
+        <view class="grp-hd">
+          <text class="grp-ico">{{g.icon}}</text>
+          <text class="grp-t">{{g.label}}</text>
+          <text class="grp-n">{{g.items.length}}</text>
+        </view>
+        <view class="grp-list">
+          <view wx:for="{{g.items}}" wx:key="id" wx:for-item="m" class="mem">
+            <view class="mem-c">{{m.content}}</view>
+            <view class="mem-x" data-id="{{m.id}}" data-content="{{m.content}}" bindtap="onTapDelete">删掉</view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 一键清空（底部醒目） -->
+    <view class="danger-zone">
+      <view class="dz-btn" bindtap="onTapClearAll">全部清空记忆</view>
+      <text class="dz-s">清空后不可撤销 —— AI 会重新开始学</text>
+    </view>
+  </block>
+</view>

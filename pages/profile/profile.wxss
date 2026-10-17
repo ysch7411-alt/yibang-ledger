@@ -1,0 +1,44 @@
+.pg{min-height:100vh;background:#FAF8F4;padding:24rpx 24rpx 60rpx;box-sizing:border-box}
+
+/* 后端状态：三种颜色对应三种情况 */
+.hp{background:#fff;border-radius:16rpx;padding:24rpx;margin-bottom:24rpx;
+  display:flex;gap:18rpx;align-items:flex-start;
+  border-left:8rpx solid #D8D2CA}
+.hp.ok{border-left-color:#2E7D5B}
+.hp.degraded{border-left-color:#EF9F27}
+.hp.err{border-left-color:#D9534F}
+.hp-d{font-size:22rpx;background:#F1EDE6;color:#8A7F76;border-radius:8rpx;
+  padding:6rpx 14rpx;flex-shrink:0}
+.hp.ok .hp-d{background:#EAF3DE;color:#2E7D5B}
+.hp.degraded .hp-d{background:#FAEEDA;color:#854F0B}
+.hp.err .hp-d{background:#FCEBEB;color:#A32D2D}
+.hp-b{flex:1}
+.hp-t{display:block;font-size:26rpx;color:#2A2522;line-height:1.5}
+.hp-r{display:inline-block;margin-top:14rpx;font-size:24rpx;color:#C9451A;
+  border:2rpx solid #E8C4B6;padding:8rpx 24rpx;border-radius:999rpx}
+
+.shop{background:#fff;border-radius:20rpx;padding:28rpx 24rpx;margin-bottom:24rpx;
+  display:flex;align-items:center;gap:20rpx}
+.av{width:88rpx;height:88rpx;border-radius:24rpx;background:#C9451A;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:38rpx;flex-shrink:0}
+.bd{flex:1}
+.nm{display:block;font-size:34rpx;font-weight:600;color:#2A2522}
+.sb{display:block;font-size:24rpx;color:#8A7F76;margin-top:6rpx}
+
+.rows{background:#fff;border-radius:20rpx;padding:8rpx 24rpx;margin-bottom:24rpx}
+.row{display:flex;align-items:center;gap:20rpx;padding:28rpx 0;
+  border-bottom:1rpx solid #F5F1EB}
+.row:last-child{border-bottom:0}
+.ico{width:64rpx;height:64rpx;border-radius:18rpx;background:#FAF8F4;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ico .ic{width:34rpx;height:34rpx}
+.bd{flex:1;min-width:0}
+.rt{display:block;font-size:30rpx;color:#2A2522}
+.rs{display:block;font-size:22rpx;color:#8A7F76;margin-top:4rpx}
+.tag{font-size:22rpx;color:#C9451A;background:#F9EAE4;padding:6rpx 14rpx;
+  border-radius:999rpx;flex-shrink:0}
+.ar{font-size:36rpx;color:#C8BFB4;flex-shrink:0}
+
+.about{background:#fff;border-radius:18rpx;padding:26rpx}
+.a-t{display:block;font-size:26rpx;font-weight:600;color:#2A2522;margin-bottom:12rpx}
+.a-s{display:block;font-size:24rpx;color:#8A7F76;line-height:1.7;margin-bottom:6rpx}

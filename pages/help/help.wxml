@@ -1,0 +1,31 @@
+<!--pages/help/help.wxml-->
+<view class="pg">
+  <view class="hero">
+    <view class="ic ic-w-chat hero-emoji"></view>
+    <text class="hero-t">遇到问题？</text>
+    <text class="hero-s">常见问题 + 一键反馈</text>
+  </view>
+
+  <view class="faq">
+    <view class="faq-h">常见问题</view>
+    <block wx:for="{{faqs}}" wx:key="q" wx:for-item="f">
+      <view class="faq-i" bindtap="onTapFaq" data-idx="{{index}}">
+        <text class="faq-q">{{f.q}}</text>
+        <text class="faq-arrow">{{f.open ? '▾' : '▸'}}</text>
+      </view>
+      <view wx:if="{{f.open}}" class="faq-a">{{f.a}}</view>
+    </block>
+  </view>
+
+  <view class="contact">
+    <view class="contact-h">联系人工</view>
+    <view class="contact-btn" bindtap="onTapCS">
+      <view class="ic ic-d-chat contact-ic"></view>
+      <text class="contact-t">发起对话</text>
+    </view>
+    <view class="contact-btn" bindtap="onTapFeedback">
+      <view class="ic ic-d-pen contact-ic"></view>
+      <text class="contact-t">提个 Bug / 建议</text>
+    </view>
+  </view>
+</view>

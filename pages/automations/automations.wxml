@@ -1,0 +1,36 @@
+<view class="pg">
+  <view class="hint">自动化按设定时间自动跑；也可以点"运行"立刻生成一次。结果会直接展示在这里。</view>
+
+  <view class="loading" wx:if="{{loading}}">加载中…</view>
+
+  <view class="empty" wx:elif="{{!list.length}}">
+    <text>还没有自动化任务。</text>
+    <text class="sub">在后台（CloudBase 数据表 yibang.automations）添加一条即可。</text>
+  </view>
+
+  <view class="list" wx:else>
+    <view class="card" wx:for="{{list}}" wx:key="id">
+      <view class="ico"><view class="ic ic-d-ai"></view></view>
+      <view class="bd">
+        <text class="nm">{{item.name}}</text>
+        <text class="meta">{{item.scheduleText}}{{item.enabled ? '' : ' · 已暂停'}}</text>
+        <text class="meta" wx:if="{{item.lastRunAt}}">上次运行：{{item.lastRunAt}}</text>
+      </view>
+      <button class="run" size="mini" data-id="{{item.id}}" data-code="{{item.code}}"
+        bindtap="onRun" disabled="{{runningId === item.id}}">
+        {{runningId === item.id ? '运行中…' : '运行'}}
+      </button>
+    </view>
+  </view>
+
+  <!-- 运行结果弹层 -->
+  <view class="mask" wx:if="{{result}}" bindtap="closeResult">
+    <view class="sheet" catchtap="noop">
+      <text class="s-t">{{result.name}} · {{result.ok ? '运行成功' : '运行失败'}}</text>
+      <scroll-view class="s-b" scroll-y="true">
+        <text class="s-text">{{result.text}}</text>
+      </scroll-view>
+      <view class="s-ok" bindtap="closeResult">关闭</view>
+    </view>
+  </view>
+</view>

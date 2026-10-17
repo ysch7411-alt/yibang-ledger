@@ -1,0 +1,22 @@
+.pg{min-height:100vh;background:#FAF8F4;padding:24rpx 24rpx 60rpx;box-sizing:border-box}
+.bar{display:flex;align-items:center;justify-content:space-between;padding:8rpx 8rpx 20rpx}
+.bar-t{font-size:28rpx;font-weight:600;color:#2A2522}
+.bar-a{font-size:24rpx;color:#C9451A;background:#F9EAE4;padding:8rpx 22rpx;border-radius:999rpx}
+.loading,.empty{padding:80rpx 24rpx;text-align:center;color:#8A7F76;font-size:26rpx}
+
+/* 每日提醒订阅条 —— 和通知卡同样的白底圆角，但用左侧色条区分"这是设置，不是一条通知" */
+.sub{display:flex;align-items:center;gap:16rpx;background:#fff;border-radius:20rpx;
+  padding:24rpx;margin-bottom:20rpx;border-left:8rpx solid #E8B84B;box-sizing:border-box}
+.sub-bd{flex:1;min-width:0}
+.sub-t{display:block;font-size:30rpx;color:#2A2522;font-weight:600}
+.sub-m{display:block;font-size:22rpx;color:#8A7F76;margin-top:6rpx;line-height:1.5}
+.sub-btn{font-size:24rpx;color:#fff;background:#C9451A;padding:12rpx 30rpx;border-radius:999rpx;flex-shrink:0}
+.sub-btn.dis{opacity:.55}
+.list{display:flex;flex-direction:column;gap:16rpx}
+.card{background:#fff;border-radius:20rpx;padding:24rpx;display:flex;align-items:center;gap:16rpx;position:relative}
+.card.read{opacity:.6}
+.dot{width:14rpx;height:14rpx;border-radius:50%;background:#C9451A;flex-shrink:0}
+.bd{flex:1;min-width:0}
+.nm{display:block;font-size:30rpx;color:#2A2522;font-weight:600}
+.meta{display:block;font-size:22rpx;color:#8A7F76;margin-top:6rpx}
+.read-btn{font-size:22rpx;color:#C9451A;background:#F9EAE4;padding:8rpx 18rpx;border-radius:999rpx;flex-shrink:0}

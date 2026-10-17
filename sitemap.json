@@ -1,0 +1,4 @@
+{
+  "desc": "易帮AI · 云开发版",
+  "rules": [{ "action": "allow", "page": "*" }]
+}

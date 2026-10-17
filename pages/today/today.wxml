@@ -1,0 +1,92 @@
+<view class="pg">
+  <!-- 加载中：骨架屏而不是转圈 -->
+  <view wx:if="{{loading}}" class="skel">
+    <view class="sk sk-1"></view>
+    <view class="sk sk-2"></view>
+    <view class="sk sk-3"></view>
+  </view>
+
+  <!-- 🔴 出错时如实显示原因 + 给重试。绝不显示成"今天 0 笔" ——
+       那会让"服务挂了"看起来像"没记账"。 -->
+  <view wx:elif="{{err}}" class="err">
+    <text class="err-t">{{err}}</text>
+    <text class="err-s">检查一下网络，或点下面重试</text>
+    <view class="err-btn" bindtap="retry">重试</view>
+  </view>
+
+  <block wx:else>
+    <!-- 今日概况 -->
+    <view class="card-sum">
+      <view class="row3">
+        <view class="col">
+          <text class="lb">进账</text>
+          <text class="nm green">{{today.income}}</text>
+        </view>
+        <view class="col">
+          <text class="lb">支出</text>
+          <text class="nm red">{{today.expense}}</text>
+        </view>
+        <view class="col">
+          <text class="lb">笔数</text>
+          <text class="nm">{{today.cnt}}</text>
+        </view>
+      </view>
+      <view class="net">
+        <text class="net-lb">今日结余</text>
+        <text class="net-nm">¥{{today.net}}</text>
+      </view>
+    </view>
+
+    <!-- 🔴 要我管的：排在数字下面。老板先看该动手的，再看报表。 -->
+    <view class="todo" wx:if="{{pending > 0}}">
+      <view class="todo-hd">
+        <text class="todo-t">要你管的</text>
+        <text class="todo-n">{{pending}}</text>
+      </view>
+      <view class="todo-list">
+        <view class="todo-i" data-q="有没有待审核的账" bindtap="goAsk">
+          <text class="todo-i-t">有待审核的账</text>
+          <text class="todo-i-g">›</text>
+        </view>
+        <view class="todo-i" data-q="谁欠我钱" bindtap="goAsk">
+          <text class="todo-i-t">谁欠我钱</text>
+          <text class="todo-i-g">›</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 近 7 天进账：柱状图比数字直观 -->
+    <view class="card" wx:if="{{bars.length > 0}}">
+      <view class="card-hd">
+        <text class="card-t">近 7 天进账</text>
+        <text class="card-s" bindtap="goExperts">问采购管家 ›</text>
+      </view>
+      <view class="bars">
+        <view class="bar-i" wx:for="{{bars}}" wx:key="date"
+              data-date="{{item.date}}" bindtap="onTapBar">
+          <text class="bar-v">{{item.v}}</text>
+          <view class="bar-col" style="height: {{item.h}}%"></view>
+          <text class="bar-d">{{item.date}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快捷提问：按钮写老板的话，不是功能名 -->
+    <view class="card">
+      <view class="card-hd"><text class="card-t">一句话就能问</text></view>
+      <view class="qs">
+        <view class="q" data-q="这个月赚了多少" bindtap="goAsk">这个月赚了多少</view>
+        <view class="q" data-q="谁欠我钱" bindtap="goAsk">谁欠我钱</view>
+        <view class="q" data-q="钱都花在哪了" bindtap="goAsk">钱花在哪了</view>
+        <view class="q" data-q="进货花了多少钱" bindtap="goAsk">进货花了多少钱</view>
+        <view class="q" data-q="钱收在哪个渠道" bindtap="goAsk">钱在哪个渠道</view>
+        <view class="q" data-q="今天有什么事吗" bindtap="goAsk">今天有事吗</view>
+      </view>
+    </view>
+
+    <view class="tip">
+      <text class="tip-t">新朋友，先记一笔</text>
+      <text class="tip-s">「老李今天送了青菜，320 块」—— 直接在「问账房」里说就行，数字它自己会算。</text>
+    </view>
+  </block>
+</view>

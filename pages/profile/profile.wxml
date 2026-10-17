@@ -1,0 +1,81 @@
+<view class="pg">
+  <!-- 🔴 后端状态放最上面。云开发版第一次用最常见的失败是
+       "服务没部署好 / openid 取不到"，那一眼就能看出来，
+       比让人对着"没有数据"猜半天好得多。 -->
+  <view class="hp {{health.state}}">
+    <view class="hp-d">{{health.state}}</view>
+    <view class="hp-b">
+      <text class="hp-t">{{health.text}}</text>
+      <text class="hp-r" wx:if="{{health.state !== 'ok'}}" bindtap="retry">重试</text>
+    </view>
+  </view>
+
+  <!-- 店铺 -->
+  <view class="shop">
+    <view class="av">{{shop && shop.name ? shop.name[0] : '店'}}</view>
+    <view class="bd">
+      <text class="nm">{{shop.name || '我的店'}}</text>
+      <text class="sb">{{shop.industry || '还没选行业'}}{{shop.plan === 'pro' ? ' · PRO' : ''}}</text>
+    </view>
+  </view>
+
+  <!-- 入口 -->
+  <view class="rows">
+    <view class="row" bindtap="goExperts">
+      <view class="ico"><view class="ic ic-d-income"></view></view>
+      <view class="bd">
+        <text class="rt">专家广场</text>
+        <text class="rs">账房助手 · 采购管家 · 催款员</text>
+      </view>
+      <text class="ar">›</text>
+    </view>
+
+    <!-- 🔴 阶段四：长期记忆透明度入口 -->
+    <view class="row" bindtap="goMemory">
+      <view class="ico"><view class="ic ic-d-remember"></view></view>
+      <view class="bd">
+        <text class="rt">AI 记住了什么</text>
+        <text class="rs">查 AI 记下的店铺 / 习惯 / 人物关系 · 可删可清空</text>
+      </view>
+      <text class="ar">›</text>
+    </view>
+
+    <view class="row" bindtap="goAutomations">
+      <view class="ico"><view class="ic ic-d-ai"></view></view>
+      <view class="bd">
+        <text class="rt">自动化</text>
+        <text class="rs">每天早上自动发 · 可手动跑一次</text>
+      </view>
+      <text class="tag" wx:if="{{automationCount}}">{{automationCount}} 条</text>
+      <text class="ar">›</text>
+    </view>
+
+    <view class="row" bindtap="goConnectors">
+      <view class="ico"><view class="ic ic-d-trend"></view></view>
+      <view class="bd">
+        <text class="rt">连接器</text>
+        <text class="rs">票据识别 · 进货单识别</text>
+      </view>
+      <text class="tag" wx:if="{{connectorOpened}}">{{connectorOpened}} 个已开通</text>
+      <text class="ar">›</text>
+    </view>
+
+    <view class="row" bindtap="goNotifications">
+      <view class="ico"><view class="ic ic-d-alert"></view></view>
+      <view class="bd">
+        <text class="rt">通知</text>
+        <text class="rs">系统消息 · 到期提醒 · 参谋建议</text>
+      </view>
+      <text class="tag" wx:if="{{unreadCount}}">{{unreadCount}} 条未读</text>
+      <text class="ar">›</text>
+    </view>
+  </view>
+
+  <!-- 说清这一版是什么，别让老板以为是那个完整版 -->
+  <view class="about">
+    <text class="a-t">这是云开发测试版</text>
+    <text class="a-s">数据存在腾讯云开发里，和你原来那套是两个独立系统，互不影响。</text>
+    <text class="a-s">现在的能力：查月结余、算利润、查欠款、看品类、看渠道、查进货、查涨价、每日提醒、对话记账。</text>
+    <text class="a-s">还没做：语音记账、拍照识票据、真推送提醒、付费开通。</text>
+  </view>
+</view>

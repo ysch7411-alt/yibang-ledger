@@ -1,0 +1,657 @@
+/* pages/chat/chat.wxss —— 方案 D · 对话驱动
+ *
+ * 2026-10-15：按 preview-demo.html 视觉 1:1 对齐
+ * 主色 #FF6B35，2x 缩放（demo 设计稿 375px → rpx 750rpx = ×2）
+ */
+
+page {
+  background: #FAFAF7;
+  height: 100vh;
+  font-family: -apple-system, "PingFang SC", sans-serif;
+}
+
+/* ===== 顶部状态条（左右布局：净余大字 + 右侧 icon 区）===== */
+.topbar {
+  padding: 24rpx 32rpx;        /* demo: 12px 16px → ×2 */
+  padding-top: calc(24rpx + env(safe-area-inset-top, 0px));  /* iPhone 刘海屏顶部让出 */
+  background: #fff;
+  border-bottom: 1rpx solid #eee;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tb-stats { display: flex; flex-direction: column; }
+.tb-d { font-size: 20rpx; color: #888; display: flex; align-items: center; }      /* demo: 10px */
+.tb-name-wrap { display: flex; align-items: center; gap: 8rpx; padding: 4rpx 10rpx;
+  border-radius: 10rpx; max-width: 360rpx; }
+.tb-name-hover { background: #F5F0EB; }
+.tb-name {
+  max-width: 320rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 34rpx; color: #2A2522; font-weight: 800; line-height: 1.1;  /* demo: 17px 加粗 */
+  letter-spacing: -0.5rpx;
+}
+.tb-pen { width: 22rpx; height: 22rpx; opacity: .55; flex-shrink: 0; }
+.tb-sep { margin: 0 8rpx; color: #C8C2BC; }
+.tb-n {
+  font-size: 36rpx; font-weight: 800; color: #C9451A; line-height: 1;   /* 正数=赭红（红涨） */
+  letter-spacing: -1rpx; font-variant-numeric: tabular-nums;     /* demo: 18px */
+  margin-top: 4rpx;
+}
+.tb-n-neg { color: #1a7f4a; }   /* 净余为负=绿（跌） */
+.tb-actions { display: flex; gap: 12rpx; align-items: center; }   /* demo: 6px */
+.tb-icon {
+  width: 60rpx; height: 60rpx; border-radius: 50%;             /* demo: 30px */
+  background: #FAFAF7; border: 1rpx solid #f0f0eb;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30rpx;                                            /* demo: 15px */
+}
+.tb-icon:active { background: #f0f0eb; }
+.tb-icon .ic { width: 34rpx; height: 34rpx; }
+.tb-share {
+  background: #FF6B35; color: #fff; border: none; border-radius: 999rpx;
+  padding: 12rpx 24rpx; font-size: 24rpx; font-weight: 600;     /* demo: 6px 12px / 12px */
+}
+.tb-share:active { background: #F45B22; }
+
+/* ===== 菜单弹层（右侧下拉，跟原型一致）===== */
+.menu-mask {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.45); z-index: 99;
+}
+.menu-sheet {
+  position: fixed; right: 24rpx; top: 120rpx; background: #fff;
+  border-radius: 20rpx; box-shadow: 0 8rpx 32rpx rgba(0,0,0,.2);
+  z-index: 100; width: 360rpx; padding: 8rpx 0;             /* demo: 12px 20px / 4px 0 */
+}
+.menu-item {
+  display: flex; align-items: center; gap: 20rpx;
+  padding: 24rpx 32rpx; font-size: 30rpx; color: #333;    /* demo: 12px 16px / 15px */
+}
+.menu-item:active { background: #f0f0eb; }
+.menu-item-danger { color: #B04848; }
+.menu-i-ic { width: 40rpx; height: 40rpx; }
+.menu-cancel {
+  text-align: center; padding: 20rpx; font-size: 26rpx; color: #888;  /* demo: 10px / 13px */
+  border-top: 1rpx solid #f0f0eb; margin-top: 8rpx;
+}
+
+/* ===== 对话流 ===== */
+.chat {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 24rpx 40rpx 40rpx; background: #FAFAF7;       /* 左右内边距 40rpx（20px），避开四曲屏边缘 */
+  box-sizing: border-box;
+}
+.tail { height: 16rpx; }                         /* demo: 8px */
+.msg { margin-bottom: 32rpx; }                    /* demo: 16px */
+.msg-u { display: flex; justify-content: flex-end; }
+.msg-u-b {
+  background: #FF6B35; color: #fff; padding: 28rpx 36rpx;   /* demo: 14px 18px */
+  border-radius: 40rpx 40rpx 8rpx 40rpx;          /* demo: 20px 20px 4px 20px */
+  max-width: 78%;
+  font-size: 30rpx; line-height: 1.4;            /* demo: 15px */
+  box-shadow: 0 2rpx 8rpx rgba(255,107,53,.15);
+  overflow-wrap: anywhere; word-break: break-word;
+}
+.msg-u-t { font-size: 20rpx; color: #888; margin: 8rpx 12rpx 0; text-align: right; }  /* demo: 10px */
+.msg-a { display: flex; gap: 20rpx; align-items: flex-start; }    /* demo: 10px */
+.msg-a-v {
+  width: 80rpx; height: 80rpx; border-radius: 50%;             /* demo: 40px */
+  background: #1a1a1a; color: #FF6B35;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32rpx; font-weight: 700; flex-shrink: 0;          /* demo: 16px */
+}
+/* 小帮头像图片版：替换原「账」字，填满圆形 */
+.msg-a-v.img { background: transparent; padding: 0; overflow: hidden; border: 1rpx solid #eee;
+  transform-origin: center center;
+  animation: xb-blink 5s infinite;        /* 空闲时偶尔眨一下 */
+}
+/* 回答中（小帮正在算/说）：快速眨 + 轻微上下晃，像在说话 */
+.msg-a-v.img.talking {
+  animation: xb-talk 0.9s ease-in-out infinite;
+}
+@keyframes xb-blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  93% { transform: scaleY(0.12); }
+  96% { transform: scaleY(1); }
+}
+@keyframes xb-talk {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  22% { transform: translateY(-6rpx) scaleY(1); }
+  32% { transform: translateY(-6rpx) scaleY(0.15); }   /* 快眨 */
+  42% { transform: translateY(-6rpx) scaleY(1); }
+  70% { transform: translateY(0) scaleY(1); }
+}
+.msg-a-c { flex: 1; min-width: 0; }
+.msg-a-n { font-size: 22rpx; color: #888; margin-bottom: 8rpx; }    /* demo: 10px */
+.msg-a-b {
+  background: #fff; padding: 28rpx 36rpx;            /* demo: 14px 18px */
+  border-radius: 8rpx 40rpx 40rpx 40rpx;            /* demo: 4px 20px 20px 20px */
+  font-size: 30rpx; line-height: 1.5; color: #333;  /* demo: 14px */
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,.06);
+  overflow-wrap: anywhere; word-break: break-word;  /* 长串（链接/单号）不撑破卡片 */
+}
+.msg-a-thinking { color: #888; font-style: italic; }
+.msg-a-err {
+  background: #FCE8E8; color: #B04848; padding: 20rpx 28rpx;     /* demo: 12px */
+  border-radius: 16rpx; margin-top: 16rpx; font-size: 26rpx;  /* demo: 13px */
+  display: flex; align-items: center; gap: 12rpx;
+}
+/* 🔴 2026-10-17 删：.msg-a-demo 死样式（catch 路径已不再返 mock 假数据，角标无意义） */
+/* 情绪价值评语：像"人"说的话，不要做成告警/卡片那种"系统提示"的观感 */
+.msg-a-tone {
+  display: flex; align-items: flex-start; gap: 10rpx;
+  margin-top: 16rpx; padding: 4rpx 0 4rpx 20rpx;
+  border-left: 4rpx solid #F0E0A0;
+}
+.msg-a-tone .ic { width: 28rpx; height: 28rpx; margin-top: 4rpx; opacity: .9; }
+.msg-a-tone-t {
+  flex: 1; font-size: 25rpx; line-height: 1.6; color: #8A7F76;  /* demo: 13px */
+}
+/* 🔴 16:09 OCR 原文展开 */
+.raw-toggle {
+  margin-top: 12rpx; padding: 8rpx 0; color: #FF6B35;
+  font-size: 24rpx;
+}
+.raw-body {
+  margin-top: 8rpx; padding: 16rpx; background: #F8F5F0;
+  border-radius: 8rpx; font-size: 22rpx; color: #6B5A4A;
+  line-height: 1.5; word-break: break-all;
+  max-height: 320rpx; overflow: auto;
+}
+.msg-a-undone {
+  background: #F0F0EB; color: #666; padding: 20rpx 28rpx;
+  border-radius: 16rpx; margin-top: 16rpx; font-size: 26rpx;
+  display: flex; align-items: center; gap: 16rpx;
+}
+.msg-a-undone-action {
+  color: #FF6B35; padding: 8rpx 20rpx;
+  border: 1rpx solid #FF6B35; border-radius: 8rpx;
+  margin-left: auto;
+}
+.msg-a-remembered {
+  background: #EEF7FF; color: #1E5BD9; padding: 12rpx 20rpx;
+  border-radius: 16rpx; margin-top: 16rpx; font-size: 24rpx;   /* demo: 12px */
+  display: inline-flex; align-items: center; gap: 10rpx;
+}
+
+/* ===== 富交互卡片（核心：和 prototype 几乎一致）===== */
+.card {
+  background: #fff; border-radius: 24rpx; padding: 28rpx;     /* demo: 16px / 14px */
+  margin-top: 16rpx;                                          /* demo: 10px */
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,.06);
+  border: 1rpx solid #f0f0eb;
+  max-width: 100%; box-sizing: border-box;
+  overflow-wrap: anywhere; word-break: break-word;
+}
+.card-hd {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 20rpx; border-bottom: 1rpx solid #f0f0eb; margin-bottom: 20rpx;   /* demo: 12px */
+}
+.card-hd-t { font-size: 30rpx; font-weight: 700; color: #2A2522; }   /* demo: 14px */
+.card-hd-tag {
+  background: #FFFBEB; color: #B08800; font-size: 20rpx;
+  padding: 6rpx 14rpx; border-radius: 999rpx;            /* demo: 10px */
+}
+.card-row {
+  display: flex; justify-content: space-between; padding: 8rpx 0;   /* demo: 4px */
+  font-size: 28rpx;                                            /* demo: 13px */
+}
+.card-row > text:first-child { color: #888; }
+.card-row-v { font-weight: 600; color: #2A2522; font-variant-numeric: tabular-nums; }
+.card-pts { margin-top: 10rpx; }                              /* demo: 5px */
+.card-pt {
+  font-size: 26rpx; color: #6C6258; line-height: 1.6; padding: 4rpx 0;   /* demo: 13px */
+}
+
+/* 卡片操作按钮：默认两列（确认卡 2 按钮铺满）；.card-act-3 三个一排，紧凑不扎眼 */
+/* 🔴 2026-10-17：原来用 `width: calc(50% - 6rpx)` / `calc(33.33% - 8rpx)` 排按钮，
+ *   真机上 calc 里的 rpx 换算失效 → width 无效 → 按钮退回内容宽，
+ *   结果「分享 / 记住 / 导出」挤成 2+1 三行（老易截图里的样子）。
+ *   改成 flex:1 1 0 均分 + 不换行，想放几个就几个（3 个各 1/3，带撤销时 4 个各 1/4）。 */
+.card-act {
+  display: flex; flex-wrap: nowrap; align-items: stretch;
+  margin-top: 20rpx;
+}
+.card-act .card-btn { flex: 1 1 0; min-width: 0; box-sizing: border-box; }
+.card-act .card-btn + .card-btn { margin-left: 12rpx; }
+/* 原生 <button> 自带 margin:auto / padding，作为 flex 子项会把宽度撑歪，统一抹平 */
+.card-act button.card-btn { margin: 0; padding-left: 0; padding-right: 0; line-height: inherit; }
+.card-btn {
+  background: #FAFAF7; border: 1rpx solid #eee;
+  border-radius: 14rpx; padding: 14rpx 6rpx;                  /* 收紧：原 24rpx 16rpx 太大 */
+  font-size: 22rpx; text-align: center; color: #333;         /* demo: 11px */
+  display: flex; flex-direction: column; align-items: center; gap: 4rpx;
+}
+.card-btn:active { background: #f0f0eb; }
+.card-btn-primary {
+  background: #FF6B35; color: #fff; border-color: #FF6B35;
+}
+.card-btn-primary:active { background: #F45B22; }
+.card-btn-danger {
+  background: #FCE8E8; color: #B04848; border-color: #F5C2C2;
+}
+.card-btn-ic { width: 30rpx; height: 30rpx; }                  /* 收紧：原 36rpx */
+
+/* ===== AI 主动建议 ===== */
+.suggest {
+  background: #FFFBEB; border: 1rpx solid #F0E0A0; border-radius: 16rpx;   /* demo: 12px 14px */
+  padding: 20rpx 24rpx; margin-top: 16rpx;                    /* demo: 10px */
+  font-size: 26rpx; color: #6B5A1E;                          /* demo: 12px */
+  display: flex; align-items: center; gap: 16rpx; flex-wrap: wrap;
+}
+.suggest-ic { width: 34rpx; height: 34rpx; }                 /* demo: 16px */
+.suggest-q { flex: 1; min-width: 0; }
+.suggest-actions { display: flex; gap: 12rpx; }             /* demo: 6px */
+.suggest-y {
+  background: #FF6B35; color: #fff; padding: 10rpx 24rpx;    /* demo: 4px 12px */
+  border-radius: 999rpx; font-size: 24rpx; font-weight: 600;  /* demo: 11px */
+  display: inline-flex; align-items: center; gap: 6rpx;
+}
+.suggest-y:active { background: #F45B22; }
+.suggest-n {
+  background: #fff; color: #888; padding: 10rpx 20rpx;       /* demo: 4px 8px */
+  border-radius: 999rpx; font-size: 24rpx; border: 1rpx solid #eee;   /* demo: 11px */
+}
+.suggest-n:active { background: #f0f0eb; }
+/* 答过的建议条置灰（看得见"这条我答过了"，比直接消失更好） */
+.suggest.resolved { opacity: .55; }
+
+/* ===== 记忆徽章 ===== */
+.badge {
+  display: inline-block; background: #EEF7FF; color: #1E5BD9;
+  padding: 6rpx 14rpx; border-radius: 999rpx;                /* demo: 4px 10px */
+  font-size: 22rpx; margin: 0 8rpx;                          /* demo: 10px */
+}
+
+/* ===== 流式字幕条 ===== */
+.live-cap {
+  display: flex; align-items: center; gap: 20rpx;            /* demo: 12px */
+  margin: 0 32rpx 16rpx; padding: 24rpx 28rpx;                /* demo: 12px 14px */
+  background: #FFFBEB; border-radius: 16rpx; border: 1rpx solid #F0E0A0;   /* demo: 12px */
+}
+.live-dot {
+  width: 18rpx; height: 18rpx; border-radius: 50%;             /* demo: 9px */
+  background: #FF6B35; animation: livePulse 1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: .4; }
+  50% { opacity: 1; }
+}
+.live-text { flex: 1; font-size: 28rpx; color: #2A2522; }    /* demo: 14px */
+.live-sec { font-size: 24rpx; color: #FF6B35; font-weight: 600; font-variant-numeric: tabular-nums; }   /* demo: 12px */
+
+/* ===== 输入区 ===== */
+.input-bar {
+  padding: 20rpx 32rpx 32rpx; background: #fff;          /* demo: 10px 16px 16px */
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom, 0px));  /* iPhone 刘海底加 16px */
+  border-top: 1rpx solid #eee; flex-shrink: 0;
+}
+/* 🔴 2026-10-17：.input-quick*（输入框上方常驻 chip 条）已随 wxml 删除。
+   替身样式：① 空状态引导卡 ② AI 气泡下的随场景快捷问按钮。 */
+
+/* ── ① 空状态引导卡（仅无消息时显示在消息区） ── */
+.empty-guide {
+  margin: 80rpx 60rpx 40rpx;
+  background: #FAF8F4;
+  border: 1rpx solid #F0E0A0;
+  border-radius: 24rpx;
+  padding: 40rpx 36rpx;
+  display: flex; flex-direction: column; align-items: center;
+}
+.eg-title { font-size: 32rpx; font-weight: 600; color: #2A2522; }
+.eg-sub { font-size: 24rpx; color: #A08C7D; margin-top: 8rpx; }
+.eg-item {
+  width: 100%; box-sizing: border-box; text-align: center;
+  margin-top: 22rpx; padding: 20rpx 0;
+  background: #fff; border: 1rpx solid #E8DCC8; border-radius: 999rpx;
+  font-size: 28rpx; color: #FF6B35;
+}
+.eg-item:active { background: #FFFBEB; }
+.eg-hint { margin-top: 26rpx; font-size: 22rpx; color: #A08C7D; }
+
+/* ── ② AI 气泡下的随场景快捷问按钮（纯查询，点击直发） ──
+   不用 gap（老基础库 WXSS flex gap 有坑，上午 2×2 塌竖排同款教训）—— 用 margin。 */
+.quicks { display: flex; flex-wrap: wrap; margin-top: 14rpx; }
+.quick-b {
+  margin: 0 12rpx 12rpx 0; padding: 12rpx 26rpx;
+  background: #fff; border: 1rpx solid #E8DCC8; border-radius: 999rpx;
+  font-size: 24rpx; color: #FF6B35;
+}
+.quick-b:active { background: #FFFBEB; }
+
+.input-box { display: flex; align-items: center; gap: 20rpx; }    /* demo: 8px */
+.input-rec {
+  width: 100rpx; height: 100rpx; border-radius: 50%;             /* demo: 50px */
+  background: #FF6B35; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 6rpx 20rpx rgba(255,107,53,.4);                /* demo: 3px 10px */
+}
+.input-rec .ic { width: 48rpx; height: 48rpx; }
+/* 录音中：白色圆角方块（停止符）代替麦克风图标 */
+.rec-square { width: 32rpx; height: 32rpx; border-radius: 8rpx; background: #fff; }
+.input-rec.rec { background: #DC2626; animation: recPulse 1.5s ease-in-out infinite; }
+@keyframes recPulse {
+  0%, 100% { box-shadow: 0 6rpx 20rpx rgba(220,38,38,.4), 0 0 0 0 rgba(220,38,38,.4); }
+  50%      { box-shadow: 0 6rpx 20rpx rgba(220,38,38,.4), 0 0 0 24rpx rgba(220,38,38,0); }
+}
+.input-text {
+  flex: 1; height: 80rpx; background: #f0f0eb; border-radius: 40rpx;   /* demo: 44px / 22px */
+  padding: 0 28rpx; display: flex; align-items: center; color: #888;   /* demo: 16px */
+}
+.input-text input {
+  flex: 1; border: none; background: transparent;
+  outline: none; font-size: 28rpx; height: 80rpx;               /* demo: 13px */
+}
+.input-send {
+  width: 80rpx; height: 80rpx; border-radius: 50%;             /* demo: 44px */
+  background: #FF6B35; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.input-send .ic { width: 38rpx; height: 38rpx; }
+.input-send.dis { background: #C8C2BC; }
+
+/* ═══════════════════════════════════════════════════════════════
+ * 以下为 2026-10-16 从 h5.dtzai.cn 那版 H5 移植的能力
+ *   上传入口 / 解析进度 / 待确认卡 / 撤销倒计时 / 流水卡 / 实时对讲
+ * 尺寸仍按 H5 的 px × 2 = rpx
+ * ═══════════════════════════════════════════════════════════════ */
+
+/* ===== 输入区 ＋ 按钮（点开上传面板；打开时旋转 45° 变 × ）===== */
+.input-plus {
+  width: 88rpx; height: 88rpx; border-radius: 50%;                /* demo: 44px */
+  background: #f0f0eb; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0;
+  transition: transform .25s, background .25s;
+}
+.input-plus .ic { width: 40rpx; height: 40rpx; }                  /* demo: 20px */
+/* 打开时旋转 45° 变 ×；颜色用"深色底 + 白色图标"两个类切换
+ * （图标是 base64 内联 SVG，改不了色，所以不靠 filter） */
+.input-plus.open { transform: rotate(45deg); background: #2A2522; }
+
+/* ===== 上传面板 ===== */
+.up-mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 115; }
+.up-panel {
+  position: fixed; left: 32rpx; bottom: 188rpx; width: 600rpx;     /* demo: 16px / 94px / 300px（抬高避免被键盘/输入条挡） */
+  background: #fff; border-radius: 32rpx; padding: 28rpx;          /* demo: 16px 14px */
+  box-shadow: 0 16rpx 48rpx rgba(0,0,0,.18); z-index: 120;
+  opacity: 0; transform: translateY(24rpx) scale(.96); pointer-events: none;
+  transition: opacity .22s, transform .22s;
+}
+.up-panel.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.up-hint {
+  display: flex; align-items: center; gap: 12rpx;                  /* demo: 6px */
+  font-size: 22rpx; color: #8A7F76; line-height: 1.5;              /* demo: 11px */
+  padding-bottom: 24rpx;                                           /* demo: 12px */
+}
+.up-hint .ic { width: 26rpx; height: 26rpx; flex-shrink: 0; }      /* demo: 13px */
+
+/* 两列 2×2：**显式两行 + flex:1 均分**，全程不用 calc。
+ * 🔴 2026-10-17 真机事故：原来写的是 `.up-item{width:calc(50% - 8rpx)}`，
+ *   WXSS 里 calc() 混用 rpx 在各基础库转换不一致（换算失败 → width 无效），
+ *   宽度一失效就退回内容宽/整行宽，2×2 直接塌成「一行一个」竖向长条。
+ *   现在每行单独一个 .up-row 容器，子项 flex:1 1 0 均分，中间靠 margin 留缝 ——
+ *   不依赖 calc、不依赖 gap（老基础库 flex gap 也不支持）。 */
+.up-grid { display: block; }
+.up-row { display: flex; align-items: stretch; }
+.up-row + .up-row { margin-top: 16rpx; }
+.up-item {
+  flex: 1 1 0; min-width: 0;                                       /* 均分 + 允许被压缩 */
+  background: #FAFAF7; border: 1rpx solid #eee;
+  border-radius: 26rpx; padding: 22rpx 16rpx;                      /* demo: 13px / 11px 8px */
+  box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; gap: 6rpx;
+  font-size: 24rpx; color: #333;                                   /* demo: 12px */
+}
+.up-item + .up-item { margin-left: 16rpx; }                        /* 列间距（替 gap，兼容老基础库） */
+.up-item:active { background: #f0f0eb; }
+.up-item .ic { width: 42rpx; height: 42rpx; }                      /* demo: 21px */
+.up-sub { font-size: 19rpx; color: #aaa; }                         /* demo: 9.5px */
+
+/* 拍照要点：面板常驻提示，赭红描边小卡片，和品牌色呼应 */
+.up-tips {
+  margin-top: 20rpx;                                                /* demo: 10px */
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12rpx;
+  background: #FFF6F1; border: 1rpx solid #F4D9CC; border-radius: 22rpx;
+  padding: 16rpx 18rpx;                                             /* demo: 8px / 9px */
+  font-size: 21rpx; color: #8A5A3C; line-height: 1.5;               /* demo: 10.5px */
+}
+.up-tips-dot {
+  flex-shrink: 0; background: #C9451A; color: #fff;
+  font-size: 19rpx; padding: 4rpx 12rpx; border-radius: 999rpx;     /* demo: 9.5px / 2px-6px */
+}
+
+.up-realtime {
+  margin-top: 24rpx;                                               /* demo: 12px */
+  background: linear-gradient(135deg, #FF6B35, #FF8F5E);
+  color: #fff; border-radius: 26rpx; padding: 24rpx;
+  display: flex; align-items: center; gap: 20rpx;
+}
+.up-realtime:active { transform: scale(.98); }
+.up-realtime .ic { width: 48rpx; height: 48rpx; flex-shrink: 0; }   /* demo: 24px */
+.up-rt-text { display: flex; flex-direction: column; gap: 4rpx; }
+.up-rt-text .up-rt-b { font-size: 28rpx; font-weight: 700; }        /* demo: 14px */
+.up-rt-text .up-rt-s { font-size: 22rpx; opacity: .85; }            /* demo: 11px */
+
+/* ===== 用户上传气泡（带缩略图）===== */
+.msg-u-b.with-thumb {
+  display: flex; align-items: center; gap: 20rpx;                   /* demo: 10px */
+  padding: 20rpx 24rpx;                                            /* demo: 10px 12px */
+}
+.up-thumb {
+  width: 108rpx; height: 108rpx; border-radius: 20rpx;              /* demo: 54px / 10px */
+  flex-shrink: 0; background: rgba(255,255,255,.2);
+}
+.up-thumb-file {
+  display: flex; align-items: center; justify-content: center;
+}
+.up-thumb-file .ic { width: 48rpx; height: 48rpx; }                 /* demo: 24px */
+.up-meta { font-size: 24rpx; line-height: 1.35; }                   /* demo: 12px */
+.up-meta .up-meta-b { display: block; font-size: 26rpx; font-weight: 600; }  /* demo: 13px */
+.up-meta .up-meta-s { opacity: .8; font-size: 22rpx; }              /* demo: 11px */
+
+/* 扫描线动画（识别中） */
+.scan { position: relative; overflow: hidden; }
+.scan::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 40%;
+  top: -40%; background: linear-gradient(180deg, transparent, rgba(255,107,53,.5), transparent);
+  animation: scanMove 1.1s linear infinite;
+}
+@keyframes scanMove { 0% { top: -40%; } 100% { top: 100%; } }
+
+/* ===== 解析进度（三步）===== */
+.proc-step {
+  display: flex; align-items: center; gap: 16rpx;                   /* demo: 8px */
+  font-size: 26rpx; color: #555; padding: 6rpx 0;                   /* demo: 13px */
+}
+.proc-step .ic { width: 28rpx; height: 28rpx; }                     /* demo: 14px */
+.proc-step.run { color: #2A2522; font-weight: 600; }
+.proc-step.wait { color: #bbb; }
+
+/* ===== 卡片头标签的两种状态 ===== */
+.card-hd-tag.warn { color: #8A6D1E; background: #FFF6DC; border-color: #F0E0A0; }
+.card-hd-tag.ok   { color: #1a7f4a; background: #E9F7EF; border-color: #BFE6D0; }
+
+/* ===== 撤销倒计时角标（挂在撤销按钮右上角）===== */
+.undo-cd {
+  position: absolute; top: -14rpx; right: -10rpx;                   /* demo: -7px -5px */
+  background: #DC2626; color: #fff; font-size: 18rpx;
+  border-radius: 999rpx; padding: 2rpx 10rpx;                       /* demo: 9px */
+  font-variant-numeric: tabular-nums;
+}
+.card-btn { position: relative; }
+
+/* ===== 流水列表卡 ===== */
+.card-list { font-size: 26rpx; }                                    /* demo: 13px */
+.cl-row {
+  display: flex; justify-content: space-between; padding: 10rpx 0;  /* demo: 5px */
+  border-bottom: 1rpx dashed #f0f0eb;
+  align-items: center;
+}
+.cl-row:last-child { border-bottom: none; }
+/* 🔴 2026-10-17 老易反馈：OCR 识别明细无法单行人工修改。本类加 editable 状态：
+   整行可点，激活色变化 + 小箭头；点开弹三栏 modal 改金额/方向/摘要 */
+.cl-row.editable { padding: 10rpx 12rpx; border-radius: 12rpx; margin: 4rpx 0; transition: background .12s; }
+.cl-row.editable:active { background: #FFFBEB; }
+.cl-row.editable::after {
+  content: '✎'; color: #B0A89A; font-size: 22rpx; margin-left: 8rpx; flex-shrink: 0;
+}
+.cl-row-t { flex: 1; min-width: 0; padding-right: 12rpx; }
+.cl-row-v { font-weight: 600; font-variant-numeric: tabular-nums; }
+.cl-row-tag {
+  background: #FF6B35; color: #fff; font-size: 18rpx;
+  padding: 2rpx 10rpx; border-radius: 999rpx; margin-left: 8rpx;
+}
+.cl-ghost .cl-row-t { color: #B04848; text-decoration: line-through; text-decoration-color: rgba(176,72,72,.4); }
+.cl-ghost-tag { background: #B04848 !important; }
+.cl-in { color: #1a7f4a; }
+.cl-out { color: #B04848; }
+
+/* ===== 通用徽章（已入账 N 笔 / 已记住 / 已撤销）===== */
+.badge {
+  display: inline-flex; align-items: center; gap: 10rpx;           /* demo: 5px */
+  background: #EEF4FF; border: 1rpx solid #C8D8FF; color: #3B62C4;
+  padding: 14rpx 24rpx; border-radius: 24rpx; margin-top: 16rpx;    /* demo: 7px 12px / 8px */
+  font-size: 24rpx;                                                 /* demo: 12px */
+}
+.badge .ic { width: 26rpx; height: 26rpx; }                         /* demo: 13px */
+.badge.done { background: #F3F4F6; border-color: #E5E7EB; color: #6B7280; }
+
+/* ===== 单行修改弹窗（2026-10-17 老易 OCR 反馈）===== */
+.edit-mask {
+  position: fixed; left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(0,0,0,.45); z-index: 300;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.edit-panel {
+  width: 100%; max-width: 720rpx; box-sizing: border-box;
+  background: #FAF8F4; border-radius: 24rpx 24rpx 0 0;
+  padding: 32rpx 32rpx 40rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom, 0px));
+}
+.edit-hd {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 30rpx; font-weight: 500; color: #2A2522; margin-bottom: 24rpx;
+}
+.edit-close { font-size: 40rpx; color: #8A7F76; padding: 0 12rpx; line-height: 1; }
+.edit-body { display: flex; flex-direction: column; gap: 20rpx; }
+.edit-row { display: flex; align-items: center; gap: 16rpx; }
+.edit-lbl { width: 96rpx; font-size: 26rpx; color: #6B5A4A; }
+.edit-inp {
+  flex: 1; min-width: 0; padding: 16rpx 20rpx; font-size: 28rpx;
+  background: #fff; border: 1rpx solid #E8DCC8; border-radius: 12rpx;
+}
+.edit-suf { color: #8A7F76; font-size: 26rpx; }
+.edit-seg { display: flex; flex: 1; }
+.edit-seg-i {
+  flex: 1; text-align: center; padding: 16rpx 0;
+  background: #fff; border: 1rpx solid #E8DCC8; color: #6B5A4A;
+  font-size: 26rpx;
+}
+.edit-seg-i:first-child { border-radius: 12rpx 0 0 12rpx; }
+.edit-seg-i:last-child { border-radius: 0 12rpx 12rpx 0; border-left: 0; }
+.edit-seg-i.on { background: #FF6B35; color: #fff; border-color: #FF6B35; }
+.edit-foot { display: flex; gap: 16rpx; margin-top: 28rpx; }
+.edit-btn {
+  flex: 1; text-align: center; padding: 20rpx 0;
+  font-size: 28rpx; border-radius: 12rpx;
+}
+.edit-btn-ghost { background: #fff; color: #B04848; border: 1rpx solid #E8DCC8; }
+.edit-btn-primary { background: #FF6B35; color: #fff; }
+.edit-btn-primary:active { background: #F45B22; }
+
+/* ===== 实时对讲面板 ===== */
+/* ═══ 实时对讲面板 ═══
+ * 🔴 2026-10-17：原来是 rgba(26,26,26,.92) 半透明遮罩 —— 真机上底下的对话流透上来，
+ *   面板自己的引导文案（灰色 think 行）和聊天里的白字、金额叠在一起，
+ *   看着就是"排版全乱"。语音模式是独占场景，直接给**不透明底**最稳：
+ *   要么全屏看对讲、要么关掉看账，不要两层字互相压。 */
+.rt-mask {
+  position: fixed; left: 0; right: 0; top: 0; bottom: 0;
+  background: #141414; z-index: 200;
+  display: flex; flex-direction: column;
+}
+.rt-top {
+  padding: 36rpx 40rpx 24rpx;                                      /* demo: 18px 20px 12px */
+  display: flex; justify-content: space-between; align-items: center; color: #fff;
+}
+.rt-title { font-size: 34rpx; font-weight: 700; display: flex; align-items: center; gap: 16rpx; }
+.rt-dot { width: 16rpx; height: 16rpx; border-radius: 50%; background: #888; flex-shrink: 0; }
+.rt-dot.on { background: #22c55e; box-shadow: 0 0 16rpx #22c55e; }
+.rt-close {
+  width: 64rpx; height: 64rpx; border-radius: 50%;                 /* demo: 32px */
+  background: rgba(255,255,255,.15); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.rt-close .ic { width: 36rpx; height: 36rpx; }
+.rt-body {
+  flex: 1; padding: 40rpx 40rpx 200rpx; display: flex; flex-direction: column; gap: 28rpx;  /* 🔴 2026-10-17 老易 15:19：底部 200rpx 让最后一行不被麦克风盖住 */
+}
+#rt-tail { display: block; height: 40rpx; }       /* 🔴 锚点留空，scroll-into-view 才能滚到锚点上方 */
+.rt-line {
+  padding: 20rpx 28rpx; border-radius: 24rpx;                      /* demo: 10px 14px / 12px */
+  font-size: 28rpx; line-height: 1.5; max-width: 85%;
+}
+.rt-line.u { background: #FF6B35; color: #fff; align-self: flex-end;
+  border-radius: 24rpx 24rpx 8rpx 24rpx; }
+.rt-line.a { background: rgba(255,255,255,.1); color: #e8e8e8; align-self: flex-start;
+  border-radius: 24rpx 24rpx 24rpx 8rpx; }
+.rt-line.think { background: transparent; color: #888; font-size: 26rpx; align-self: center;
+  text-align: center; }
+/* 语音记账后的撤销入口 —— 跟在 think 行下面，居中、可点、不抢眼但不能没有 */
+.rt-undo {
+  align-self: center; display: flex; align-items: center; gap: 8rpx;
+  padding: 10rpx 26rpx; border-radius: 999rpx;
+  border: 1rpx solid rgba(255,255,255,.35); color: #ddd; font-size: 24rpx;
+}
+.rt-undo .ic { width: 24rpx; height: 24rpx; }
+.rt-bottom {
+  padding: 40rpx 40rpx 60rpx;                                      /* 底部多留 20rpx，别贴着home条 */
+  display: flex; flex-direction: column; align-items: center; gap: 28rpx;
+}
+.rt-mic {
+  width: 160rpx; height: 160rpx; border-radius: 50%;               /* demo: 80px */
+  background: #FF6B35; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6rpx 24rpx rgba(255,107,53,.45);
+}
+.rt-mic .ic { width: 72rpx; height: 72rpx; }
+.rt-mic.listening { animation: rtPulse 1.2s infinite; }
+.rt-mic.speaking { background: #22c55e; box-shadow: 0 0 0 16rpx rgba(34,197,94,.3); }
+@keyframes rtPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,53,.5); }
+  50%      { box-shadow: 0 0 0 32rpx rgba(255,107,53,0); }
+}
+.rt-status {
+  color: #c9c9c9; font-size: 26rpx; text-align: center; line-height: 1.6;
+  word-break: break-word; max-width: 96%;                          /* 报错文案长，允许折行 */
+}
+.rt-hint { color: #7a7a7a; font-size: 22rpx; text-align: center; }
+/* 实时字幕：正在说的话（还没定稿），麦克风上方一行；品牌赭红呼应 */
+.rt-live {
+  max-width: 86%; box-sizing: border-box;
+  background: rgba(255,255,255,.08); border: 1rpx solid rgba(201,69,26,.55);
+  color: #f2e9e2; font-size: 30rpx; line-height: 1.5;
+  padding: 18rpx 28rpx; border-radius: 32rpx; text-align: center;
+}
+.rt-live.on { border-color: #C9451A; color: #fff; }
+
+/* ═══ 原生转发（open-type=share）按钮 ═══
+   只重置微信 <button> 自带的默认皮肤（::after 描边 / margin），
+   其余外观全部沿用 .card-btn / .card-btn-primary 的现成皮肤 ——
+   ⚠️ 别在这里写背景/圆角等高优先级属性，会把主题色压掉。 */
+button.card-btn-share { margin: 0; }
+.card-btn-share::after { border: none; }
+
+/* 消息流里的"转发给微信好友"大按钮（对账单等先生成、后转发的场景） */
+.msg-a-share { margin-top: 14rpx; }
+.fwd-btn {
+  display: flex; flex-direction: row; align-items: center; justify-content: center;
+  gap: 10rpx; width: 100%; box-sizing: border-box;
+  background: #FF6B35; color: #fff; font-size: 28rpx; font-weight: 600;
+  padding: 20rpx 0; border-radius: 18rpx; line-height: 1.2;
+  box-shadow: 0 4rpx 16rpx rgba(255,107,53,.35);
+}
+.fwd-btn::after { border: none; }

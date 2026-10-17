@@ -1,0 +1,37 @@
+<view class="pg">
+  <view class="bar">
+    <text class="bar-t">通知{{unread ? ' · ' + unread + ' 条未读' : ''}}</text>
+    <text class="bar-a" wx:if="{{unread}}" bindtap="onReadAll">全部已读</text>
+  </view>
+
+  <!-- 每日提醒订阅：如实呈现"配没配"。
+       configured=false 时整块不出现 —— 点了必然失败的按钮比没有按钮更糟。
+       ⚠️ 这块必须放在下面 wx:if/wx:elif/wx:else 链**之外**，
+          插进链里会把 empty 那一支接成 elif，导致"配了订阅就看不到空状态"。 -->
+  <view class="sub" wx:if="{{push.configured}}">
+    <view class="sub-bd">
+      <text class="sub-t">每日提醒</text>
+      <text class="sub-m">{{push.remain > 0 ? '还能推送 ' + push.remain + ' 次' : '还没开启'}} · 微信一次性订阅，点一次续一次</text>
+    </view>
+    <view class="sub-btn {{push.requesting ? 'dis' : ''}}" bindtap="onSubscribe">
+      {{push.requesting ? '请求中…' : '开启'}}
+    </view>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">加载中…</view>
+
+  <view class="empty" wx:elif="{{!list.length}}">
+    <text>暂无通知。</text>
+  </view>
+
+  <view class="list" wx:else>
+    <view class="card {{item.is_read ? 'read' : ''}}" wx:for="{{list}}" wx:key="id">
+      <view class="dot" wx:if="{{!item.is_read}}"></view>
+      <view class="bd">
+        <text class="nm">{{item.title}}</text>
+        <text class="meta">{{item.content}}</text>
+      </view>
+      <text class="read-btn" wx:if="{{!item.is_read}}" data-id="{{item.id}}" bindtap="onRead">标已读</text>
+    </view>
+  </view>
+</view>

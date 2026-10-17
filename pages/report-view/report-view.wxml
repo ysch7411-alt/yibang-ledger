@@ -1,0 +1,121 @@
+<!--pages/report-view/report-view.wxml-->
+<view class="pg">
+  <view wx:if="{{loading}}" class="loading">
+    <text class="ld-t">读取中…</text>
+  </view>
+
+  <view wx:elif="{{err}}" class="err">
+    <text class="err-t">{{err}}</text>
+    <text class="err-s">链接无效或已过期</text>
+  </view>
+
+  <block wx:elif="{{data}}">
+    <!-- 顶部：店名 + 报表标题 + 快照元信息 -->
+    <view class="hdr">
+      <view class="hdr-shop" wx:if="{{data.shop}}">{{data.shop}}</view>
+      <view class="hdr-label">{{data.label}}</view>
+      <view class="hdr-range">
+        <text wx:if="{{data.kind === 'contact'}}">截至 {{data.asOf}}</text>
+        <text wx:else>{{data.from}} 至 {{data.to}}</text>
+      </view>
+      <view class="hdr-meta">
+        <text class="m-pill">快照 · 不随数据变化</text>
+        <text class="m-pill">有效期至 {{data.expireDay}}</text>
+        <text class="m-pill">已查看 {{data.viewCount}} 次</text>
+      </view>
+    </view>
+
+    <!-- 区间报表 / 每日汇总：收入/支出/结余 -->
+    <view wx:if="{{data.kind === 'report'}}" class="summary">
+      <view class="sum-card">
+        <text class="sum-l">收入</text>
+        <text class="sum-v sum-v-inc">¥{{data.income}}</text>
+      </view>
+      <view class="sum-card">
+        <text class="sum-l">支出</text>
+        <text class="sum-v sum-v-exp">¥{{data.expense}}</text>
+      </view>
+      <view class="sum-card sum-card-net">
+        <text class="sum-l">结余</text>
+        <text class="sum-v sum-v-net">¥{{data.net}}</text>
+      </view>
+    </view>
+
+    <!-- 客户对账：4 个分项 + 余额 -->
+    <view wx:elif="{{data.kind === 'contact'}}" class="contact">
+      <view class="ct-name">客户：{{data.contact.name}}</view>
+      <view class="ct-row">
+        <text class="ct-l">累计应收（对方欠我）</text>
+        <text class="ct-v">¥{{data.amount.recvAmt}}</text>
+      </view>
+      <view class="ct-row">
+        <text class="ct-l">已回款</text>
+        <text class="ct-v">-¥{{data.amount.backAmt}}</text>
+      </view>
+      <view class="ct-row">
+        <text class="ct-l">累计应付（我欠对方）</text>
+        <text class="ct-v">¥{{data.amount.payAmt}}</text>
+      </view>
+      <view class="ct-row">
+        <text class="ct-l">已付款</text>
+        <text class="ct-v">-¥{{data.amount.doneAmt}}</text>
+      </view>
+      <view class="ct-row ct-row-net">
+        <text class="ct-l">对账余额</text>
+        <text class="ct-v ct-v-net">¥{{data.amount.balance}}</text>
+      </view>
+    </view>
+
+    <!-- 明细标题 -->
+    <view class="list-hd">
+      <text class="lh-t">明细</text>
+      <text class="lh-n">共 {{data.count}} 笔</text>
+    </view>
+
+    <!-- 区间 / 每日 报表的明细 -->
+    <block wx:if="{{data.kind === 'report'}}">
+      <block wx:if="{{data.details.length > 0}}">
+        <view class="txn" wx:for="{{data.details}}" wx:key="id" wx:for-item="d">
+          <view class="t-row1">
+            <text class="t-type {{d.type === 1 || d.type === 5 ? 't-in' : 't-out'}}">{{typeText[d.type]}}</text>
+            <text class="t-amt">¥{{d.amount}}</text>
+          </view>
+          <view class="t-row2">
+            <text class="t-content">{{d.content || typeText[d.type]}}</text>
+            <text class="t-date">{{d.record_date}}</text>
+          </view>
+          <view class="t-row3" wx:if="{{d.contact_name}}">
+            <text class="t-contact">{{d.contact_name}}</text>
+          </view>
+        </view>
+      </block>
+    </block>
+
+    <!-- 客户对账的明细 -->
+    <block wx:if="{{data.kind === 'contact'}}">
+      <block wx:if="{{data.transactions.length > 0}}">
+        <view class="txn" wx:for="{{data.transactions}}" wx:key="id" wx:for-item="d">
+          <view class="t-row1">
+            <text class="t-type {{d.type === 3 || d.type === 6 ? 't-in' : 't-out'}}">{{typeText[d.type] || '账目'}}</text>
+            <text class="t-amt">¥{{d.amount}}</text>
+          </view>
+          <view class="t-row2">
+            <text class="t-content">{{d.content || '账目'}}</text>
+            <text class="t-date">{{d.record_date}}</text>
+          </view>
+        </view>
+      </block>
+    </block>
+
+    <!-- 明细截断提示 -->
+    <view wx:if="{{data.truncated > 0}}" class="truncated">
+      还有 {{data.truncated}} 笔未列出 —— 仅显示最近 {{data.details.length || data.transactions.length}} 笔
+    </view>
+
+    <!-- 底部水印 -->
+    <view class="wm">
+      <text class="wm-t">本报表由「易帮AI」生成</text>
+      <text class="wm-s">创建于 {{data.createdDay}}</text>
+    </view>
+  </block>
+</view>

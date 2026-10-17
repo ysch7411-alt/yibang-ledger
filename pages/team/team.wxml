@@ -1,0 +1,49 @@
+<!--pages/team/team.wxml-->
+<view class="pg">
+  <view class="hero">
+    <view class="ic ic-w-users hero-ic"></view>
+    <view class="hero-t">成员管理</view>
+    <view class="hero-s">查看店铺成员、邀请新成员、设置权限</view>
+  </view>
+
+  <view class="card">
+    <view class="card-hd">
+      <text class="card-hd-t">当前成员（1）</text>
+      <text class="card-hd-action" bindtap="onTapInvite">+ 邀请</text>
+    </view>
+    <view class="member">
+      <view class="member-avatar">我</view>
+      <view class="member-info">
+        <view class="member-name">老板（你）</view>
+        <view class="member-role">店主 · 全部权限</view>
+      </view>
+      <view class="member-tag">店主</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-hd">
+      <text class="card-hd-t">权限说明</text>
+    </view>
+    <view class="info-row">
+      <text class="info-l">店主</text>
+      <text class="info-r">记账 / 撤销 / 分享 / 改设置</text>
+    </view>
+    <view class="info-row">
+      <text class="info-l">收银员</text>
+      <text class="info-r">记账（不可撤销、不可分享）</text>
+    </view>
+    <view class="info-row">
+      <text class="info-l">会计</text>
+      <text class="info-r">查账 / 导出（不可记账）</text>
+    </view>
+  </view>
+
+  <view class="tip">
+    <view class="tip-hd">
+      <view class="ic ic-p-ai tip-ic"></view>
+      <text class="tip-t">多成员功能开发中</text>
+    </view>
+    <text class="tip-s">当前为单店主模式。后续可邀请收银员/会计，各自有不同权限。</text>
+  </view>
+</view>

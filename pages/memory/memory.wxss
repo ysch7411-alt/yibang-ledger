@@ -1,0 +1,86 @@
+/* AI 记住了什么 */
+.pg{min-height:100vh;background:#FAF8F4;padding:24rpx}
+
+/* 「越用越懂」可见账本（顶部 hero 区） */
+.learned{background:linear-gradient(135deg,#FFF4EE 0%,#FDEEE6 100%);
+  border-radius:20rpx;padding:24rpx 28rpx;margin-bottom:24rpx;
+  border:1rpx solid #F2D9C8;position:relative;overflow:hidden}
+.learned::before{content:'';position:absolute;top:-40rpx;right:-40rpx;
+  width:160rpx;height:160rpx;background:rgba(201,69,26,.06);border-radius:50%}
+.l-t{display:block;font-size:32rpx;font-weight:600;color:#2A2522;
+  position:relative;z-index:1}
+.l-meta{display:flex;flex-wrap:wrap;gap:10rpx;margin-top:14rpx;position:relative;z-index:1}
+.m-pill{font-size:22rpx;color:#5C5048;background:rgba(255,255,255,.7);
+  padding:6rpx 16rpx;border-radius:999rpx;border:1rpx solid #F2D9C8}
+.m-pill-ok{color:#C9451A;background:#fff;border-color:#F2A98C;font-weight:500}
+
+.l-block{margin-top:20rpx;position:relative;z-index:1}
+.l-h{display:block;font-size:24rpx;color:#8A7F76;margin-bottom:12rpx;font-weight:500}
+.l-name{display:flex;flex-direction:column;gap:10rpx}
+.name-card{display:flex;align-items:center;gap:12rpx;background:rgba(255,255,255,.7);
+  border-radius:12rpx;padding:12rpx 18rpx;border:1rpx solid rgba(242,217,200,.6)}
+.from{font-size:26rpx;color:#A79C92;flex-shrink:0}
+.arrow{font-size:24rpx;color:#C9A98C;flex-shrink:0}
+.to{font-size:28rpx;color:#2A2522;font-weight:500;flex:1}
+
+.l-reasons{display:flex;flex-wrap:wrap;gap:10rpx}
+.r-card{font-size:24rpx;color:#5C5048;background:rgba(255,255,255,.7);
+  padding:8rpx 16rpx;border-radius:8rpx;border:1rpx solid #F2D9C8}
+
+/* 顶部说明 */
+.hdr{background:#FFF4EE;border-radius:16rpx;padding:20rpx 24rpx;
+  margin-bottom:24rpx;border:1rpx solid #F2D9C8}
+.hdr-t{display:block;font-size:32rpx;font-weight:600;color:#2A2522}
+.hdr-s{display:block;font-size:24rpx;color:#8A7F76;margin-top:8rpx;line-height:1.5}
+
+/* 加载骨架 */
+.skel{padding:24rpx 0}
+.sk{height:120rpx;background:#fff;border-radius:16rpx;margin-bottom:16rpx;
+  animation: skelPulse 1.5s ease-in-out infinite}
+.sk-1{animation-delay:0s}
+.sk-2{animation-delay:.2s}
+.sk-3{animation-delay:.4s}
+@keyframes skelPulse{
+  0%,100%{opacity:.6}
+  50%{opacity:1}
+}
+
+/* 错误 */
+.err{background:#fff;border-radius:16rpx;padding:60rpx 30rpx;text-align:center}
+.err-t{display:block;font-size:30rpx;color:#C9451A;margin-bottom:12rpx}
+.err-s{display:block;font-size:24rpx;color:#8A7F76;margin-bottom:30rpx}
+.err-btn{display:inline-block;background:#C9451A;color:#fff;font-size:28rpx;
+  padding:18rpx 48rpx;border-radius:999rpx}
+
+/* 空状态 */
+.empty{padding:80rpx 30rpx;text-align:center}
+.e-t{display:block;font-size:34rpx;color:#2A2522;font-weight:600;margin-bottom:16rpx}
+.e-s{display:block;font-size:26rpx;color:#8A7F76;line-height:1.6}
+
+/* 分组 */
+.grp{background:#fff;border-radius:16rpx;margin-bottom:20rpx;overflow:hidden;
+  box-shadow:0 2rpx 12rpx rgba(120,60,30,.04)}
+.grp-hd{display:flex;align-items:center;gap:12rpx;padding:18rpx 24rpx;
+  background:#FAF8F4;border-bottom:1rpx solid #F0EBE5}
+.grp-ico{font-size:28rpx}
+.grp-t{flex:1;font-size:28rpx;font-weight:500;color:#2A2522}
+.grp-n{font-size:22rpx;color:#A79C92;background:#fff;padding:2rpx 14rpx;
+  border-radius:999rpx;border:1rpx solid #EDE7DF}
+
+/* 单条记忆 */
+.grp-list{padding:8rpx 0}
+.mem{display:flex;align-items:center;gap:16rpx;padding:18rpx 24rpx;
+  border-bottom:1rpx solid #F5F0EB}
+.mem:last-child{border-bottom:none}
+.mem-c{flex:1;font-size:28rpx;color:#2A2522;line-height:1.55}
+.mem-x{font-size:24rpx;color:#A79C92;padding:8rpx 14rpx;
+  border-radius:8rpx;flex-shrink:0}
+.mem-x:active{background:#F9EAE4;color:#C9451A}
+
+/* 危险区 */
+.danger-zone{padding:40rpx 24rpx 60rpx;text-align:center}
+.dz-btn{display:inline-block;background:#fff;color:#C9451A;font-size:28rpx;
+  padding:20rpx 56rpx;border-radius:999rpx;border:2rpx solid #C9451A;
+  font-weight:500}
+.dz-btn:active{background:#F9EAE4}
+.dz-s{display:block;font-size:22rpx;color:#A79C92;margin-top:14rpx}

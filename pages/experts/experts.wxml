@@ -1,0 +1,49 @@
+<view class="pg">
+  <view wx:if="{{loading}}" class="sk">
+    <view class="sk-i"></view><view class="sk-i"></view><view class="sk-i"></view>
+  </view>
+
+  <view wx:elif="{{err}}" class="err">
+    <text class="err-t">{{err}}</text>
+    <view class="err-btn" bindtap="retry">重试</view>
+  </view>
+
+  <block wx:else>
+    <!-- 🔴 免费的那张放最上面。它是入口，不是商品 ——
+         先让人用起来，付费能力自然会有人问。 -->
+    <view class="cards">
+      <view class="ex" wx:for="{{list}}" wx:key="code"
+            data-code="{{item.code}}" bindtap="onTap">
+
+        <view class="hd">
+          <view class="av">{{item.icon}}</view>
+          <view class="tt">
+            <text class="n">{{item.name}}</text>
+            <text class="s">{{item.tagline}}</text>
+          </view>
+          <text class="pro" wx:if="{{item.priceCents > 0}}">¥{{item.priceCents / 100}}/月</text>
+          <text class="free" wx:else>免费</text>
+        </view>
+
+        <!-- 能做什么：具体能力名，不是形容词 -->
+        <view class="caps">
+          <text class="cap" wx:for="{{item.capabilities}}" wx:for-item="c" wx:key="*this">{{c}}</text>
+        </view>
+
+        <!-- 🔴 不能做什么：这一行是这个产品的诚信所在。
+             催款员碰不到你的账 —— 这是服务端用代码挡的，不是说说而已。 -->
+        <view class="cant" wx:if="{{item.writeCapabilities.length}}">
+          <text class="cant-t">能做：记账（需你确认）</text>
+        </view>
+        <view class="cant" wx:elif="{{item.code === 'dun_expert'}}">
+          <text class="cant-t">碰不到你的账本，只能看欠款</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="tip">
+      <text class="tip-t">这些能力现在都能用</text>
+      <text class="tip-s">数据都在你自己的店里，谁也看不到别人的账。</text>
+    </view>
+  </block>
+</view>

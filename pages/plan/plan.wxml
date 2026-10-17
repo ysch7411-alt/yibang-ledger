@@ -1,0 +1,50 @@
+<!--pages/plan/plan.wxml-->
+<view class="pg">
+  <view class="hero">
+    <view class="ic ic-w-gem hero-emoji"></view>
+    <text class="hero-t">邀请 2 人解锁终身版</text>
+    <text class="hero-s">把你用了顺手的易帮AI推荐给同行</text>
+  </view>
+
+  <view class="progress">
+    <view class="prog-hd">
+      <text class="prog-t">当前进度</text>
+      <text class="prog-n">0 / 2</text>
+    </view>
+    <view class="prog-bar">
+      <view class="prog-fill" style="width: 0%"></view>
+    </view>
+    <text class="prog-tip">再邀请 2 位朋友用易帮AI，你和 TA 都升级到「终身免费」</text>
+  </view>
+
+  <view class="step">
+    <view class="step-i">1</view>
+    <view class="step-c">
+      <view class="step-t">分享你的专属码</view>
+      <view class="step-s">长按识别二维码 / 微信转发链接</view>
+    </view>
+    <view class="step-btn" bindtap="onTapShowCode">查看我的码</view>
+  </view>
+
+  <view class="step">
+    <view class="step-i">2</view>
+    <view class="step-c">
+      <view class="step-t">朋友扫码进易帮</view>
+      <view class="step-s">TA 完成首次记账，自动绑定邀请关系</view>
+    </view>
+  </view>
+
+  <view class="step">
+    <view class="step-i">3</view>
+    <view class="step-c">
+      <view class="step-t">解锁终身免费</view>
+      <view class="step-s">你和 TA 同步升级，无需再付费</view>
+    </view>
+  </view>
+
+  <view class="legal">
+    <text class="legal-t">· 邀请关系绑定后不可更改</text>
+    <text class="legal-t">· 同一手机号/微信号只算 1 个有效邀请</text>
+    <text class="legal-t">· 终身版含全部功能，永久不收费</text>
+  </view>
+</view>

@@ -1,0 +1,442 @@
+<!--pages/chat/chat.wxml-->
+<!-- 方案 D · 对话驱动 -->
+<view class="pg">
+
+  <!-- 顶部状态条：名称（可点改名）+ 今日净余 + 仅一个菜单按钮 -->
+  <view class="topbar">
+    <view class="tb-stats">
+      <view class="tb-d">
+        <!-- catchtap 阻止冒泡到外层 —— 点名称只改名 -->
+        <view class="tb-name-wrap" catchtap="onTapEntityName" hover-class="tb-name-hover">
+          <text class="tb-name">{{entityName || '我的账本'}}</text>
+          <view class="ic ic-m-pen tb-pen"></view>
+        </view>
+        <text class="tb-sep">·</text>
+        <text>今日净余</text>
+      </view>
+      <view class="tb-n {{todayStat.net < 0 ? 'tb-n-neg' : ''}}">{{todayNetText}}</view>
+    </view>
+    <view class="tb-actions">
+      <view class="tb-icon" bindtap="onTapMenu" hover-class="tb-icon-active">
+        <view class="ic ic-d-menu"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 菜单弹层 -->
+  <view class="menu-mask" wx:if="{{menuOpen}}" bindtap="onTapMenu"></view>
+  <view class="menu-sheet" wx:if="{{menuOpen}}">
+    <view class="menu-item" data-action="memory" bindtap="onTapMenuItem">
+      <view class="ic ic-d-remember menu-i-ic"></view><text>AI 记住了什么</text>
+    </view>
+    <view class="menu-item" data-action="shop" bindtap="onTapMenuItem">
+      <view class="ic ic-d-pen menu-i-ic"></view><text>{{entityName ? '修改名称' : '设置名称'}}</text>
+    </view>
+    <view class="menu-item" data-action="voice" bindtap="onTapMenuItem">
+      <view class="ic ic-d-sound menu-i-ic" wx:if="{{ttsOn}}"></view>
+      <view class="ic ic-d-mute menu-i-ic" wx:else></view>
+      <text>{{ttsOn ? '关闭播报' : '开启播报'}}</text>
+    </view>
+    <view class="menu-item" data-action="team" bindtap="onTapMenuItem">
+      <view class="ic ic-d-users menu-i-ic"></view><text>成员管理</text>
+    </view>
+    <view class="menu-item" data-action="plan" bindtap="onTapMenuItem">
+      <view class="ic ic-d-gem menu-i-ic"></view><text>套餐升级</text>
+    </view>
+    <view class="menu-item" data-action="help" bindtap="onTapMenuItem">
+      <view class="ic ic-d-chat menu-i-ic"></view><text>联系客服</text>
+    </view>
+    <view class="menu-sep"></view>
+    <view class="menu-item" data-action="restart" bindtap="onTapMenuItem">
+      <view class="ic ic-p-undo menu-i-ic"></view><text>重新开始（清屏）</text>
+    </view>
+    <view class="menu-item menu-item-danger" data-action="logout" bindtap="onTapMenuItem">
+      <view class="ic ic-p-logout menu-i-ic"></view><text>退出账号</text>
+    </view>
+    <view class="menu-cancel" bindtap="onTapMenu">关闭</view>
+  </view>
+
+  <!-- 对话流 -->
+  <scroll-view class="chat" scroll-y="true" scroll-into-view="{{scrollTo}}" lower-threshold="50">
+
+    <!-- ① 空状态引导卡（2026-10-17 方案①）：新用户入口，发过第一条消息即消失。
+         按钮全是纯查询（不写库）点击直接问；记账话术只作文案提示 —— 写操作不直发。 -->
+    <view wx:if="{{!msgs.length}}" class="empty-guide">
+      <view class="eg-title">试试这样问我</view>
+      <view class="eg-sub">说人话就行，我直接答</view>
+      <view class="eg-item" data-q="今天赚了多少" bindtap="onQuickAsk">今天赚了多少</view>
+      <view class="eg-item" data-q="这个月赚了多少" bindtap="onQuickAsk">这个月赚了多少</view>
+      <view class="eg-item" data-q="最近 3 笔" bindtap="onQuickAsk">最近 3 笔</view>
+      <view class="eg-item" data-q="发昨天的日报" bindtap="onQuickAsk">发昨天的日报</view>
+      <view class="eg-hint">记账直接说：「买菜 30 块」「卖苹果收 200」</view>
+    </view>
+
+    <block wx:for="{{msgs}}" wx:key="id" wx:for-item="m">
+
+      <!-- 老板消息 -->
+      <view wx:if="{{m.role === 'user'}}" class="msg msg-u">
+        <!-- 上传的气泡：图片给缩略图（识别中带扫描线），文件给图标 -->
+        <view wx:if="{{m.meta}}" class="msg-u-b with-thumb">
+          <image wx:if="{{m.thumb}}" class="up-thumb {{sending ? 'scan' : ''}}"
+                 src="{{m.thumb}}" mode="aspectFill"></image>
+          <view wx:else class="up-thumb up-thumb-file">
+            <view class="ic ic-w-file"></view>
+          </view>
+          <view class="up-meta">
+            <text class="up-meta-b">{{m.meta.title}}</text>
+            <text class="up-meta-s">{{m.meta.sub}}</text>
+          </view>
+        </view>
+        <view wx:else class="msg-u-b">{{m.text}}</view>
+        <view class="msg-u-t">{{m.t}}</view>
+      </view>
+
+      <!-- AI 消息 -->
+      <block wx:elif="{{m.role === 'ai'}}">
+        <view class="msg msg-a" id="{{m.id}}">
+          <image class="msg-a-v img {{sending ? ' talking' : ''}}" src="/assets/xiaobang.png" mode="aspectFill"></image>
+          <view class="msg-a-c">
+            <view class="msg-a-n">小帮 · {{m.t}}</view>
+
+            <!-- 解析进度（三步）—— 识别/解析中显示 -->
+            <view wx:if="{{m.steps}}" class="msg-a-b">
+              <view wx:for="{{m.steps}}" wx:key="text" wx:for-item="s"
+                    class="proc-step {{s.state}}">
+                <view class="ic ic-m-{{s.icon}}"></view>
+                <text>{{s.text}}</text>
+              </view>
+            </view>
+
+            <view wx:else class="msg-a-b">{{m.text}}</view>
+
+            <!-- 🔴 2026-10-17 删：m.demo 死 UI 残留（catch 路径已不再返 mock 假数据） -->
+
+            <!-- 分享快照生成好了：点一下直接弹微信好友选择器（open-type=share） -->
+            <view wx:if="{{m.shareCard}}" class="msg-a-share">
+              <button class="fwd-btn" open-type="share"
+                      data-token="{{m.shareCard.token}}" data-title="{{m.shareCard.title}}">
+                <view class="ic ic-w-share card-btn-ic"></view>
+                <text>转发给微信好友</text>
+              </button>
+            </view>
+
+            <!-- 情绪价值评语（该沉默就沉默 —— 后端/前端挑不出场景时这里不出现） -->
+            <view wx:if="{{m.tone}}" class="msg-a-tone">
+              <view class="ic ic-p-ai ic-sm"></view>
+              <text class="msg-a-tone-t">{{m.tone}}</text>
+            </view>
+
+            <!-- 错误 -->
+            <view wx:if="{{m.error}}" class="msg-a-err">
+              <view class="ic ic-p-alert ic-sm"></view>
+              <text>请稍后再试</text>
+            </view>
+
+            <!-- 待您确认卡（上传解析出来的批量账目，确认才入账） -->
+            <view wx:if="{{m.confirm}}" class="card">
+              <view class="card-hd">
+                <text class="card-hd-t">识别结果</text>
+                <text class="card-hd-tag {{m.confirm.done ? 'ok' : 'warn'}}">
+                  {{m.confirm.done ? '已入账' : '待您确认'}}
+                </text>
+              </view>
+              <view class="card-list">
+                <view wx:for="{{m.confirm.rows}}" wx:key="k" wx:for-item="r" class="cl-row {{m.confirm.done ? '' : 'editable'}} {{r._ghost ? 'cl-ghost' : ''}}"
+                      data-mid="{{m.id}}" data-rk="{{r.k}}" data-idx="{{index}}" bindtap="onTapEditConfirmRow">
+                  <text class="cl-row-t">{{r.txt}}{{r.who ? ' · ' + r.who : ''}}</text>
+                  <text class="cl-row-v {{r.t === 'in' ? 'cl-in' : 'cl-out'}}">{{r.amtText}}</text>
+                  <text wx:if="{{r._edited}}" class="cl-row-tag">已改</text>
+                  <text wx:if="{{r._ghost}}" class="cl-row-tag cl-ghost-tag">疑似 AI 编</text>
+                </view>
+              </view>
+              <view wx:if="{{m.confirm.hint}}" class="msg-a-tone">
+                <view class="ic ic-p-alert ic-sm"></view>
+                <text class="msg-a-tone-t">{{m.confirm.hint}}</text>
+              </view>
+              <!-- 🔴 16:09 OCR 原文展开：点了显示原图上的字（防 AI 编 / 看 OCR 抽的什么） -->
+              <view wx:if="{{!m.confirm.done && rawTextCache}}" class="raw-toggle" bindtap="onTapToggleRaw">
+                <text>{{showRawText ? '收起 OCR 原文' : '展开 OCR 原文'}}</text>
+              </view>
+              <view wx:if="{{showRawText && rawTextCache}}" class="raw-body">
+                <text>{{rawTextCache}}</text>
+              </view>
+              <view wx:if="{{!m.confirm.done}}" class="card-act">
+                <view class="card-btn card-btn-primary" data-id="{{m.id}}" bindtap="onTapConfirm">
+                  <view class="ic ic-w-check card-btn-ic"></view><text>确认入账</text>
+                </view>
+                <view class="card-btn" data-id="{{m.id}}" bindtap="onTapDrop">
+                  <view class="ic ic-d-quit card-btn-ic"></view><text>忽略</text>
+                </view>
+              </view>
+              <view wx:else class="badge">
+                <view class="ic ic-w-check"></view>
+                <text>已入账 · 共 {{m.confirm.count}} 笔</text>
+              </view>
+            </view>
+
+            <!-- 富交互卡片（数字卡 / 流水卡 / 只有标题的卡，三种共用一个模板） -->
+            <block wx:elif="{{m.card}}">
+              <view class="card">
+                <view wx:if="{{m.card.summary}}" class="card-hd">
+                  <text class="card-hd-t">{{m.card.summary}}</text>
+                </view>
+
+                <!-- 指标行（金额/笔数这类） -->
+                <view wx:if="{{m.card.numbers && m.card.numbers.length}}">
+                  <view wx:for="{{m.card.numbers}}" wx:key="label" wx:for-item="n" class="card-row">
+                    <text>{{n.label}}</text><text class="card-row-v">{{n.value}}</text>
+                  </view>
+                </view>
+
+                <!-- 流水明细（最近 N 笔那类卡；收支配色） -->
+                <view wx:if="{{m.card.list && m.card.list.length}}" class="card-list">
+                  <view wx:for="{{m.card.list}}" wx:key="k" wx:for-item="r" class="cl-row">
+                    <text>{{r.txt}}{{r.who ? ' · ' + r.who : ''}}{{r.d ? '（' + r.d + '）' : ''}}</text>
+                    <text class="cl-row-v {{r.t === 'in' ? 'cl-in' : 'cl-out'}}">{{r.amtText}}</text>
+                  </view>
+                </view>
+
+                <view wx:if="{{m.card.points && m.card.points.length}}" class="card-pts">
+                  <!-- 🔴 2026-10-17 修：原来这里写的是 {{m.card.points[0]}} ——
+                       循环遍历 points，内容却写死取第 0 项，于是**每一条都显示第一句**。
+                       老易截图里「不需要对方装 App」出现两次就是这个 bug。 -->
+                  <view wx:for="{{m.card.points}}" wx:key="*this" wx:for-item="pt" class="card-pt">· {{pt}}</view>
+                </view>
+
+                <!-- 4 个操作按钮：分享 / 记住 / 导出 / 撤销（有内容才显示） -->
+                <view wx:if="{{m.card.numbers || m.card.list || m.card.points}}" class="card-act card-act-3">
+                  <!-- 🔴 分享快照已就绪：原生转发按钮，点了**直接弹微信好友选择器** -->
+                  <button wx:if="{{m.shareToken}}" class="card-btn card-btn-primary card-btn-share"
+                          open-type="share" data-token="{{m.shareToken}}" data-title="{{m.shareName}}">
+                    <view class="ic ic-w-share card-btn-ic"></view><text>分享</text>
+                  </button>
+                  <!-- 快照还没就绪（刚收到卡片/预生成失败）：先走生成流程 -->
+                  <view wx:else class="card-btn card-btn-primary" data-id="{{m.id}}" bindtap="onTapShare">
+                    <view class="ic ic-w-share card-btn-ic"></view><text>分享</text>
+                  </view>
+                  <view class="card-btn" data-id="{{m.id}}" bindtap="onTapRemember">
+                    <view class="ic ic-d-remember card-btn-ic"></view><text>记住</text>
+                  </view>
+                  <view class="card-btn" data-id="{{m.id}}" bindtap="onTapExport">
+                    <view class="ic ic-d-export card-btn-ic"></view><text>导出</text>
+                  </view>
+                  <view wx:if="{{m.undone}}" class="card-btn card-btn-danger" data-id="{{m.id}}" bindtap="onTapUndo">
+                    <view class="ic ic-p-undo card-btn-ic"></view><text>撤销</text>
+                    <!-- 30 秒倒计时角标 -->
+                    <text wx:if="{{m.undoLeft > 0}}" class="undo-cd">{{m.undoLeft}}s</text>
+                  </view>
+                </view>
+
+                <!-- 撤销后 30 秒内可撤回 -->
+                <view wx:if="{{m.canRedo}}" class="card-act">
+                  <view class="card-btn card-btn-primary" data-id="{{m.id}}" bindtap="onTapRedo">
+                    <view class="ic ic-p-undo card-btn-ic"></view><text>撤回这次撤销</text>
+                  </view>
+                </view>
+              </view>
+            </block>
+
+            <!-- 已被撤销的徽章 -->
+            <view wx:if="{{m._undone}}" class="badge done">
+              <view class="ic ic-m-check"></view>
+              <text>已撤销</text>
+            </view>
+
+            <!-- AI 主动建议（suggest 区域）
+                 🔴 按钮文案不能死写「是 / 不是」—— 标签是「提醒」时读成「提醒 是 / 提醒 不是」。
+                    改成读 suggest.yes / suggest.no，缺省「好 / 不用」，由发起方给动词（提醒 / 出表…）。 -->
+            <block wx:if="{{m.suggest}}">
+              <view class="suggest {{m.suggestDone ? 'resolved' : ''}}">
+                <view class="ic ic-p-ai suggest-ic"></view>
+                <text class="suggest-q">{{m.suggest.label || m.suggest.q}}</text>
+                <view wx:if="{{!m.suggestDone}}" class="suggest-actions">
+                  <view class="suggest-y" data-id="{{m.id}}" bindtap="onTapSuggestYes">
+                    <view class="ic ic-w-check ic-sm"></view><text>{{m.suggest.yes || '好'}}</text>
+                  </view>
+                  <view class="suggest-n" data-id="{{m.id}}" bindtap="onTapSuggestNo">{{m.suggest.no || '不用'}}</view>
+                </view>
+              </view>
+            </block>
+
+            <!-- ② AI 随场景快捷问（2026-10-17 方案②）：挂在 AI 气泡下方随消息流滚动，
+                 替代被删除的输入框上方常驻 chip 条。全是纯查询，点击直接发送。 -->
+            <view wx:if="{{m.quicks && m.quicks.length}}" class="quicks">
+              <view class="quick-b" wx:for="{{m.quicks}}" wx:key="*this" wx:for-item="qq"
+                    data-q="{{qq}}" bindtap="onQuickAsk">{{qq}}</view>
+            </view>
+
+            <!-- 已记住徽章 -->
+            <view wx:if="{{m._remembered}}" class="badge">
+              <view class="ic ic-w-check"></view>
+              <text>AI 已记到长期记忆</text>
+            </view>
+          </view>
+        </view>
+      </block>
+    </block>
+
+    <!-- 思考中 -->
+    <view wx:if="{{sending}}" class="msg msg-a">
+      <image class="msg-a-v img talking" src="/assets/xiaobang.png" mode="aspectFill"></image>
+      <view class="msg-a-c">
+        <view class="msg-a-b msg-a-thinking">正在算 ...</view>
+      </view>
+    </view>
+
+    <view id="tail" class="tail"></view>
+  </scroll-view>
+
+  <!-- 流式字幕条（录音时显示） -->
+  <view wx:if="{{recording}}" class="live-cap">
+    <view class="live-dot"></view>
+    <text class="live-text">
+      {{recFallback ? '语音通道未连通，识别不到声音' : ''}}
+      {{liveText || '正在听，松开/再点完成...'}}
+    </text>
+    <text class="live-sec">{{recSecs}}s</text>
+  </view>
+
+  <!-- 输入区 -->
+  <view class="input-bar">
+  <!-- 🔴 2026-10-17 方案①+② 落地：输入框上方常驻快捷 chip 条整条删除
+       （老易：「位置和卡片美观上都不合适，放在这很容易出错」——
+        张姐是写死的人名、谁欠我钱指向空数据、点即发送容易误触发）。
+       替身：① 空状态引导卡（消息区居中，仅无消息时）② AI 气泡下随场景按钮组。 -->
+  <view class="input-box">
+      <!-- 录音按钮：点按（不再长按） -->
+      <view class="input-rec {{recording ? 'rec' : ''}}" bindtap="onTapMic">
+        <view class="ic ic-w-mic ic-lg" wx:if="{{!recording}}"></view>
+        <view class="rec-square" wx:else></view>
+      </view>
+      <view class="input-text">
+        <input type="text" value="{{input}}" bindinput="onInput" bindconfirm="onTapSend"
+               placeholder="说「今天赚了多少」「发昨天的日报」" confirm-type="send"/>
+      </view>
+      <!-- ＋：点开上传面板（拍照/相册/文件）。打开时旋转 45° 变 ×，并换成白色图标 -->
+      <view class="input-plus {{upOpen ? 'open' : ''}}" bindtap="onTapPlus">
+        <view class="ic {{upOpen ? 'ic-w-plus' : 'ic-d-plus'}}"></view>
+      </view>
+      <view class="input-send {{input ? '' : 'dis'}}" bindtap="onTapSend">
+        <view class="ic ic-w-send"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ═══ 上传面板（点 ＋ 弹出）═══ -->
+  <view wx:if="{{upOpen}}" class="up-mask" bindtap="onTapPlus"></view>
+  <view class="up-panel {{upOpen ? 'show' : ''}}">
+    <view class="up-hint">
+      <view class="ic ic-p-ai"></view>
+      <text>发我就行 —— 小票、账单截图、对账单、微信账单，我识完给您过目（相册/文件可一次选多张）</text>
+    </view>
+    <!-- 两列 2×2：**显式两行**，不用 calc（rpx 在 calc 里换算出错就会塌成单列，
+         2026-10-17 真机上就是这么塌的）。每行两个 .up-item，flex:1 均分，稳。 -->
+    <view class="up-grid">
+      <view class="up-row">
+        <view class="up-item" data-up="cam" bindtap="onTapUpload">
+          <view class="ic ic-d-cam"></view>
+          <text>拍小票</text>
+          <text class="up-sub">对准金额就行</text>
+        </view>
+        <view class="up-item" data-up="img" bindtap="onTapUpload">
+          <view class="ic ic-d-img"></view>
+          <text>相册图片</text>
+          <text class="up-sub">截图 / 照片（可多选 9 张）</text>
+        </view>
+      </view>
+      <view class="up-row">
+        <view class="up-item" data-up="file" bindtap="onTapUpload">
+          <view class="ic ic-d-file"></view>
+          <text>传文件</text>
+          <text class="up-sub">Excel / CSV / PDF</text>
+        </view>
+        <view class="up-item" data-up="paste" bindtap="onTapUpload">
+          <view class="ic ic-d-clip"></view>
+          <text>粘贴</text>
+          <text class="up-sub">图片 / 文字</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 拍照要点：面板常驻，正对 / 光线 / 整页入框 / 手写工整 —— 不花钱、提准确率 -->
+    <view class="up-tips">
+      <text class="up-tips-dot">拍清楚更准</text>
+      <text>正对票面 · 光线充足 · 整页入框 · 手写写工整，识别才稳</text>
+    </view>
+  </view>
+
+  <!-- ═══ 实时对讲面板 ═══ -->
+  <view wx:if="{{rtOpen}}" class="rt-mask">
+    <view class="rt-top">
+      <view class="rt-title">
+        <view class="rt-dot {{rtConnected ? 'on' : ''}}"></view>
+        <text>实时对讲</text>
+      </view>
+      <view class="rt-close" bindtap="onTapRtClose">
+        <view class="ic ic-w-close"></view>
+      </view>
+    </view>
+    <scroll-view class="rt-body" scroll-y="true" scroll-into-view="{{rtScrollTo}}" scroll-with-animation="true">
+      <block wx:for="{{rtLines}}" wx:key="k" wx:for-item="l">
+        <view id="rt-line-{{l.k}}">
+          <view class="rt-line {{l.role}}">{{l.text}}</view>
+          <!-- 语音记的账也要能撤（后端 30 秒内可撤）—— 没有这个入口，说错一句就没救 -->
+          <view wx:if="{{l.undoId}}" class="rt-undo" data-k="{{l.k}}" data-id="{{l.undoId}}" bindtap="onTapRtUndo">
+            <view class="ic ic-p-undo"></view><text>撤销这笔</text>
+          </view>
+        </view>
+      </block>
+      <view id="rt-tail"></view>
+    </scroll-view>
+    <view class="rt-bottom">
+      <!-- 实时字幕：边说边上屏（partial），定稿后归位到上面的对话流 -->
+      <view wx:if="{{rtLive}}" class="rt-live {{rtState === 'listening' ? 'on' : ''}}">{{rtLive}}</view>
+      <view class="rt-mic {{rtState === 'listening' ? 'listening' : ''}}{{rtState === 'speaking' ? 'speaking' : ''}}"
+            bindtap="onTapRtMic">
+        <view class="ic ic-w-mic"></view>
+      </view>
+      <text class="rt-status">{{rtStatus}}</text>
+      <!-- ⚠️ 这句话必须和实现一致：/api/chat 命中记账意图时是**直接入账 + 给撤销入口**，
+           不是「弹确认卡」。原来写的是"说完账目会弹出确认卡"，那是假的。 -->
+      <text class="rt-hint">支持语音记账、查账、报账；记账会直接入账，30 秒内可撤销</text>
+    </view>
+  </view>
+</view>
+
+<!-- 🔴 2026-10-17 OCR 识别明细人工修改弹窗（老易反馈"单条有错不能改"） -->
+<view wx:if="{{editRowOpen}}" class="edit-mask" bindtap="onTapEditCloseMask">
+  <!-- catch:tap 增强版，绕开某些基础库对 catchtap="" 吞事件的兼容问题 -->
+  <view class="edit-panel" catch:tap="onTapEditNoop">
+    <view class="edit-hd">
+      <text>改这一行</text>
+      <!-- 🔴 2026-10-17 16:09：用 catch:tap（增强版）替代 catchtap，避免某些基础库版本吞事件 -->
+      <view class="edit-close" catch:tap="onTapEditClose">×</view>
+    </view>
+    <view class="edit-body">
+      <view class="edit-row">
+        <text class="edit-lbl">方向</text>
+        <view class="edit-seg">
+          <view class="edit-seg-i {{editRow.t === 'out' ? 'on' : ''}}" data-t="out" bindtap="onTapEditToggle">支出</view>
+          <view class="edit-seg-i {{editRow.t === 'in' ? 'on' : ''}}" data-t="in" bindtap="onTapEditToggle">收入</view>
+        </view>
+      </view>
+      <view class="edit-row">
+        <text class="edit-lbl">金额</text>
+        <input class="edit-inp" type="digit" value="{{editRow.amt}}" bindinput="onEditAmtInput" placeholder="0.00"/>
+        <text class="edit-suf">元</text>
+      </view>
+      <view class="edit-row">
+        <text class="edit-lbl">摘要</text>
+        <input class="edit-inp" value="{{editRow.txt}}" bindinput="onEditTxtInput" placeholder="做了什么"/>
+      </view>
+      <view class="edit-row">
+        <text class="edit-lbl">对方</text>
+        <input class="edit-inp" value="{{editRow.who}}" bindinput="onEditWhoInput" placeholder="(可不填)"/>
+      </view>
+    </view>
+    <view class="edit-foot">
+      <view class="edit-btn edit-btn-ghost" bindtap="onTapEditDel">删除这行</view>
+      <view class="edit-btn edit-btn-primary" bindtap="onTapEditSave">保存改</view>
+    </view>
+  </view>
+</view>

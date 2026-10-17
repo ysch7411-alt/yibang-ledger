@@ -1,0 +1,16 @@
+/* app.wxss —— 全局样式（所有页面共享） */
+
+/* 图标系统（自动生成，见 tools/gen-icons.js） */
+@import "./styles/icons.wxss";
+
+/* 全局底座 */
+page {
+  background: #FAFAF7;
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 数字统一用等宽数字，防止跳动 */
+.num {
+  font-variant-numeric: tabular-nums;
+}
